@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120">
+  <rect x="8" y="8" width="104" height="104" rx="6" fill="#A8342A"></rect>
+  <rect x="14" y="14" width="92" height="92" rx="3" fill="none" stroke="#F4ECE0" stroke-width="2"></rect>
+  <text x="60" y="84" text-anchor="middle" font-family="Shippori Mincho, Noto Serif JP, serif" font-size="70" font-weight="600" fill="#F4ECE0">墨</text>
+</svg>

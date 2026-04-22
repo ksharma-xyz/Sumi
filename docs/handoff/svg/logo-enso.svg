@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120">
+  <defs>
+    <filter id="ink"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="2" seed="2"></feTurbulence><feDisplacementMap in="SourceGraphic" scale="2"></feDisplacementMap></filter>
+  </defs>
+  <path d="M 95,30 A 42,42 0 1,0 82,92 Q 72,94 60,92" fill="none" stroke="#1A1410" stroke-width="11" stroke-linecap="round" filter="url(#ink)"></path>
+  <circle cx="60" cy="94" r="3" fill="#1A1410" opacity="0.7"></circle>
+  <circle cx="66" cy="99" r="1.5" fill="#1A1410" opacity="0.5"></circle>
+</svg>
