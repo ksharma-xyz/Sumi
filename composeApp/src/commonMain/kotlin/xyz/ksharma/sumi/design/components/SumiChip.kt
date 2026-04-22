@@ -11,10 +11,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import xyz.ksharma.sumi.theme.SumiTokens as Sumi
 import xyz.ksharma.sumi.theme.SumiTheme
-
-enum class SumiChipTone { Ink, Red, Teal, Gold, Muted }
+import xyz.ksharma.sumi.theme.SumiTokens as Sumi
 
 @Composable
 fun SumiChip(
@@ -42,17 +40,17 @@ fun SumiChip(
 }
 
 private fun chipTextColor(tone: SumiChipTone): Color = when (tone) {
-    SumiChipTone.Ink   -> Sumi.Color.ink
-    SumiChipTone.Red   -> Sumi.Color.red
-    SumiChipTone.Teal  -> Sumi.Color.teal
-    SumiChipTone.Gold  -> Sumi.Color.gold
+    SumiChipTone.Ink -> Sumi.Color.ink
+    SumiChipTone.Red -> Sumi.Color.red
+    SumiChipTone.Teal -> Sumi.Color.teal
+    SumiChipTone.Gold -> Sumi.Color.gold
     SumiChipTone.Muted -> Sumi.Color.inkFaint
 }
 
 private fun chipBorderColor(tone: SumiChipTone): Color = when (tone) {
-    SumiChipTone.Ink   -> Sumi.Color.ink
-    SumiChipTone.Red   -> Sumi.Color.red
-    SumiChipTone.Teal  -> Sumi.Color.teal
-    SumiChipTone.Gold  -> Sumi.Color.gold
+    SumiChipTone.Ink -> Sumi.Color.ink
+    SumiChipTone.Red -> Sumi.Color.red
+    SumiChipTone.Teal -> Sumi.Color.teal
+    SumiChipTone.Gold -> Sumi.Color.gold
     SumiChipTone.Muted -> Sumi.Color.inkGhost
 }

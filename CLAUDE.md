@@ -49,6 +49,14 @@ composeApp/src/commonMain/kotlin/xyz/ksharma/sumi/
 └── App.kt          Root composable
 ```
 
+## Detekt suppression policy
+
+**Do not suppress detekt violations without checking first.** The default approach is to fix properly.
+
+- `MagicNumber`: okay to suppress in some cases (UI constants, pixel values), but fix first if practical
+- Everything else (`MatchingDeclarationName`, `LongMethod`, `ComposableParamOrder`, etc.): **fix properly, do not suppress**
+- If you think a suppression is the right call, **ask the user** before adding `@file:Suppress` or `@Suppress`
+
 ## Build structure
 
 - Convention plugins in `gradle/build-logic/`

@@ -20,14 +20,6 @@ import sumi.composeapp.generated.resources.shippori_mincho_semibold
 import sumi.composeapp.generated.resources.source_serif_4_medium
 import sumi.composeapp.generated.resources.source_serif_4_regular
 
-data class SumiFontBundle(
-    val display: FontFamily,
-    val body: FontFamily,
-    val ui: FontFamily,
-    val hand: FontFamily,
-    val cjk: FontFamily,
-)
-
 @Composable
 fun rememberSumiFonts(): SumiFontBundle {
     val display = FontFamily(
