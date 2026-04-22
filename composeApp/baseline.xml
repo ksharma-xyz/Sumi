@@ -1,0 +1,9 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>FinalNewline:MainViewController.kt$xyz.ksharma.sumi.MainViewController.kt</ID>
+    <ID>FunctionNaming:MainViewController.kt$fun MainViewController()</ID>
+    <ID>ModifierMissing:App.kt$App</ID>
+  </CurrentIssues>
+</SmellBaseline>
