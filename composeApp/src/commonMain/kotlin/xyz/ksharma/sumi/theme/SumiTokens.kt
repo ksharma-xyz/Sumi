@@ -9,107 +9,116 @@ object SumiTokens {
 
     object Color {
         // Paper (day)
-        val paper       = androidx.compose.ui.graphics.Color(0xFFF4ECE0)
-        val paperWarm   = androidx.compose.ui.graphics.Color(0xFFEBE0CC)
-        val paperDeep   = androidx.compose.ui.graphics.Color(0xFFDFD1B6)
-        val paperEdge   = androidx.compose.ui.graphics.Color(0xFFC9B48A)
-        val paperGlow   = androidx.compose.ui.graphics.Color(0xFFFBF6ED)
+        val paper = androidx.compose.ui.graphics.Color(0xFFF4ECE0)
+        val paperWarm = androidx.compose.ui.graphics.Color(0xFFEBE0CC)
+        val paperDeep = androidx.compose.ui.graphics.Color(0xFFDFD1B6)
+        val paperEdge = androidx.compose.ui.graphics.Color(0xFFC9B48A)
+        val paperGlow = androidx.compose.ui.graphics.Color(0xFFFBF6ED)
 
         // Ink
-        val ink         = androidx.compose.ui.graphics.Color(0xFF1A1410)
-        val inkSoft     = androidx.compose.ui.graphics.Color(0xFF5A4838)
-        val inkFaint    = androidx.compose.ui.graphics.Color(0xFF8A7560)
-        val inkGhost    = androidx.compose.ui.graphics.Color(0xFFB3A088)
+        val ink = androidx.compose.ui.graphics.Color(0xFF1A1410)
+        val inkSoft = androidx.compose.ui.graphics.Color(0xFF5A4838)
+        val inkFaint = androidx.compose.ui.graphics.Color(0xFF8A7560)
+        val inkGhost = androidx.compose.ui.graphics.Color(0xFFB3A088)
 
         // Accents
-        val red         = androidx.compose.ui.graphics.Color(0xFFA8342A)
-        val redDeep     = androidx.compose.ui.graphics.Color(0xFF7E2820)
-        val teal        = androidx.compose.ui.graphics.Color(0xFF2A5A6E)
-        val tealSoft    = androidx.compose.ui.graphics.Color(0xFF4A7A8E)
-        val gold        = androidx.compose.ui.graphics.Color(0xFF8A6B2A)
-        val goldLight   = androidx.compose.ui.graphics.Color(0xFFC49A4A)
+        val red = androidx.compose.ui.graphics.Color(0xFFA8342A)
+        val redDeep = androidx.compose.ui.graphics.Color(0xFF7E2820)
+        val teal = androidx.compose.ui.graphics.Color(0xFF2A5A6E)
+        val tealSoft = androidx.compose.ui.graphics.Color(0xFF4A7A8E)
+        val gold = androidx.compose.ui.graphics.Color(0xFF8A6B2A)
+        val goldLight = androidx.compose.ui.graphics.Color(0xFFC49A4A)
 
         // States
-        val success     = androidx.compose.ui.graphics.Color(0xFF5A7A3A)
-        val warning     = androidx.compose.ui.graphics.Color(0xFFA8632A)
-        val error       = androidx.compose.ui.graphics.Color(0xFFA8342A)
-        val hint        = androidx.compose.ui.graphics.Color(0xFF8A6B2A)
+        val success = androidx.compose.ui.graphics.Color(0xFF5A7A3A)
+        val warning = androidx.compose.ui.graphics.Color(0xFFA8632A)
+        val error = androidx.compose.ui.graphics.Color(0xFFA8342A)
+        val hint = androidx.compose.ui.graphics.Color(0xFF8A6B2A)
 
         object Night {
-            val paper       = androidx.compose.ui.graphics.Color(0xFF1A1410)
-            val paperWarm   = androidx.compose.ui.graphics.Color(0xFF241C14)
-            val paperDeep   = androidx.compose.ui.graphics.Color(0xFF2D241A)
-            val paperEdge   = androidx.compose.ui.graphics.Color(0xFF3D3022)
-            val ink         = androidx.compose.ui.graphics.Color(0xFFF4ECE0)
-            val inkSoft     = androidx.compose.ui.graphics.Color(0xFFB3A088)
-            val inkFaint    = androidx.compose.ui.graphics.Color(0xFF8A7560)
-            val inkGhost    = androidx.compose.ui.graphics.Color(0xFF5A4838)
-            val red         = androidx.compose.ui.graphics.Color(0xFFE84A3E)
-            val teal        = androidx.compose.ui.graphics.Color(0xFF6FA8BC)
-            val gold        = androidx.compose.ui.graphics.Color(0xFFD9A855)
+            val paper = androidx.compose.ui.graphics.Color(0xFF1A1410)
+            val paperWarm = androidx.compose.ui.graphics.Color(0xFF241C14)
+            val paperDeep = androidx.compose.ui.graphics.Color(0xFF2D241A)
+            val paperEdge = androidx.compose.ui.graphics.Color(0xFF3D3022)
+            val ink = androidx.compose.ui.graphics.Color(0xFFF4ECE0)
+            val inkSoft = androidx.compose.ui.graphics.Color(0xFFB3A088)
+            val inkFaint = androidx.compose.ui.graphics.Color(0xFF8A7560)
+            val inkGhost = androidx.compose.ui.graphics.Color(0xFF5A4838)
+            val red = androidx.compose.ui.graphics.Color(0xFFE84A3E)
+            val teal = androidx.compose.ui.graphics.Color(0xFF6FA8BC)
+            val gold = androidx.compose.ui.graphics.Color(0xFFD9A855)
         }
     }
 
     object TypeFamily {
         const val DISPLAY = "CormorantGaramond"
-        const val BODY    = "SourceSerif4"
-        const val UI      = "Inter"
+        const val BODY = "SourceSerif4"
+        const val UI = "Inter"
         const val NUMERAL = "CormorantGaramond"
-        const val HAND    = "Caveat"
-        const val CJK     = "ShipporiMincho"
+        const val HAND = "Caveat"
+        const val CJK = "ShipporiMincho"
     }
 
     object Size {
         val caption = 11.sp
-        val small   = 12.sp
-        val body    = 15.sp
-        val bodyLg  = 17.sp
+        val small = 12.sp
+        val body = 15.sp
+        val bodyLg = 17.sp
         val subhead = 20.sp
-        val h3      = 26.sp
-        val h2      = 34.sp
-        val h1      = 46.sp
+        val h3 = 26.sp
+        val h2 = 34.sp
+        val h1 = 46.sp
         val display = 62.sp
-        val hero    = 88.sp
+        val hero = 88.sp
     }
 
     object Weight {
-        const val LIGHT   = 300
+        const val LIGHT = 300
         const val REGULAR = 400
-        const val MEDIUM  = 500
-        const val SEMI    = 600
-        const val BOLD    = 700
+        const val MEDIUM = 500
+        const val SEMI = 600
+        const val BOLD = 700
     }
 
     object Track {
-        const val TIGHT  = -0.03f
-        const val SNUG   = -0.01f
+        const val TIGHT = -0.03f
+        const val SNUG = -0.01f
         const val NORMAL = 0f
-        const val WIDE   = 0.1f
-        const val WIDER  = 0.2f
+        const val WIDE = 0.1f
+        const val WIDER = 0.2f
         const val WIDEST = 0.28f
     }
 
     object Space {
-        val s0  =  0.dp; val s1  =  4.dp; val s2  =  8.dp; val s3  = 12.dp
-        val s4  = 16.dp; val s5  = 20.dp; val s6  = 24.dp; val s7  = 32.dp
-        val s8  = 40.dp; val s9  = 48.dp; val s10 = 64.dp; val s11 = 80.dp
+        val s0 = 0.dp
+        val s1 = 4.dp
+        val s2 = 8.dp
+        val s3 = 12.dp
+        val s4 = 16.dp
+        val s5 = 20.dp
+        val s6 = 24.dp
+        val s7 = 32.dp
+        val s8 = 40.dp
+        val s9 = 48.dp
+        val s10 = 64.dp
+        val s11 = 80.dp
     }
 
     object Radius {
-        val none =    0.dp
-        val xs   =    2.dp
-        val sm   =    4.dp
-        val md   =    8.dp
-        val lg   =   12.dp
+        val none = 0.dp
+        val xs = 2.dp
+        val sm = 4.dp
+        val md = 8.dp
+        val lg = 12.dp
         val pill = 9999.dp
     }
 
     object Duration {
-        const val BRIEF    = 160
-        const val SHORT    = 260
-        const val BASE     = 380
-        const val BREATH   = 560
-        const val SLOW     = 900
+        const val BRIEF = 160
+        const val SHORT = 260
+        const val BASE = 380
+        const val BREATH = 560
+        const val SLOW = 900
         const val CEREMONY = 1600
     }
 
@@ -117,14 +126,14 @@ object SumiTokens {
         val paper: Easing = CubicBezierEasing(0.22f, 0.75f, 0.28f, 1f)
         val brush: Easing = CubicBezierEasing(0.65f, 0f, 0.35f, 1f)
         val bleed: Easing = CubicBezierEasing(0.16f, 0.84f, 0.24f, 1f)
-        val snap:  Easing = CubicBezierEasing(0.5f, -0.2f, 0.3f, 1.4f)
+        val snap: Easing = CubicBezierEasing(0.5f, -0.2f, 0.3f, 1.4f)
     }
 
     object Layout {
         val screenPadX = 24.dp
         val screenPadY = 28.dp
-        val cellSize   = 38.dp
-        val minTap     = 44.dp
+        val cellSize = 38.dp
+        val minTap = 44.dp
     }
 }
 

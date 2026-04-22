@@ -2,7 +2,6 @@ package xyz.ksharma.sumi.design.components
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -38,12 +37,12 @@ fun WashiBG(
         val rng = Random(0x53756D69L) // "Sumi" seed
         List(1000) {
             FiberLine(
-                x       = rng.nextFloat(),
-                y       = rng.nextFloat(),
-                length  = rng.nextFloat() * 0.06f + 0.01f,
-                angle   = rng.nextFloat() * 0.4f - 0.2f,
-                alpha   = (rng.nextFloat() * 0.5f + 0.3f) * 0.09f * intensity,
-                width   = rng.nextFloat() * 0.6f + 0.3f,
+                x = rng.nextFloat(),
+                y = rng.nextFloat(),
+                length = rng.nextFloat() * 0.06f + 0.01f,
+                angle = rng.nextFloat() * 0.4f - 0.2f,
+                alpha = (rng.nextFloat() * 0.5f + 0.3f) * 0.09f * intensity,
+                width = rng.nextFloat() * 0.6f + 0.3f,
             )
         }
     }
@@ -61,7 +60,7 @@ fun WashiBG(
                 drawLine(
                     color = Color(fiberR, fiberG, fiberB, fiber.alpha),
                     start = Offset(x1, y1),
-                    end   = Offset(x1 + len * cos(fiber.angle), y1 + len * sin(fiber.angle)),
+                    end = Offset(x1 + len * cos(fiber.angle), y1 + len * sin(fiber.angle)),
                     strokeWidth = fiber.width,
                 )
             }

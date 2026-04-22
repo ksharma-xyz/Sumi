@@ -44,98 +44,85 @@ fun sumiTypography(
     hand: FontFamily,
     cjk: FontFamily,
 ): SumiTypeRoles = SumiTypeRoles(
-    h1 = TextStyle(
-        fontFamily = display, fontStyle = FontStyle.Italic,
-        fontWeight = FontWeight(SumiTokens.Weight.MEDIUM),
-        fontSize = SumiTokens.Size.h1, letterSpacing = (-0.02f).em,
-    ),
-    h2 = TextStyle(
-        fontFamily = display, fontStyle = FontStyle.Italic,
-        fontWeight = FontWeight(SumiTokens.Weight.MEDIUM),
-        fontSize = SumiTokens.Size.h2, letterSpacing = (-0.015f).em,
-    ),
-    h3 = TextStyle(
-        fontFamily = display, fontStyle = FontStyle.Italic,
-        fontWeight = FontWeight(SumiTokens.Weight.MEDIUM),
-        fontSize = SumiTokens.Size.h3, letterSpacing = (-0.01f).em,
-    ),
-    subhead = TextStyle(
-        fontFamily = display, fontStyle = FontStyle.Italic,
-        fontWeight = FontWeight(SumiTokens.Weight.MEDIUM),
-        fontSize = SumiTokens.Size.subhead,
-    ),
-    body = TextStyle(
-        fontFamily = body, fontWeight = FontWeight(SumiTokens.Weight.REGULAR),
-        fontSize = SumiTokens.Size.body,
-        lineHeight = (SumiTokens.Size.body.value * 1.6f).sp,
-    ),
-    bodySmall = TextStyle(
-        fontFamily = body, fontWeight = FontWeight(SumiTokens.Weight.REGULAR),
-        fontSize = SumiTokens.Size.small,
-    ),
-    caption = TextStyle(
-        fontFamily = body, fontWeight = FontWeight(SumiTokens.Weight.REGULAR),
-        fontSize = SumiTokens.Size.caption,
-    ),
-    uiButton = TextStyle(
-        fontFamily = ui, fontWeight = FontWeight(SumiTokens.Weight.SEMI),
-        fontSize = 13.sp, letterSpacing = SumiTokens.Track.WIDER.em,
-    ),
-    uiLabel = TextStyle(
-        fontFamily = ui, fontWeight = FontWeight(SumiTokens.Weight.SEMI),
-        fontSize = 11.sp, letterSpacing = SumiTokens.Track.WIDEST.em,
-    ),
-    uiMeta = TextStyle(
-        fontFamily = ui, fontWeight = FontWeight(SumiTokens.Weight.MEDIUM),
-        fontSize = 10.sp, letterSpacing = SumiTokens.Track.WIDER.em,
-    ),
+    h1 = displayStyle(display, SumiTokens.Size.h1, (-0.02f).em),
+    h2 = displayStyle(display, SumiTokens.Size.h2, (-0.015f).em),
+    h3 = displayStyle(display, SumiTokens.Size.h3, (-0.01f).em),
+    subhead = displayStyle(display, SumiTokens.Size.subhead, 0f.em),
+    body = bodyStyle(body, SumiTokens.Size.body, (SumiTokens.Size.body.value * 1.6f).sp),
+    bodySmall = bodyStyle(body, SumiTokens.Size.small),
+    caption = bodyStyle(body, SumiTokens.Size.caption),
+    uiButton = uiStyle(ui, 13.sp, SumiTokens.Track.WIDER.em, SumiTokens.Weight.SEMI),
+    uiLabel = uiStyle(ui, 11.sp, SumiTokens.Track.WIDEST.em, SumiTokens.Weight.SEMI),
+    uiMeta = uiStyle(ui, 10.sp, SumiTokens.Track.WIDER.em, SumiTokens.Weight.MEDIUM),
     quote = TextStyle(
-        fontFamily = display, fontStyle = FontStyle.Italic,
+        fontFamily = display,
+        fontStyle = FontStyle.Italic,
         fontWeight = FontWeight(SumiTokens.Weight.MEDIUM),
-        fontSize = 22.sp, lineHeight = 32.sp,
+        fontSize = 22.sp,
+        lineHeight = 32.sp,
     ),
     numeral = TextStyle(
-        fontFamily = display, fontWeight = FontWeight(SumiTokens.Weight.SEMI),
-        fontSize = 22.sp, letterSpacing = (-0.02f).em,
+        fontFamily = display,
+        fontWeight = FontWeight(SumiTokens.Weight.SEMI),
+        fontSize = 22.sp,
+        letterSpacing = (-0.02f).em,
     ),
-    hand = TextStyle(
-        fontFamily = hand, fontWeight = FontWeight(SumiTokens.Weight.MEDIUM),
-        fontSize = 24.sp,
-    ),
-    cjk = TextStyle(
-        fontFamily = cjk, fontWeight = FontWeight(SumiTokens.Weight.MEDIUM),
-    ),
+    hand = TextStyle(fontFamily = hand, fontWeight = FontWeight(SumiTokens.Weight.MEDIUM), fontSize = 24.sp),
+    cjk = TextStyle(fontFamily = cjk, fontWeight = FontWeight(SumiTokens.Weight.MEDIUM)),
 )
+
+private fun displayStyle(family: FontFamily, size: androidx.compose.ui.unit.TextUnit, tracking: androidx.compose.ui.unit.TextUnit) =
+    TextStyle(
+        fontFamily = family,
+        fontStyle = FontStyle.Italic,
+        fontWeight = FontWeight(SumiTokens.Weight.MEDIUM),
+        fontSize = size,
+        letterSpacing = tracking,
+    )
+
+private fun bodyStyle(
+    family: FontFamily,
+    size: androidx.compose.ui.unit.TextUnit,
+    leading: androidx.compose.ui.unit.TextUnit = androidx.compose.ui.unit.TextUnit.Unspecified,
+) = TextStyle(
+    fontFamily = family,
+    fontWeight = FontWeight(SumiTokens.Weight.REGULAR),
+    fontSize = size,
+    lineHeight = leading,
+)
+
+private fun uiStyle(family: FontFamily, size: androidx.compose.ui.unit.TextUnit, tracking: androidx.compose.ui.unit.TextUnit, weight: Int) =
+    TextStyle(fontFamily = family, fontWeight = FontWeight(weight), fontSize = size, letterSpacing = tracking)
 
 @Composable
 fun SumiTheme(
-    dark: Boolean = isSystemInDarkTheme(),
     typography: SumiTypeRoles,
+    dark: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit,
 ) {
     val colorScheme = if (dark) {
         darkColorScheme(
-            background   = SumiTokens.Color.Night.paper,
-            surface      = SumiTokens.Color.Night.paperWarm,
+            background = SumiTokens.Color.Night.paper,
+            surface = SumiTokens.Color.Night.paperWarm,
             onBackground = SumiTokens.Color.Night.ink,
-            onSurface    = SumiTokens.Color.Night.ink,
-            primary      = SumiTokens.Color.Night.red,
-            onPrimary    = SumiTokens.Color.Night.paper,
-            secondary    = SumiTokens.Color.Night.teal,
-            tertiary     = SumiTokens.Color.Night.gold,
-            error        = SumiTokens.Color.Night.red,
+            onSurface = SumiTokens.Color.Night.ink,
+            primary = SumiTokens.Color.Night.red,
+            onPrimary = SumiTokens.Color.Night.paper,
+            secondary = SumiTokens.Color.Night.teal,
+            tertiary = SumiTokens.Color.Night.gold,
+            error = SumiTokens.Color.Night.red,
         )
     } else {
         lightColorScheme(
-            background   = SumiTokens.Color.paper,
-            surface      = SumiTokens.Color.paperWarm,
+            background = SumiTokens.Color.paper,
+            surface = SumiTokens.Color.paperWarm,
             onBackground = SumiTokens.Color.ink,
-            onSurface    = SumiTokens.Color.ink,
-            primary      = SumiTokens.Color.red,
-            onPrimary    = SumiTokens.Color.paper,
-            secondary    = SumiTokens.Color.teal,
-            tertiary     = SumiTokens.Color.gold,
-            error        = SumiTokens.Color.red,
+            onSurface = SumiTokens.Color.ink,
+            primary = SumiTokens.Color.red,
+            onPrimary = SumiTokens.Color.paper,
+            secondary = SumiTokens.Color.teal,
+            tertiary = SumiTokens.Color.gold,
+            error = SumiTokens.Color.red,
         )
     }
     CompositionLocalProvider(LocalSumiTypography provides typography) {

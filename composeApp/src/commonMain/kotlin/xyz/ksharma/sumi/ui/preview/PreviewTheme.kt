@@ -7,8 +7,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import xyz.ksharma.sumi.theme.SumiTokens as Sumi
 import xyz.ksharma.sumi.ui.theme.AppTheme
+import xyz.ksharma.sumi.theme.SumiTokens as Sumi
 
 @Composable
 fun AppPreviewTheme(

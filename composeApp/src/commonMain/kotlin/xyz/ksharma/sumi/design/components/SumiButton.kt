@@ -24,8 +24,8 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import xyz.ksharma.sumi.theme.SumiTokens as Sumi
 import xyz.ksharma.sumi.theme.SumiTheme
+import xyz.ksharma.sumi.theme.SumiTokens as Sumi
 
 enum class SumiButtonVariant { Primary, Ghost, Subtle, Red }
 enum class SumiButtonSize { Sm, Md, Lg }
@@ -116,11 +116,6 @@ fun SumiTextButton(
     size: SumiButtonSize = SumiButtonSize.Md,
     enabled: Boolean = true,
 ) {
-    val fontSize = when (size) {
-        SumiButtonSize.Sm -> 11
-        SumiButtonSize.Md -> 13
-        SumiButtonSize.Lg -> 14
-    }
     SumiButton(onClick = onClick, modifier = modifier, variant = variant, size = size, enabled = enabled) {
         Text(
             text = text.uppercase(),
@@ -132,21 +127,21 @@ fun SumiTextButton(
 
 private fun variantBg(variant: SumiButtonVariant): Color = when (variant) {
     SumiButtonVariant.Primary -> Sumi.Color.ink
-    SumiButtonVariant.Ghost   -> Color.Transparent
-    SumiButtonVariant.Subtle  -> Sumi.Color.paperWarm
-    SumiButtonVariant.Red     -> Sumi.Color.red
+    SumiButtonVariant.Ghost -> Color.Transparent
+    SumiButtonVariant.Subtle -> Sumi.Color.paperWarm
+    SumiButtonVariant.Red -> Sumi.Color.red
 }
 
 private fun variantFg(variant: SumiButtonVariant): Color = when (variant) {
     SumiButtonVariant.Primary -> Sumi.Color.paper
-    SumiButtonVariant.Ghost   -> Sumi.Color.ink
-    SumiButtonVariant.Subtle  -> Sumi.Color.ink
-    SumiButtonVariant.Red     -> Sumi.Color.paper
+    SumiButtonVariant.Ghost -> Sumi.Color.ink
+    SumiButtonVariant.Subtle -> Sumi.Color.ink
+    SumiButtonVariant.Red -> Sumi.Color.paper
 }
 
 private fun variantBorder(variant: SumiButtonVariant): Color = when (variant) {
     SumiButtonVariant.Primary -> Sumi.Color.ink
-    SumiButtonVariant.Ghost   -> Sumi.Color.ink
-    SumiButtonVariant.Subtle  -> Sumi.Color.paperEdge
-    SumiButtonVariant.Red     -> Sumi.Color.red
+    SumiButtonVariant.Ghost -> Sumi.Color.ink
+    SumiButtonVariant.Subtle -> Sumi.Color.paperEdge
+    SumiButtonVariant.Red -> Sumi.Color.red
 }

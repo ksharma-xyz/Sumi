@@ -14,10 +14,10 @@ fun AppTheme(
     val fonts = rememberSumiFonts()
     val typography = sumiTypography(
         display = fonts.display,
-        body    = fonts.body,
-        ui      = fonts.ui,
-        hand    = fonts.hand,
-        cjk     = fonts.cjk,
+        body = fonts.body,
+        ui = fonts.ui,
+        hand = fonts.hand,
+        cjk = fonts.cjk,
     )
-    SumiTheme(dark = dark, typography = typography, content = content)
+    SumiTheme(typography = typography, dark = dark, content = content)
 }
