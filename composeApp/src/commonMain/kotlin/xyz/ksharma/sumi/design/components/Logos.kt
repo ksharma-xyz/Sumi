@@ -28,6 +28,7 @@ fun LogoEnso(
     modifier: Modifier = Modifier,
     size: Dp = 120.dp,
     color: Color = Sumi.Color.ink,
+    progress: Float = 1f,
 ) {
     Canvas(modifier = modifier.size(size)) {
         val w = this.size.width
@@ -36,9 +37,7 @@ fun LogoEnso(
         val r = w * 0.42f
         val strokePx = w * 0.065f
 
-        // Enso: open circle arc ~300° with brush-like end (tapered via two overlapping arcs)
-        val path = Path().apply {
-            // Approximate arc: start at ~150°, sweep ~300°
+        val fullPath = Path().apply {
             val startAngleRad = (150.0 * kotlin.math.PI / 180.0).toFloat()
             val sweepRad = (295.0 * kotlin.math.PI / 180.0).toFloat()
             val steps = 80
@@ -50,14 +49,18 @@ fun LogoEnso(
             }
         }
 
+        val drawPath = if (progress >= 1f) {
+            fullPath
+        } else {
+            val pm = androidx.compose.ui.graphics.PathMeasure()
+            pm.setPath(fullPath, false)
+            Path().also { seg -> pm.getSegment(0f, progress * pm.length, seg, true) }
+        }
+
         drawPath(
-            path = path,
+            path = drawPath,
             color = color,
-            style = Stroke(
-                width = strokePx,
-                cap = StrokeCap.Round,
-                join = StrokeJoin.Round,
-            ),
+            style = Stroke(width = strokePx, cap = StrokeCap.Round, join = StrokeJoin.Round),
         )
     }
 }
