@@ -15,8 +15,10 @@ import kotlin.time.ExperimentalTime
 
 private val KEY_SEEN_ONBOARDING = booleanPreferencesKey("seen_onboarding")
 private val KEY_STREAK = intPreferencesKey("streak_count")
+private val KEY_BEST_STREAK = intPreferencesKey("best_streak")
 private val KEY_LAST_SOLVE_DAY = longPreferencesKey("last_solve_day")
 private val KEY_SOLVE_DAYS = stringSetPreferencesKey("solve_days")
+private val KEY_TOTAL_PUZZLES = intPreferencesKey("total_puzzles")
 
 class DataStoreSumiPreferences(private val store: DataStore<Preferences>) : SumiPreferences {
 
@@ -28,6 +30,10 @@ class DataStoreSumiPreferences(private val store: DataStore<Preferences>) : Sumi
     }
 
     override suspend fun getStreak(): Int = store.data.first()[KEY_STREAK] ?: 0
+
+    override suspend fun getBestStreak(): Int = store.data.first()[KEY_BEST_STREAK] ?: 0
+
+    override suspend fun getTotalPuzzlesSolved(): Int = store.data.first()[KEY_TOTAL_PUZZLES] ?: 0
 
     override suspend fun recordSolve(): Int {
         val today = todayEpochDay()
@@ -43,10 +49,12 @@ class DataStoreSumiPreferences(private val store: DataStore<Preferences>) : Sumi
             if (lastDay != today) {
                 prefs[KEY_STREAK] = newStreak
                 prefs[KEY_LAST_SOLVE_DAY] = today
+                val prevBest = prefs[KEY_BEST_STREAK] ?: 0
+                if (newStreak > prevBest) prefs[KEY_BEST_STREAK] = newStreak
             }
-            // Record this day in the solve-days set (store as string for DataStore compatibility)
             val existing = prefs[KEY_SOLVE_DAYS] ?: emptySet()
             prefs[KEY_SOLVE_DAYS] = existing + today.toString()
+            prefs[KEY_TOTAL_PUZZLES] = (prefs[KEY_TOTAL_PUZZLES] ?: 0) + 1
         }
         return newStreak
     }

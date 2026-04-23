@@ -5,6 +5,8 @@ interface SumiPreferences {
     suspend fun setSeenOnboarding()
 
     suspend fun getStreak(): Int
+    suspend fun getBestStreak(): Int
+    suspend fun getTotalPuzzlesSolved(): Int
 
     // Records today as a solve day. Returns updated streak.
     suspend fun recordSolve(): Int

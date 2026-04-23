@@ -1,40 +1,111 @@
+@file:Suppress("MagicNumber")
+
 package xyz.ksharma.sumi.screens.stats
 
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
+import androidx.compose.ui.unit.sp
+import xyz.ksharma.sumi.design.components.QuoteRule
+import xyz.ksharma.sumi.design.components.SumiEyebrow
 import xyz.ksharma.sumi.design.components.WashiBG
 import xyz.ksharma.sumi.theme.SumiTheme
 import xyz.ksharma.sumi.theme.SumiTokens as Sumi
 
 @Composable
-fun StatsScreen(modifier: Modifier = Modifier) {
+fun StatsScreen(
+    state: StatsState,
+    modifier: Modifier = Modifier,
+) {
     WashiBG(modifier = modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = Sumi.Space.s6, vertical = Sumi.Space.s7),
-            verticalArrangement = Arrangement.spacedBy(Sumi.Space.s4),
+                .padding(horizontal = Sumi.Space.s6)
+                .padding(top = Sumi.Space.s8, bottom = Sumi.Space.s7),
         ) {
-            Text(
-                text = "Stats",
-                style = SumiTheme.typography.uiLabel,
-                color = SumiTheme.colors.red,
-            )
-            Text(
-                text = "486",
-                style = SumiTheme.typography.h1,
-                color = SumiTheme.colors.ink,
-            )
-            Text(
-                text = "puzzles solved, all time.",
-                style = SumiTheme.typography.body,
-                color = SumiTheme.colors.inkSoft,
-            )
+            SumiEyebrow(text = "練習 · Practice Stats", color = SumiTheme.colors.red)
+            Spacer(Modifier.height(Sumi.Space.s5))
+            StatHero(total = state.totalPuzzlesSolved)
+            Spacer(Modifier.height(Sumi.Space.s6))
+            QuoteRule()
+            Spacer(Modifier.height(Sumi.Space.s6))
+            StatSummaryRow(state = state)
+        }
+    }
+}
+
+@Composable
+private fun StatHero(total: Int) {
+    Column {
+        Text(
+            text = total.toString(),
+            style = SumiTheme.typography.h1.copy(
+                fontSize = 72.sp,
+                letterSpacing = (-0.03f).em,
+                fontStyle = FontStyle.Italic,
+            ),
+            color = SumiTheme.colors.ink,
+        )
+        Text(
+            text = "puzzles solved, all time.",
+            style = SumiTheme.typography.body.copy(fontSize = 15.sp),
+            color = SumiTheme.colors.inkSoft,
+        )
+    }
+}
+
+@Composable
+private fun StatSummaryRow(state: StatsState) {
+    val cells = listOf(
+        "Streak" to "${state.currentStreak}d",
+        "Best" to "${state.bestStreak}d",
+        "Days" to state.daysPlayed.toString(),
+    )
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(width = 1.dp, color = SumiTheme.colors.paperEdge),
+    ) {
+        cells.forEachIndexed { i, (label, value) ->
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .then(
+                        if (i > 0) Modifier.border(width = 1.dp, color = SumiTheme.colors.paperEdge)
+                        else Modifier,
+                    )
+                    .padding(vertical = Sumi.Space.s4, horizontal = Sumi.Space.s2),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(Sumi.Space.s1),
+            ) {
+                Text(
+                    text = label.uppercase(),
+                    style = SumiTheme.typography.uiMeta.copy(letterSpacing = 2.sp),
+                    color = SumiTheme.colors.inkFaint,
+                )
+                Text(
+                    text = value,
+                    style = SumiTheme.typography.numeral.copy(
+                        fontSize = 22.sp,
+                        fontStyle = FontStyle.Italic,
+                    ),
+                    color = SumiTheme.colors.ink,
+                )
+            }
         }
     }
 }

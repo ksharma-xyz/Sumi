@@ -9,6 +9,7 @@ import xyz.ksharma.sumi.screens.daily.DailyViewModel
 import xyz.ksharma.sumi.screens.game.GameViewModel
 import xyz.ksharma.sumi.screens.home.HomeViewModel
 import xyz.ksharma.sumi.screens.splash.SplashViewModel
+import xyz.ksharma.sumi.screens.stats.StatsViewModel
 import xyz.ksharma.sumi.screens.win.WinViewModel
 
 val appModule = module {
@@ -19,4 +20,5 @@ val appModule = module {
     viewModel { HomeViewModel(prefs = get()) }
     viewModel { WinViewModel(prefs = get()) }
     viewModel { DailyViewModel(prefs = get()) }
+    viewModel { StatsViewModel(prefs = get()) }
 }
