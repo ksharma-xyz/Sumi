@@ -23,8 +23,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -62,16 +64,19 @@ fun GameScreen(
     val vm: GameViewModel = koinViewModel()
     val diff = Difficulty.entries.firstOrNull { it.name == difficulty } ?: Difficulty.Medium
     val currentOnWin by rememberUpdatedState(onWin)
+    val currentOnBack by rememberUpdatedState(onBack)
 
     LaunchedEffect(difficulty) { vm.init(diff) }
 
     val state by vm.state.collectAsState()
+    var paused by remember { mutableStateOf(false) }
 
     LaunchedEffect(state.isComplete) {
         if (state.isComplete) currentOnWin()
     }
 
-    WashiBG(modifier = modifier.fillMaxSize()) {
+    Box(modifier = modifier.fillMaxSize()) {
+        WashiBG(modifier = Modifier.fillMaxSize())
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -79,7 +84,7 @@ fun GameScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Spacer(Modifier.height(Sumi.Space.s8))
-            GameTopBar(difficulty = diff, elapsedMs = state.elapsedMs, onBack = onBack)
+            GameTopBar(difficulty = diff, elapsedMs = state.elapsedMs, onBack = onBack, onPause = { paused = true })
             Spacer(Modifier.height(Sumi.Space.s3))
             MarksHintsRow(mistakeCount = state.mistakeCount, hintsRemaining = state.hintsRemaining)
             Spacer(Modifier.height(Sumi.Space.s3))
@@ -102,17 +107,27 @@ fun GameScreen(
             Spacer(Modifier.height(Sumi.Space.s3))
             NumberPad(state = state, onDigit = { vm.enter(it) })
         }
+        if (paused) {
+            PauseOverlay(
+                onResume = { paused = false },
+                onNewPuzzle = {
+                    paused = false
+                    vm.init(diff)
+                },
+                onHome = { currentOnBack() },
+            )
+        }
     }
 }
 
 @Composable
-private fun GameTopBar(difficulty: Difficulty, elapsedMs: Long, onBack: () -> Unit) {
+private fun GameTopBar(difficulty: Difficulty, elapsedMs: Long, onBack: () -> Unit, onPause: () -> Unit) {
     val backSrc = remember { MutableInteractionSource() }
+    val pauseSrc = remember { MutableInteractionSource() }
     val kanji = DIFFICULTY_KANJI[difficulty] ?: "一"
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .border(width = 0.dp, color = Sumi.Color.paperEdge)
             .padding(bottom = Sumi.Space.s3),
     ) {
         Row(
@@ -139,7 +154,13 @@ private fun GameTopBar(difficulty: Difficulty, elapsedMs: Long, onBack: () -> Un
                     color = Sumi.Color.ink,
                 )
             }
-            SumiIcon(icon = SumiIcons.Pause, contentDescription = "Pause", tint = Sumi.Color.ink, size = 22.dp)
+            SumiIcon(
+                icon = SumiIcons.Pause,
+                contentDescription = "Pause",
+                tint = Sumi.Color.ink,
+                size = 22.dp,
+                modifier = Modifier.clickable(interactionSource = pauseSrc, indication = null, onClick = onPause),
+            )
         }
     }
 }
