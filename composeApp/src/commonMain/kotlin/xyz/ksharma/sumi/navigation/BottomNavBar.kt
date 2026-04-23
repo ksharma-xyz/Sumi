@@ -27,10 +27,10 @@ import xyz.ksharma.sumi.theme.SumiTokens as Sumi
 private data class NavTab(val route: NavKey, val label: String, val icon: ImageVector)
 
 private val TABS = listOf(
-    NavTab(HomeRoute, "Home", SumiIcons.Menu),
+    NavTab(HomeRoute, "Play", SumiIcons.Book),
     NavTab(DailyRoute, "Daily", SumiIcons.Calendar),
     NavTab(StatsRoute, "Stats", SumiIcons.Chart),
-    NavTab(PaywallRoute, "Pro", SumiIcons.Trophy),
+    NavTab(PaywallRoute, "Zen", SumiIcons.Quote),
 )
 
 @Composable

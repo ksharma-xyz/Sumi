@@ -3,6 +3,7 @@ package xyz.ksharma.sumi
 import androidx.compose.ui.window.ComposeUIViewController
 import org.koin.core.context.startKoin
 import xyz.ksharma.sumi.di.appModule
+import xyz.ksharma.sumi.di.iosModule
 import xyz.ksharma.sumi.game.di.gameModule
 
 fun MainViewController() = ComposeUIViewController {
@@ -11,6 +12,6 @@ fun MainViewController() = ComposeUIViewController {
 
 fun initKoinIos() {
     startKoin {
-        modules(appModule, gameModule)
+        modules(appModule, gameModule, iosModule)
     }
 }

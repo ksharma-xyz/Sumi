@@ -14,12 +14,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
@@ -70,9 +69,9 @@ fun OnboardingScreen(
     onComplete: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var page by remember { mutableIntStateOf(0) }
-    val slide = SLIDES[page]
-    val isLast = page == SLIDES.lastIndex
+    val pagerState = rememberPagerState(pageCount = { SLIDES.size })
+    val isLast = pagerState.currentPage == SLIDES.lastIndex
+    val skipSrc = remember { MutableInteractionSource() }
 
     WashiBG(modifier = modifier.fillMaxSize()) {
         Column(
@@ -81,18 +80,64 @@ fun OnboardingScreen(
                 .padding(horizontal = Sumi.Space.s6)
                 .padding(top = Sumi.Space.s8, bottom = Sumi.Space.s7),
         ) {
-            ProgressBars(total = SLIDES.size, filled = page + 1)
-            Spacer(Modifier.height(Sumi.Space.s8))
-            Box(modifier = Modifier.align(Alignment.CenterHorizontally)) { slide.visual() }
-            Spacer(Modifier.height(Sumi.Space.s7))
-            SlideContent(slide = slide)
-            Spacer(Modifier.weight(1f))
-            OnboardingActions(
-                isLast = isLast,
-                onContinue = { if (isLast) onComplete() else page++ },
-                onSkip = onComplete,
-            )
+            // Top row: progress + skip
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                ProgressBars(
+                    total = SLIDES.size,
+                    filled = pagerState.currentPage + 1,
+                    modifier = Modifier.weight(1f),
+                )
+                Spacer(Modifier.padding(horizontal = Sumi.Space.s4))
+                Text(
+                    text = "SKIP",
+                    style = SumiTheme.typography.uiLabel.copy(letterSpacing = 2.sp),
+                    color = SumiTheme.colors.inkFaint,
+                    modifier = Modifier.clickable(
+                        interactionSource = skipSrc,
+                        indication = null,
+                        onClick = onComplete,
+                    ),
+                )
+            }
+
+            // Swipeable pages
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.weight(1f),
+            ) { page ->
+                SlidePage(slide = SLIDES[page])
+            }
+
+            // Begin button — only visible on last page
+            if (isLast) {
+                SumiButton(
+                    onClick = onComplete,
+                    modifier = Modifier.fillMaxWidth(),
+                    size = SumiButtonSize.Lg,
+                ) {
+                    Text(text = "Begin →", style = SumiTheme.typography.uiButton)
+                }
+            } else {
+                Spacer(Modifier.height(48.dp + Sumi.Space.s3))
+            }
         }
+    }
+}
+
+@Composable
+private fun SlidePage(slide: OnboardingSlide) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(top = Sumi.Space.s8),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Box(modifier = Modifier.align(Alignment.CenterHorizontally)) { slide.visual() }
+        Spacer(Modifier.height(Sumi.Space.s7))
+        SlideContent(slide = slide)
     }
 }
 
@@ -122,38 +167,10 @@ private fun SlideContent(slide: OnboardingSlide) {
 }
 
 @Composable
-private fun OnboardingActions(isLast: Boolean, onContinue: () -> Unit, onSkip: () -> Unit) {
-    val skipSrc = remember { MutableInteractionSource() }
-    Column(modifier = Modifier.fillMaxWidth()) {
-        SumiButton(
-            onClick = onContinue,
-            modifier = Modifier.fillMaxWidth(),
-            size = SumiButtonSize.Lg,
-        ) {
-            Text(
-                text = if (isLast) "Begin →" else "Continue",
-                style = SumiTheme.typography.uiButton,
-            )
-        }
-        Spacer(Modifier.height(Sumi.Space.s3))
-        Text(
-            text = "SKIP",
-            style = SumiTheme.typography.uiLabel.copy(letterSpacing = 2.sp),
-            color = SumiTheme.colors.inkFaint,
-            textAlign = TextAlign.Center,
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable(interactionSource = skipSrc, indication = null, onClick = onSkip)
-                .padding(vertical = Sumi.Space.s2),
-        )
-    }
-}
-
-@Composable
-private fun ProgressBars(total: Int, filled: Int) {
+private fun ProgressBars(total: Int, filled: Int, modifier: Modifier = Modifier) {
     Row(
         horizontalArrangement = Arrangement.spacedBy(6.dp),
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier,
     ) {
         repeat(total) { i ->
             Box(

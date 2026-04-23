@@ -19,11 +19,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import xyz.ksharma.sumi.design.components.SumiButtonVariant
-import xyz.ksharma.sumi.design.components.SumiChip
-import xyz.ksharma.sumi.design.components.SumiChipTone
 import xyz.ksharma.sumi.design.components.SumiTextButton
 import xyz.ksharma.sumi.design.components.WashiBG
-import xyz.ksharma.sumi.preferences.ThemeMode
 import xyz.ksharma.sumi.theme.SumiTheme
 import xyz.ksharma.sumi.theme.SumiTokens as Sumi
 
@@ -31,8 +28,6 @@ import xyz.ksharma.sumi.theme.SumiTokens as Sumi
 fun SettingsScreen(
     onBack: () -> Unit,
     onLicenses: () -> Unit,
-    currentThemeMode: ThemeMode,
-    onThemeModeChange: (ThemeMode) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     WashiBG(modifier = modifier.fillMaxSize()) {
@@ -48,25 +43,6 @@ fun SettingsScreen(
             ) {
                 Spacer(Modifier.height(Sumi.Space.s4))
 
-                // ── APPEARANCE ─────────────────────────────────────────────
-                SettingsSectionLabel("Appearance")
-                Spacer(Modifier.height(Sumi.Space.s3))
-
-                SettingsPanel {
-                    SettingsRow(
-                        label = "Color mode",
-                        description = "Always dark feels like reading by lamplight.",
-                    )
-                    Spacer(Modifier.height(Sumi.Space.s4))
-                    ThemeModeChips(
-                        current = currentThemeMode,
-                        onSelect = onThemeModeChange,
-                    )
-                }
-
-                Spacer(Modifier.height(Sumi.Space.s6))
-
-                // ── ABOUT ──────────────────────────────────────────────────
                 SettingsSectionLabel("About")
                 Spacer(Modifier.height(Sumi.Space.s3))
 
@@ -86,36 +62,6 @@ fun SettingsScreen(
             }
         }
     }
-}
-
-@Composable
-private fun ThemeModeChips(
-    current: ThemeMode,
-    onSelect: (ThemeMode) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
-        ThemeModeEntry.entries.forEachIndexed { index, entry ->
-            val interactionSource = remember { MutableInteractionSource() }
-            SumiChip(
-                text = entry.label,
-                tone = if (current == entry.mode) SumiChipTone.Ink else SumiChipTone.Muted,
-                modifier = Modifier.clickable(
-                    interactionSource = interactionSource,
-                    indication = null,
-                ) { onSelect(entry.mode) },
-            )
-            if (index < ThemeModeEntry.entries.lastIndex) {
-                Spacer(Modifier.weight(1f))
-            }
-        }
-    }
-}
-
-private enum class ThemeModeEntry(val label: String, val mode: ThemeMode) {
-    FollowSystem("Follow system", ThemeMode.FollowSystem),
-    Light("Always light", ThemeMode.AlwaysLight),
-    Dark("Always dark", ThemeMode.AlwaysDark),
 }
 
 @Composable

@@ -1,5 +1,6 @@
 package xyz.ksharma.sumi.navigation
 
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -37,8 +38,11 @@ fun SumiNavHost(modifier: Modifier = Modifier) {
         LicensesEntry(navigator)
     }
 
+    // contentWindowInsets = 0 so Scaffold doesn't consume system bar insets.
+    // Screens that need inset protection (title bars, bottom nav) handle it themselves.
     Scaffold(
         modifier = modifier,
+        contentWindowInsets = WindowInsets(0),
         bottomBar = {
             if (!state.isSetupFlow) {
                 BottomNavBar(
@@ -50,7 +54,7 @@ fun SumiNavHost(modifier: Modifier = Modifier) {
     ) { innerPadding ->
         NavDisplay(
             entries = state.toEntries(entries),
-            modifier = Modifier.padding(innerPadding),
+            modifier = Modifier.padding(bottom = innerPadding.calculateBottomPadding()),
             onBack = { navigator.pop() },
         )
     }

@@ -58,25 +58,22 @@ fun HomeScreen(
     val quote = FREE_QUOTES.getOrElse(2) { FREE_QUOTES[0] }
 
     WashiBG(modifier = modifier.fillMaxSize()) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = Sumi.Space.s6)
-                    .padding(top = Sumi.Space.s8, bottom = Sumi.Space.s5),
-            ) {
-                HomeTopChrome(onSettings = onSettings)
-                Spacer(Modifier.height(Sumi.Space.s5))
-                DailyQuoteBlock(quote = quote)
-                Spacer(Modifier.height(Sumi.Space.s5))
-                QuoteRule()
-                Spacer(Modifier.height(Sumi.Space.s5))
-                StreakCard(streakDays = streakDays)
-                Spacer(Modifier.height(Sumi.Space.s4))
-                NewPracticeGrid(onStartGame = onStartGame)
-            }
-            HomeBottomNav()
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = Sumi.Space.s6)
+                .padding(top = Sumi.Space.s8, bottom = Sumi.Space.s5),
+        ) {
+            HomeTopChrome(onSettings = onSettings)
+            Spacer(Modifier.height(Sumi.Space.s5))
+            DailyQuoteBlock(quote = quote)
+            Spacer(Modifier.height(Sumi.Space.s5))
+            QuoteRule()
+            Spacer(Modifier.height(Sumi.Space.s5))
+            StreakCard(streakDays = streakDays)
+            Spacer(Modifier.height(Sumi.Space.s4))
+            NewPracticeGrid(onStartGame = onStartGame)
         }
     }
 }
@@ -246,46 +243,6 @@ private fun DifficultyTile(
                 style = SumiTheme.typography.uiMeta.copy(letterSpacing = 1.sp),
                 color = SumiTheme.colors.inkFaint,
             )
-        }
-    }
-}
-
-@Composable
-private fun HomeBottomNav() {
-    val tabs = listOf(
-        Triple(SumiIcons.Book, "Play", true),
-        Triple(SumiIcons.Calendar, "Daily", false),
-        Triple(SumiIcons.Trophy, "Stats", false),
-        Triple(SumiIcons.Quote, "Zen", false),
-    )
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .border(
-                width = 1.dp,
-                color = SumiTheme.colors.paperEdge,
-                shape = androidx.compose.ui.graphics.RectangleShape,
-            )
-            .padding(top = Sumi.Space.s3, bottom = Sumi.Space.s4),
-        horizontalArrangement = Arrangement.SpaceAround,
-    ) {
-        tabs.forEach { (icon, label, active) ->
-            val tint = if (active) SumiTheme.colors.ink else SumiTheme.colors.inkFaint
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                SumiIcon(icon = icon, contentDescription = label, tint = tint, size = 22.dp)
-                Text(
-                    text = label.uppercase(),
-                    style = SumiTheme.typography.uiMeta.copy(
-                        fontSize = 9.sp,
-                        letterSpacing = 1.5.sp,
-                        fontWeight = if (active) FontWeight.Bold else FontWeight.Medium,
-                    ),
-                    color = tint,
-                )
-            }
         }
     }
 }

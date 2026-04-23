@@ -67,6 +67,7 @@ kotlin {
             implementation(libs.ktor.client.logging)
             implementation(libs.ktor.serialization.json)
             implementation(libs.sqldelight.coroutines)
+            implementation(libs.datastore.preferences)
             implementation(projects.game)
         }
 

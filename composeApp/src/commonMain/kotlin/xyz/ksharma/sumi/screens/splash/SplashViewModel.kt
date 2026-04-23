@@ -32,6 +32,6 @@ class SplashViewModel(private val prefs: SumiPreferences) : ViewModel() {
     }
 
     companion object {
-        private const val SPLASH_DURATION_MS = 1400L
+        private const val SPLASH_DURATION_MS = 2000L
     }
 }

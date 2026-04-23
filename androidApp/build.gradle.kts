@@ -56,5 +56,6 @@ dependencies {
     implementation(libs.androidx.appcompat)
     implementation(libs.core.ktx)
     implementation(libs.di.koinAndroid)
+    implementation(libs.datastore.preferences)
     debugImplementation(libs.compose.ui.tooling)
 }

@@ -61,7 +61,7 @@ fun SplashScreen(
     }
 
     WashiBG(modifier = modifier.fillMaxSize()) {
-        SumiPetals(modifier = Modifier.fillMaxSize(), count = 28)
+        SumiPetals(modifier = Modifier.fillMaxSize(), count = 8)
         SplashCenter(ensoProgress.value, wordmarkAlpha.value, eyebrowAlpha.value)
         SplashVersion()
     }
