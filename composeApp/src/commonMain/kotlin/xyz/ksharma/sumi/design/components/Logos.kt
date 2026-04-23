@@ -3,6 +3,7 @@
 package xyz.ksharma.sumi.design.components
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
@@ -12,18 +13,42 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathMeasure
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import org.jetbrains.compose.resources.painterResource
+import sumi.composeapp.generated.resources.Res
+import sumi.composeapp.generated.resources.enso_ink
 import xyz.ksharma.sumi.theme.SumiTheme
-import kotlin.math.cos
-import kotlin.math.sin
-import kotlin.math.sqrt
 import xyz.ksharma.sumi.theme.SumiTokens as Sumi
+
+// Enso path mirrors enso_ink.xml (1024×1024 viewBox scaled to 120×120):
+// M694,356 A218.4,218.4 121.4,1 0,626.4 678.4 Q574.4,688.8 512,678.4
+// Arc: center≈(60.92,57.14) r=25.59, startAngle=-37.1°, sweep=-262° (CCW large arc)
+// Tail: quadratic bezier to (60,79.5) with control (67.26,80.72)
+private fun ensoFullPath(s: Float): Path = Path().apply {
+    moveTo(81.30f * s, 41.72f * s)
+    arcTo(
+        rect = Rect(
+            left = 35.33f * s,
+            top = 31.55f * s,
+            right = 86.51f * s,
+            bottom = 82.73f * s,
+        ),
+        startAngleDegrees = -37.1f,
+        sweepAngleDegrees = -262f,
+        forceMoveTo = false,
+    )
+    quadraticTo(67.26f * s, 80.72f * s, 60f * s, 79.5f * s)
+}
 
 @Composable
 fun LogoEnso(
@@ -32,60 +57,35 @@ fun LogoEnso(
     color: Color = Sumi.Color.ink,
     progress: Float = 1f,
 ) {
-    Canvas(modifier = modifier.size(size)) {
-        val w = this.size.width
-        val cx = w / 2f
-        val cy = w / 2f
-        val rx = w * 0.435f
-        val ry = w * 0.400f
-        val startAngleRad = (148.0 * kotlin.math.PI / 180.0).toFloat()
-        val sweepRad = (297.0 * kotlin.math.PI / 180.0).toFloat()
-        val steps = 120
-        val limitedSteps = (steps * progress.coerceIn(0f, 1f)).toInt().coerceAtLeast(2)
-        val maxStroke = w * 0.092f
-        val minStroke = w * 0.022f
+    if (progress >= 1f) {
+        Image(
+            painter = painterResource(Res.drawable.enso_ink),
+            contentDescription = null,
+            modifier = modifier.size(size),
+            contentScale = ContentScale.Fit,
+            colorFilter = ColorFilter.tint(color),
+        )
+    } else {
+        Canvas(modifier = modifier.size(size)) {
+            val s = this.size.width / 120f
+            val strokeW = this.size.width * 0.092f
+            val fullPath = ensoFullPath(s)
+            val pm = PathMeasure().also { it.setPath(fullPath, false) }
+            val drawPath = Path().also { seg -> pm.getSegment(0f, progress * pm.length, seg, true) }
 
-        val outerPts = ArrayList<Offset>(limitedSteps + 1)
-        val innerPts = ArrayList<Offset>(limitedSteps + 1)
-
-        for (i in 0..limitedSteps) {
-            val t = i.toFloat() / steps
-            val angle = startAngleRad + sweepRad * t
-            val wobble = w * 0.006f * sin(angle * 3.7f)
-            val x = cx + (rx + wobble) * cos(angle)
-            val y = cy + (ry - wobble * 0.4f) * sin(angle)
-
-            val halfW = ensoHalfWidth(t, maxStroke, minStroke) / 2f
-
-            val tx = -ry * sin(angle)
-            val ty = rx * cos(angle)
-            val tLen = sqrt(tx * tx + ty * ty).coerceAtLeast(0.001f)
-            val px = -ty / tLen
-            val py = tx / tLen
-
-            outerPts.add(Offset(x + px * halfW, y + py * halfW))
-            innerPts.add(Offset(x - px * halfW, y - py * halfW))
+            drawPath(
+                path = drawPath,
+                color = color.copy(alpha = 0.10f),
+                style = Stroke(strokeW * 1.8f, cap = StrokeCap.Round),
+            )
+            drawPath(
+                path = drawPath,
+                color = color.copy(alpha = 0.30f),
+                style = Stroke(strokeW * 1.3f, cap = StrokeCap.Round),
+            )
+            drawPath(path = drawPath, color = color, style = Stroke(strokeW, cap = StrokeCap.Round))
         }
-
-        val path = Path().apply {
-            moveTo(outerPts[0].x, outerPts[0].y)
-            for (i in 1..limitedSteps) lineTo(outerPts[i].x, outerPts[i].y)
-            lineTo(innerPts[limitedSteps].x, innerPts[limitedSteps].y)
-            for (i in limitedSteps downTo 0) lineTo(innerPts[i].x, innerPts[i].y)
-            close()
-        }
-        drawPath(path = path, color = color)
-
-        val startPt = outerPts[0].run { Offset((x + innerPts[0].x) / 2f, (y + innerPts[0].y) / 2f) }
-        drawCircle(color = color, radius = maxStroke * 0.48f, center = startPt)
     }
-}
-
-private fun ensoHalfWidth(t: Float, max: Float, min: Float): Float = when {
-    t < 0.06f -> min + (max * 0.55f - min) * (t / 0.06f)
-    t < 0.22f -> max * 0.55f + (max - max * 0.55f) * ((t - 0.06f) / 0.16f)
-    t < 0.72f -> max * (0.88f + 0.12f * sin(t * 7.3f + 1f))
-    else -> max * 0.9f + (min - max * 0.9f) * ((t - 0.72f) / 0.28f)
 }
 
 @Composable
