@@ -21,6 +21,9 @@ class GameViewModel(
     private val _state = MutableStateFlow(EMPTY_BOARD)
     val state: StateFlow<BoardState> = _state.asStateFlow()
 
+    private val _elapsedMs = MutableStateFlow(0L)
+    val elapsedMs: StateFlow<Long> = _elapsedMs.asStateFlow()
+
     private var boardManager: BoardManager = RealBoardManager(EMPTY_BOARD)
     private var timerJob: Job? = null
     private var syncJob: Job? = null
@@ -28,6 +31,7 @@ class GameViewModel(
     fun init(difficulty: Difficulty) {
         timerJob?.cancel()
         syncJob?.cancel()
+        _elapsedMs.value = 0L
         boardManager = RealBoardManager(puzzleRepository.daily(difficulty))
         _state.value = boardManager.state.value
         syncJob = viewModelScope.launch {
@@ -36,7 +40,10 @@ class GameViewModel(
         timerJob = viewModelScope.launch {
             while (true) {
                 delay(TIMER_TICK_MS)
-                boardManager.tick(TIMER_TICK_MS)
+                val current = _state.value
+                if (!current.isGameOver && !current.isComplete) {
+                    _elapsedMs.value += TIMER_TICK_MS
+                }
             }
         }
     }

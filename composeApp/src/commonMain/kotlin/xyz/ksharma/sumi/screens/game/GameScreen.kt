@@ -20,13 +20,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -38,7 +32,6 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
-import org.koin.compose.viewmodel.koinViewModel
 import xyz.ksharma.sumi.design.board.SumiBoard
 import xyz.ksharma.sumi.design.components.SumiIcon
 import xyz.ksharma.sumi.design.components.WashiBG
@@ -58,58 +51,32 @@ private val DIFFICULTY_KANJI = mapOf(
 
 @Composable
 fun GameScreen(
-    difficulty: String,
-    onBack: () -> Unit,
-    onWin: () -> Unit,
+    state: BoardState,
+    elapsedMs: Long,
+    paused: Boolean,
+    gameOver: Boolean,
+    difficulty: Difficulty,
+    callbacks: GameCallbacks,
     modifier: Modifier = Modifier,
 ) {
-    val vm: GameViewModel = koinViewModel()
-    val diff = Difficulty.entries.firstOrNull { it.name == difficulty } ?: Difficulty.Medium
-    val currentOnWin by rememberUpdatedState(onWin)
-    val currentOnBack by rememberUpdatedState(onBack)
-
-    LaunchedEffect(difficulty) { vm.init(diff) }
-
-    val state by vm.state.collectAsState()
-    var paused by remember { mutableStateOf(false) }
-    var gameOver by remember { mutableStateOf(false) }
-
-    LaunchedEffect(state.isComplete) { if (state.isComplete) currentOnWin() }
-    LaunchedEffect(state.isGameOver) { if (state.isGameOver) gameOver = true }
-
     Box(modifier = modifier.fillMaxSize()) {
         WashiBG(modifier = Modifier.fillMaxSize())
-        GameBody(state = state, diff = diff, onBack = onBack, onPause = { paused = true }, vm = vm)
+        GameBody(state = state, elapsedMs = elapsedMs, diff = difficulty, callbacks = callbacks)
         if (paused) {
             PauseOverlay(
-                onResume = { paused = false },
-                onNewPuzzle = {
-                    paused = false
-                    vm.init(diff)
-                },
-                onHome = { currentOnBack() },
+                onResume = callbacks.onResume,
+                onNewPuzzle = callbacks.onNewPuzzle,
+                onHome = callbacks.onBack,
             )
         }
         if (gameOver) {
-            GameOverOverlay(
-                onNewPuzzle = {
-                    gameOver = false
-                    vm.init(diff)
-                },
-                onHome = { currentOnBack() },
-            )
+            GameOverOverlay(onNewPuzzle = callbacks.onNewPuzzle, onHome = callbacks.onBack)
         }
     }
 }
 
 @Composable
-private fun GameBody(
-    state: BoardState,
-    diff: Difficulty,
-    onBack: () -> Unit,
-    onPause: () -> Unit,
-    vm: GameViewModel,
-) {
+private fun GameBody(state: BoardState, elapsedMs: Long, diff: Difficulty, callbacks: GameCallbacks) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -117,7 +84,7 @@ private fun GameBody(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Spacer(Modifier.height(Sumi.Space.s8))
-        GameTopBar(difficulty = diff, elapsedMs = state.elapsedMs, onBack = onBack, onPause = onPause)
+        GameTopBar(difficulty = diff, elapsedMs = elapsedMs, onBack = callbacks.onBack, onPause = callbacks.onPause)
         Spacer(Modifier.height(Sumi.Space.s3))
         MarksHintsRow(mistakeCount = state.mistakeCount, hintsRemaining = state.hintsRemaining)
         Spacer(Modifier.height(Sumi.Space.s3))
@@ -127,18 +94,18 @@ private fun GameBody(
                 .background(SumiTheme.colors.paperGlow)
                 .padding(2.dp),
         ) {
-            SumiBoard(state = state, onCellTap = { r, c -> vm.select(r, c) })
+            SumiBoard(state = state, onCellTap = { r, c -> callbacks.onSelect(r, c) })
         }
         Spacer(Modifier.height(Sumi.Space.s4))
         ToolsRow(
             notesActive = state.notesMode,
-            onUndo = { vm.undo() },
-            onNote = { vm.toggleNotes() },
-            onErase = { vm.erase() },
-            onHint = { vm.hint() },
+            onUndo = callbacks.onUndo,
+            onNote = callbacks.onToggleNotes,
+            onErase = callbacks.onErase,
+            onHint = callbacks.onHint,
         )
         Spacer(Modifier.height(Sumi.Space.s3))
-        NumberPad(state = state, onDigit = { vm.enter(it) })
+        NumberPad(state = state, onDigit = callbacks.onEnter)
     }
 }
 

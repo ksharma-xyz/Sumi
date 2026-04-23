@@ -30,7 +30,6 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import xyz.ksharma.sumi.FREE_QUOTES
 import xyz.ksharma.sumi.Quote
 import xyz.ksharma.sumi.design.components.LogoWordmark
 import xyz.ksharma.sumi.design.components.QuoteRule
@@ -50,12 +49,12 @@ private val DIFFICULTY_TILES = listOf(
 
 @Composable
 fun HomeScreen(
+    streakDays: Int,
+    quote: Quote,
     onStartGame: (difficulty: String) -> Unit,
     onSettings: () -> Unit,
     modifier: Modifier = Modifier,
-    streakDays: Int = 14,
 ) {
-    val quote = FREE_QUOTES.getOrElse(2) { FREE_QUOTES[0] }
 
     WashiBG(modifier = modifier.fillMaxSize()) {
         Column(
