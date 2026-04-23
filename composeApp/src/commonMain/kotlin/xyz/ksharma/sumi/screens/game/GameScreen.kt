@@ -11,11 +11,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -25,14 +27,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.koin.compose.viewmodel.koinViewModel
 import xyz.ksharma.sumi.design.board.SumiBoard
-import xyz.ksharma.sumi.design.components.SumiChip
-import xyz.ksharma.sumi.design.components.SumiChipTone
 import xyz.ksharma.sumi.design.components.SumiIcon
 import xyz.ksharma.sumi.design.components.WashiBG
 import xyz.ksharma.sumi.design.icons.SumiIcons
@@ -40,6 +43,14 @@ import xyz.ksharma.sumi.game.model.BoardState
 import xyz.ksharma.sumi.game.model.Difficulty
 import xyz.ksharma.sumi.theme.SumiTheme
 import xyz.ksharma.sumi.theme.SumiTokens as Sumi
+
+private val DIFFICULTY_KANJI = mapOf(
+    Difficulty.Easy to "一",
+    Difficulty.Medium to "二",
+    Difficulty.Hard to "三",
+    Difficulty.Master to "四",
+    Difficulty.Edo to "五",
+)
 
 @Composable
 fun GameScreen(
@@ -64,106 +75,149 @@ fun GameScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = Sumi.Space.s4),
+                .padding(horizontal = Sumi.Space.s6),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            GameTopBar(
-                title = "Daily puzzle",
-                difficulty = diff,
-                elapsedMs = state.elapsedMs,
-                onBack = onBack,
-            )
-
+            Spacer(Modifier.height(Sumi.Space.s8))
+            GameTopBar(difficulty = diff, elapsedMs = state.elapsedMs, onBack = onBack)
             Spacer(Modifier.height(Sumi.Space.s3))
-
-            SumiBoard(
-                state = state,
-                onCellTap = { r, c -> vm.select(r, c) },
-            )
-
+            MarksHintsRow(mistakeCount = state.mistakeCount, hintsRemaining = state.hintsRemaining)
+            Spacer(Modifier.height(Sumi.Space.s3))
+            Box(
+                modifier = Modifier
+                    .border(1.dp, Sumi.Color.ink)
+                    .background(Sumi.Color.paperGlow)
+                    .padding(2.dp),
+            ) {
+                SumiBoard(state = state, onCellTap = { r, c -> vm.select(r, c) })
+            }
             Spacer(Modifier.height(Sumi.Space.s4))
-
-            DigitLedger(state = state, onDigitTap = { vm.enter(it) })
-
-            Spacer(Modifier.height(Sumi.Space.s4))
-
             ToolsRow(
                 notesActive = state.notesMode,
-                hintsRemaining = state.hintsRemaining,
                 onUndo = { vm.undo() },
+                onNote = { vm.toggleNotes() },
                 onErase = { vm.erase() },
-                onNotes = { vm.toggleNotes() },
                 onHint = { vm.hint() },
             )
-
-            Spacer(Modifier.height(Sumi.Space.s4))
-
-            NumberPad(onDigit = { vm.enter(it) })
+            Spacer(Modifier.height(Sumi.Space.s3))
+            NumberPad(state = state, onDigit = { vm.enter(it) })
         }
     }
 }
 
 @Composable
-private fun GameTopBar(
-    title: String,
-    difficulty: Difficulty,
-    elapsedMs: Long,
-    onBack: () -> Unit,
-) {
-    val backSource = remember { MutableInteractionSource() }
-    Column(modifier = Modifier.fillMaxWidth()) {
+private fun GameTopBar(difficulty: Difficulty, elapsedMs: Long, onBack: () -> Unit) {
+    val backSrc = remember { MutableInteractionSource() }
+    val kanji = DIFFICULTY_KANJI[difficulty] ?: "一"
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(width = 0.dp, color = Sumi.Color.paperEdge)
+            .padding(bottom = Sumi.Space.s3),
+    ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = Sumi.Space.s3),
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             SumiIcon(
                 icon = SumiIcons.Back,
                 contentDescription = "Back",
                 tint = Sumi.Color.ink,
-                size = 24.dp,
-                modifier = Modifier.clickable(interactionSource = backSource, indication = null, onClick = onBack),
+                size = 22.dp,
+                modifier = Modifier.clickable(interactionSource = backSrc, indication = null, onClick = onBack),
             )
-            Spacer(Modifier.weight(1f))
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(text = title, style = SumiTheme.typography.uiMeta, color = Sumi.Color.inkFaint)
-                SumiChip(text = difficulty.label, tone = SumiChipTone.Red)
+                Text(
+                    text = "$kanji · ${difficulty.label}",
+                    style = SumiTheme.typography.uiMeta.copy(letterSpacing = 2.5.sp),
+                    color = Sumi.Color.inkFaint,
+                )
+                Text(
+                    text = formatTime(elapsedMs),
+                    style = SumiTheme.typography.quote.copy(fontSize = 22.sp, lineHeight = 22.sp),
+                    color = Sumi.Color.ink,
+                )
             }
-            Spacer(Modifier.weight(1f))
-            SumiIcon(icon = SumiIcons.Pause, contentDescription = "Pause", tint = Sumi.Color.inkFaint, size = 24.dp)
+            SumiIcon(icon = SumiIcons.Pause, contentDescription = "Pause", tint = Sumi.Color.ink, size = 22.dp)
         }
+    }
+}
+
+@Composable
+private fun MarksHintsRow(mistakeCount: Int, hintsRemaining: Int) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
         Text(
-            text = formatTime(elapsedMs),
-            style = SumiTheme.typography.h3.copy(fontSize = 15.sp),
-            color = Sumi.Color.inkFaint,
-            modifier = Modifier.align(Alignment.CenterHorizontally),
+            text = buildAnnotatedString {
+                withStyle(SpanStyle(color = Sumi.Color.inkSoft)) { append("MARKS ") }
+                withStyle(SpanStyle(color = Sumi.Color.red, fontWeight = FontWeight.Bold)) {
+                    append("$mistakeCount / 3")
+                }
+            },
+            style = SumiTheme.typography.uiMeta.copy(letterSpacing = 1.5.sp),
+        )
+        Text(
+            text = buildAnnotatedString {
+                withStyle(SpanStyle(color = Sumi.Color.inkSoft)) { append("HINTS ") }
+                withStyle(SpanStyle(color = Sumi.Color.gold, fontWeight = FontWeight.Bold)) {
+                    append("$hintsRemaining")
+                }
+            },
+            style = SumiTheme.typography.uiMeta.copy(letterSpacing = 1.5.sp),
         )
     }
 }
 
 @Composable
-private fun DigitLedger(state: BoardState, onDigitTap: (Int) -> Unit) {
-    val remaining = state.remainingCounts
+private fun ToolsRow(
+    notesActive: Boolean,
+    onUndo: () -> Unit,
+    onNote: () -> Unit,
+    onErase: () -> Unit,
+    onHint: () -> Unit,
+) {
+    data class Tool(val icon: ImageVector, val label: String, val onClick: () -> Unit, val active: Boolean = false)
+    val tools = listOf(
+        Tool(SumiIcons.Undo, "Undo", onUndo),
+        Tool(SumiIcons.Lantern, "Note", onNote, notesActive),
+        Tool(SumiIcons.Erase, "Erase", onErase),
+        Tool(SumiIcons.Sparkle, "Hint", onHint),
+    )
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceEvenly,
+        horizontalArrangement = Arrangement.SpaceAround,
     ) {
-        for (d in 1..9) {
-            val count = remaining[d - 1]
+        tools.forEach { tool ->
             val src = remember { MutableInteractionSource() }
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.clickable(interactionSource = src, indication = null) { onDigitTap(d) },
+                verticalArrangement = Arrangement.spacedBy(5.dp),
+                modifier = Modifier.clickable(interactionSource = src, indication = null, onClick = tool.onClick),
             ) {
+                Box(
+                    modifier = Modifier
+                        .size(Sumi.Layout.minTap)
+                        .border(1.dp, Sumi.Color.paperEdge),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    SumiIcon(
+                        icon = tool.icon,
+                        contentDescription = tool.label,
+                        tint = if (tool.active) Sumi.Color.teal else Sumi.Color.ink,
+                        size = 20.dp,
+                    )
+                }
                 Text(
-                    text = d.toString(),
-                    style = SumiTheme.typography.numeral,
-                    color = if (count > 0) Sumi.Color.ink else Sumi.Color.inkGhost,
-                )
-                Text(
-                    text = if (count > 0) count.toString() else "",
-                    style = SumiTheme.typography.uiMeta,
+                    text = tool.label.uppercase(),
+                    style = SumiTheme.typography.uiMeta.copy(
+                        fontSize = 9.sp,
+                        letterSpacing = 1.5.sp,
+                        fontWeight = FontWeight(600),
+                    ),
                     color = Sumi.Color.inkFaint,
                 )
             }
@@ -172,77 +226,41 @@ private fun DigitLedger(state: BoardState, onDigitTap: (Int) -> Unit) {
 }
 
 @Composable
-private fun ToolsRow(
-    notesActive: Boolean,
-    hintsRemaining: Int,
-    onUndo: () -> Unit,
-    onErase: () -> Unit,
-    onNotes: () -> Unit,
-    onHint: () -> Unit,
-) {
+private fun NumberPad(state: BoardState, onDigit: (Int) -> Unit) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceEvenly,
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(width = 1.dp, color = Sumi.Color.paperEdge)
+            .padding(vertical = Sumi.Space.s2),
     ) {
-        ToolButton(SumiIcons.Undo, "Undo", onClick = onUndo)
-        ToolButton(SumiIcons.Erase, "Erase", onClick = onErase)
-        ToolButton(
-            icon = SumiIcons.Lantern,
-            label = "Notes",
-            onClick = onNotes,
-            tint = if (notesActive) Sumi.Color.teal else Sumi.Color.inkFaint,
-        )
-        Box {
-            ToolButton(SumiIcons.Sparkle, "Hint", onClick = onHint)
-            if (hintsRemaining > 0) {
+        for (n in 1..9) {
+            val src = remember { MutableInteractionSource() }
+            val remaining = state.remainingCounts.getOrElse(n - 1) { 0 }
+            if (n > 1) {
                 Box(
                     modifier = Modifier
-                        .size(6.dp)
-                        .background(Sumi.Color.red)
-                        .align(Alignment.TopEnd),
+                        .width(1.dp)
+                        .height(40.dp)
+                        .background(Sumi.Color.paperEdge),
                 )
             }
-        }
-    }
-}
-
-@Composable
-private fun ToolButton(
-    icon: ImageVector,
-    label: String,
-    onClick: () -> Unit,
-    tint: Color = Sumi.Color.inkFaint,
-) {
-    val src = remember { MutableInteractionSource() }
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
-            .clickable(interactionSource = src, indication = null, onClick = onClick)
-            .padding(Sumi.Space.s2),
-    ) {
-        SumiIcon(icon = icon, contentDescription = label, tint = tint, size = 24.dp)
-    }
-}
-
-@Composable
-private fun NumberPad(onDigit: (Int) -> Unit) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceEvenly,
-    ) {
-        for (d in 1..9) {
-            val src = remember { MutableInteractionSource() }
-            Box(
-                contentAlignment = Alignment.Center,
+            Column(
                 modifier = Modifier
-                    .size(Sumi.Layout.minTap)
-                    .border(1.dp, Sumi.Color.paperEdge)
-                    .clickable(interactionSource = src, indication = null) { onDigit(d) },
+                    .weight(1f)
+                    .aspectRatio(1f)
+                    .clickable(interactionSource = src, indication = null) { onDigit(n) },
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
             ) {
                 Text(
-                    text = d.toString(),
-                    style = SumiTheme.typography.numeral,
-                    color = Sumi.Color.ink,
+                    text = n.toString(),
+                    style = SumiTheme.typography.numeral.copy(fontSize = 26.sp),
+                    color = if (remaining > 0) Sumi.Color.ink else Sumi.Color.inkGhost,
+                )
+                Text(
+                    text = if (remaining > 0) remaining.toString() else "",
+                    style = SumiTheme.typography.uiMeta.copy(fontSize = 9.sp),
+                    color = Sumi.Color.inkFaint,
                 )
             }
         }

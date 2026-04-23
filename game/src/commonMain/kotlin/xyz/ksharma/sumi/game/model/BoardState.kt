@@ -8,6 +8,7 @@ data class BoardState(
     val conflict: Pair<Int, Int>? = null,
     val notesMode: Boolean = false,
     val hintsRemaining: Int = 3,
+    val mistakeCount: Int = 0,
     val elapsedMs: Long = 0L,
     val difficulty: Difficulty,
     val solution: List<List<Int>>,
@@ -64,8 +65,14 @@ data class BoardState(
             updateCell(row, col, cell.copy(notes = newNotes, value = 0))
         } else {
             val conflict = checkConflict(row, col, digit)
+            val isWrong = digit != 0 && digit != solution[row][col]
             val newCells = updatedCells(row, col, cell.copy(value = digit, notes = emptySet()))
-            copy(cells = newCells, conflict = if (conflict) Pair(row, col) else null, history = history + listOf(cells))
+            copy(
+                cells = newCells,
+                conflict = if (conflict) Pair(row, col) else null,
+                mistakeCount = if (isWrong) mistakeCount + 1 else mistakeCount,
+                history = history + listOf(cells),
+            )
         }
     }
 
