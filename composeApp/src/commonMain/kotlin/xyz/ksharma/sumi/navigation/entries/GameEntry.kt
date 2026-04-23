@@ -58,6 +58,7 @@ private fun GameEntryContent(
 ) {
     var paused by rememberSaveable { mutableStateOf(false) }
     var gameOver by rememberSaveable { mutableStateOf(false) }
+    val celebrationCount by vm.celebrationCount.collectAsState()
 
     LaunchedEffect(state.isComplete) {
         if (state.isComplete) {
@@ -72,6 +73,7 @@ private fun GameEntryContent(
     GameScreen(
         state = state,
         elapsedMs = elapsedMs,
+        celebrationCount = celebrationCount,
         paused = paused,
         gameOver = gameOver,
         difficulty = diff,

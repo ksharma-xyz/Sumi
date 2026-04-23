@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import xyz.ksharma.sumi.design.board.SumiBoard
 import xyz.ksharma.sumi.design.components.SumiIcon
+import xyz.ksharma.sumi.design.components.SumiPetalBurst
 import xyz.ksharma.sumi.design.components.WashiBG
 import xyz.ksharma.sumi.design.icons.SumiIcons
 import xyz.ksharma.sumi.game.model.BoardState
@@ -53,6 +54,7 @@ private val DIFFICULTY_KANJI = mapOf(
 fun GameScreen(
     state: BoardState,
     elapsedMs: Long,
+    celebrationCount: Int,
     paused: Boolean,
     gameOver: Boolean,
     difficulty: Difficulty,
@@ -62,6 +64,7 @@ fun GameScreen(
     Box(modifier = modifier.fillMaxSize()) {
         WashiBG(modifier = Modifier.fillMaxSize())
         GameBody(state = state, elapsedMs = elapsedMs, diff = difficulty, callbacks = callbacks)
+        SumiPetalBurst(trigger = celebrationCount, modifier = Modifier.fillMaxSize())
         if (paused) {
             PauseOverlay(
                 onResume = callbacks.onResume,
@@ -202,13 +205,14 @@ private fun GameTopBar(difficulty: Difficulty, elapsedMs: Long, onBack: () -> Un
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            SumiIcon(
-                icon = SumiIcons.Back,
-                contentDescription = "Back",
-                tint = SumiTheme.colors.ink,
-                size = 22.dp,
-                modifier = Modifier.clickable(interactionSource = backSrc, indication = null, onClick = onBack),
-            )
+            Box(
+                modifier = Modifier
+                    .size(Sumi.Layout.minTap)
+                    .clickable(interactionSource = backSrc, indication = null, onClick = onBack),
+                contentAlignment = Alignment.Center,
+            ) {
+                SumiIcon(icon = SumiIcons.Back, contentDescription = "Back", tint = SumiTheme.colors.ink, size = 22.dp)
+            }
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     text = "$kanji · ${difficulty.label}",
@@ -221,13 +225,19 @@ private fun GameTopBar(difficulty: Difficulty, elapsedMs: Long, onBack: () -> Un
                     color = SumiTheme.colors.ink,
                 )
             }
-            SumiIcon(
-                icon = SumiIcons.Pause,
-                contentDescription = "Pause",
-                tint = SumiTheme.colors.ink,
-                size = 22.dp,
-                modifier = Modifier.clickable(interactionSource = pauseSrc, indication = null, onClick = onPause),
-            )
+            Box(
+                modifier = Modifier
+                    .size(Sumi.Layout.minTap)
+                    .clickable(interactionSource = pauseSrc, indication = null, onClick = onPause),
+                contentAlignment = Alignment.Center,
+            ) {
+                SumiIcon(
+                    icon = SumiIcons.Pause,
+                    contentDescription = "Pause",
+                    tint = SumiTheme.colors.ink,
+                    size = 22.dp,
+                )
+            }
         }
     }
 }

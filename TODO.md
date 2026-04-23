@@ -76,6 +76,11 @@ Last updated: 2026-04-24
 - [x] **Digit entry animation** — spring scale (0.80→1f, MediumBouncy) + alpha fade (160ms)
   on user-placed digits; given cells fade-only; `CellDigitLayout` extracted for clean separation
 
+- [x] **Petal burst on completion** — `SumiPetalBurst(trigger)` composable; same physics engine
+  as splash `SumiPetals` (shared `renderPetalAtProgress`); wind always left→right; seed from
+  `celebrationCount` so each burst is uniquely random; triggered in `GameViewModel` via
+  `completionKey()` diff on every board state change (rows, cols, boxes, grid)
+
 - [ ] **Paywall entry point** — decide when/where to show Paywall (e.g., after N free puzzles,
   or when tapping "Zen" tab). Currently reachable only via bottom nav tab.
 
@@ -95,6 +100,43 @@ Last updated: 2026-04-24
 - [ ] **Daily challenge leaderboard** — same seed for all users on a given day; share solve time
 - [ ] **Puzzle replay** — `fromSeed()` exists in PuzzleRepository; needs UI entry point
 - [ ] **Settings expansion** — theme picker, sound/haptic toggles, difficulty preference
+
+---
+
+### Phase 5 — Game Save / Resume
+
+**Business logic (spec — implement in a future phase):**
+
+**Save slots:** one per difficulty level (5 total: Easy / Medium / Hard / Master / Edo).
+Multiple difficulties can have live saves simultaneously; they are fully independent.
+
+**Save trigger:** the moment the user correctly places their first digit. A blank grid is not
+worth saving. Incorrect digits don't count (they're never saved state anyway).
+
+**On Home → tap difficulty tile:**
+- Check: does this difficulty have a live save for today's puzzle? (epoch day stored with save)
+  - **Yes** → resume immediately, no prompt
+  - **No** → start a fresh game
+- If the daily puzzle has rolled over since the save was written, the save is stale → discard
+  it silently and start fresh
+
+**New game / discard from within an active game:**
+- The Pause overlay should expose a **"New Game"** button (in addition to Resume / Home)
+- Tapping "New Game" clears the save slot for that difficulty and restarts fresh
+- Win screen navigated to → auto-clears that difficulty's save slot
+- Game-over (3 marks) → auto-clears that difficulty's save slot
+
+**What to persist per slot (DataStore, one key per difficulty):**
+- `epochDay: Int` — the day the game was started (for staleness check)
+- `cells: String` — serialised 81-cell user-entered values (0 = empty; givens are re-derived)
+- `elapsedMs: Long`
+- `mistakeCount: Int`
+- `hintsRemaining: Int`
+- Notes mode resets to `false` on resume
+
+**Navigation invariant:** you cannot have two `GameRoute` entries on the stack simultaneously
+(Home → Game is always a push; going back pops back to Home). If a user is on GameScreen and
+taps a difficulty from Home, that path is not reachable — they must navigate back first.
 
 ---
 
