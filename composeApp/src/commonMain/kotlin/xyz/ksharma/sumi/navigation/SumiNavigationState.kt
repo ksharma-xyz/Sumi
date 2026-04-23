@@ -50,6 +50,7 @@ class SumiNavigationState(
         } else {
             backStacks[topLevelRoute]?.add(route)
         }
+        logStack("goTo(${route::class.simpleName})")
     }
 
     fun pop() {
@@ -59,13 +60,24 @@ class SumiNavigationState(
         } else {
             currentStack.removeLastOrNull()
         }
+        logStack("pop()")
     }
 
     fun resetRoot(route: NavKey) {
         val stack = backStacks[topLevelRoute] ?: return
         stack.clear()
         stack.add(route)
+        logStack("resetRoot(${route::class.simpleName})")
     }
+
+    private fun logStack(action: String) {
+        val stackStr = backStacks[topLevelRoute]
+            ?.joinToString(" → ") { routeLabel(it) }
+            ?: "empty"
+        println("[Nav] $action | tab=${routeLabel(topLevelRoute)} | stack=[$stackStr]")
+    }
+
+    private fun routeLabel(key: NavKey): String = key::class.simpleName ?: key.toString()
 
     @Composable
     fun toEntries(entryProvider: (NavKey) -> NavEntry<NavKey>): SnapshotStateList<NavEntry<NavKey>> {

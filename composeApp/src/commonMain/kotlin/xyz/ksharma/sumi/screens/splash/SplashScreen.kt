@@ -55,8 +55,10 @@ fun SplashScreen(
                 delay(900)
                 eyebrowAlpha.animateTo(1f, tween(400, easing = Sumi.Ease.paper))
             }
-            launch { delay(1400) }
         }
+    }
+
+    LaunchedEffect(uiState.navigationTarget) {
         uiState.navigationTarget?.let { currentOnNavigate(it) }
     }
 

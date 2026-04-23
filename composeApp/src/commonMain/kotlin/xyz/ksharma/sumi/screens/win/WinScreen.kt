@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Text
@@ -58,7 +59,7 @@ fun WinScreen(
             color = SumiTheme.colors.teal,
             size = 160.dp,
             seed = 2,
-            modifier = Modifier.align(Alignment.TopEnd).padding(end = (-20).dp, top = 320.dp),
+            modifier = Modifier.align(Alignment.TopEnd).offset(x = 20.dp).padding(top = 320.dp),
         )
         Column(
             modifier = Modifier
