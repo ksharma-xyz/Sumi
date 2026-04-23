@@ -88,6 +88,22 @@ Sound is off by default. When on, sources are organic: brush on paper, water dro
 
 Haptics are subtle: `.light` on taps, `.rigid` on mistakes (one, small), `.success` doubled on puzzle solve. Nothing else.
 
+## 11. Dark mode is lamplight, not a screen
+
+Sumi's dark mode is **warm ink on warm black** — never cool white on pure black. It should feel like reading by a paper lantern at night, not staring into an OLED.
+
+**Concrete rules:**
+- **Surfaces are warm-black, not pure black.** `Night.paper` is `#1A1410` (a soft sumi-ink black with red-brown undertone), never `#000000`. `Night.paperWarm` (`#231C15`) sits one step warmer still.
+- **Text is warm-cream, not white.** `Night.ink` is `#F4ECE0` — the same cream as day-mode paper, inverted onto black. Never `#FFFFFF`. The eye should rest, not strain.
+- **Accents warm and brighten proportionally.** Red shifts from `#A8342A` → `#E84A3E` (a brighter vermilion so it still reads as a chop, not a shadow). Teal lifts from `#2A5A6E` → `#6FA8BC`. Gold warms from `#8A6B2A` → `#D9A855`. These are **not** automatic tints — they are hand-tuned to hold the same emotional weight on black paper.
+- **The user's pen stays legible.** Caveat entries in `Night.teal` must remain the single strongest signal on the board. Test every night surface with a real night-mode solve.
+- **Celebrations dim, not brighten.** `AURORA_HUES_DARK` is a separate, darker hue set — ember and ash tones, not neon. The celebration is still visible but never aggressive against a dark surface.
+- **No pure-black tab bars, sheets, or modals.** Every surface in night mode is a shade of `Night.paper*`. The washi texture (`WashiBG`) still renders — the noise just layers over dark instead of cream.
+
+**The test:** hold the phone at arm's length in a dim room. The screen should glow like a lantern, not a flashlight. If any element looks white or pure-black, it's wrong.
+
+**User control:** Settings offers `Follow system / Always light / Always dark`. Default is follow system. The toggle lives in Settings, not the top bar — switching modes is an occasional choice, not a repeated action.
+
 ---
 
 ## Anti-patterns to reject (and push back on)
