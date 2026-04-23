@@ -13,7 +13,7 @@ Last updated: 2026-04-24
 - [x] Notes mode (per-cell pencil marks, cleared on digit entry)
 - [x] Timer (1s ticks, stops on win/game-over; separate flow → no board recompose)
 - [x] House completion detection: completedRows / completedCols / completedBoxes / completedDigits
-- [x] 27 unit tests passing (`./gradlew :game:testAndroidHostTest`)
+- [x] 36 unit tests passing (`./gradlew :game:testAndroidHostTest`)
 
 ### Screens
 - [x] Splash — animated enso logo, sakura petals, routes to onboarding or home
@@ -31,6 +31,7 @@ Last updated: 2026-04-24
 - [x] Aurora sweep on completed row / column (1200ms)
 - [x] Aurora sweep on completed 3×3 box (1400ms)
 - [x] Cell fade-in on digit entry (120ms)
+- [x] Spring scale animation on user-placed digits (0.80→1f, MediumBouncy)
 - [x] Same-digit highlight, unit (row/col/box) highlight, selected-cell highlight
 - [x] Error cells shown in red
 - [x] Pause overlay (resumes on button, hides board)
@@ -64,18 +65,19 @@ Last updated: 2026-04-24
 
 ### Phase 2 — Polish
 
-- [ ] **Haptics** — vibration on: cell tap, correct digit, mistake, win
-  - Needs `expect/actual` in `composeApp/androidMain` + `iosMain`
-  - Android: `Vibrator` / `VibrationEffect`; iOS: `UIImpactFeedbackGenerator`
+- [x] **Haptics** — `HapticEngine` expect/actual; `tick` / `confirm` / `error` / `win` levels
+  - Android: `View.performHapticFeedback` (no VIBRATE permission)
+  - iOS: `UIImpactFeedbackGenerator` (light/medium) + `UINotificationFeedbackGenerator`
+  - Wired at `GameEntry` (all callbacks) and `WinEntry` (win event)
 
-- [ ] **Number pad dim when digit is complete** — already computed (`remainingCounts`), but pad
-  numbers with `remaining == 0` only grey out the digit; they remain tappable. Disable tap too.
+- [x] **Number pad disabled when digit is complete** — `enabled = remaining > 0` on the
+  clickable modifier; exhausted digits are visually dimmed and not tappable
+
+- [x] **Digit entry animation** — spring scale (0.80→1f, MediumBouncy) + alpha fade (160ms)
+  on user-placed digits; given cells fade-only; `CellDigitLayout` extracted for clean separation
 
 - [ ] **Paywall entry point** — decide when/where to show Paywall (e.g., after N free puzzles,
   or when tapping "Zen" tab). Currently reachable only via bottom nav tab.
-
-- [ ] **Correct-placement animation** — subtle "ink drop" effect when a digit is placed correctly
-  (not just a fade-in). Requires knowing at entry time whether the digit was right.
 
 ### Phase 3 — Monetisation
 
