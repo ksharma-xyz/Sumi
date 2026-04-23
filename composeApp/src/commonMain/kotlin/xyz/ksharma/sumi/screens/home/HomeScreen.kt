@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
@@ -45,6 +44,7 @@ private val DIFFICULTY_TILES = listOf(
     Triple("Medium", "二", "6 min"),
     Triple("Hard", "三", "12 min"),
     Triple("Master", "四", "25 min"),
+    Triple("Edo", "五", "45 min"),
 )
 
 @Composable
@@ -86,13 +86,6 @@ private fun HomeTopChrome(onSettings: () -> Unit) {
     ) {
         LogoWordmark(scale = 0.48f, color = SumiTheme.colors.ink, accent = SumiTheme.colors.red)
         Spacer(Modifier.weight(1f))
-        SumiIcon(
-            icon = SumiIcons.Chart,
-            contentDescription = "Stats",
-            tint = SumiTheme.colors.inkSoft,
-            size = 22.dp,
-        )
-        Spacer(Modifier.width(Sumi.Space.s4))
         SumiIcon(
             icon = SumiIcons.Settings,
             contentDescription = "Settings",
@@ -199,6 +192,7 @@ private fun NewPracticeGrid(onStartGame: (String) -> Unit) {
                             modifier = Modifier.weight(1f),
                         )
                     }
+                    if (row.size == 1) Spacer(Modifier.weight(1f))
                 }
             }
         }

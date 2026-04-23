@@ -1,0 +1,104 @@
+# Sumi — Build Status
+
+Last updated: 2026-04-24
+
+## Done
+
+### Game Engine
+- [x] Puzzle generation (seed-based, deterministic per difficulty + date)
+- [x] 5 difficulty levels: Easy / Medium / Hard / Master / Edo (一二三四五)
+- [x] Board state machine: select, enter, erase, undo, hint, toggle-notes
+- [x] Mistake counting (max 3 marks → game over)
+- [x] Hints (3 per puzzle, marks cell as given)
+- [x] Notes mode (per-cell pencil marks, cleared on digit entry)
+- [x] Timer (1s ticks, stops on win/game-over; separate flow → no board recompose)
+- [x] House completion detection: completedRows / completedCols / completedBoxes / completedDigits
+- [x] 27 unit tests passing (`./gradlew :game:testAndroidHostTest`)
+
+### Screens
+- [x] Splash — animated enso logo, sakura petals, routes to onboarding or home
+- [x] Onboarding — 4-slide pager, persisted via DataStore (won't re-show)
+- [x] Home — streak card, daily quote, 5 difficulty tiles (incl. Edo), settings icon
+- [x] Game — 9×9 board, timer, pause overlay, game-over overlay, number pad, tools (undo/notes/erase/hint)
+- [x] Win — completion seal, time/marks/streak stats, difficulty label, next-puzzle + home buttons
+- [x] Daily — 30-day heatmap (solved/today/empty), streak summary, legend
+- [x] Stats — total puzzles solved (all-time), streak, best streak, days played
+- [x] Settings — view licenses link
+- [x] Licenses — typeface (5) + library (7) credits with license types
+- [x] Paywall — "Sumi Pro" hero, feature rows, pricing UI (no purchase logic)
+
+### Animations & UX
+- [x] Aurora sweep on completed row / column (1200ms)
+- [x] Aurora sweep on completed 3×3 box (1400ms)
+- [x] Cell fade-in on digit entry (120ms)
+- [x] Same-digit highlight, unit (row/col/box) highlight, selected-cell highlight
+- [x] Error cells shown in red
+- [x] Pause overlay (resumes on button, hides board)
+- [x] Game-over overlay (3 marks → "誤")
+
+### Architecture & DI
+- [x] ViewModel at Entry level only (screens are pure composables)
+- [x] Business logic in VM — no calculations in composables
+- [x] Immutable `List<T>` / `Set<T>` for all state (no mutableStateListOf)
+- [x] `rememberSaveable` for primitive UI flags (paused, gameOver)
+- [x] `rememberUpdatedState` for pointer-input callbacks (stable gesture detector)
+- [x] Koin DI: SplashVM, GameVM, HomeVM, WinVM, DailyVM, StatsVM all registered
+
+### Persistence (DataStore)
+- [x] Onboarding seen flag
+- [x] Current streak (consecutive days)
+- [x] Best streak (all-time)
+- [x] Last solve epoch day (for streak continuity)
+- [x] Solve days set (for 30-day heatmap)
+- [x] Total puzzles solved (all-time counter, incremented per win)
+
+### Navigation
+- [x] Bottom nav: Play / Daily / Stats / Zen (Paywall)
+- [x] Full game flow: Home → Game → Win → Home
+- [x] Settings → Licenses sub-flow
+- [x] All 10 routes wired with real Entries
+
+---
+
+## Pending
+
+### Phase 2 — Polish
+
+- [ ] **Haptics** — vibration on: cell tap, correct digit, mistake, win
+  - Needs `expect/actual` in `composeApp/androidMain` + `iosMain`
+  - Android: `Vibrator` / `VibrationEffect`; iOS: `UIImpactFeedbackGenerator`
+
+- [ ] **Number pad dim when digit is complete** — already computed (`remainingCounts`), but pad
+  numbers with `remaining == 0` only grey out the digit; they remain tappable. Disable tap too.
+
+- [ ] **Paywall entry point** — decide when/where to show Paywall (e.g., after N free puzzles,
+  or when tapping "Zen" tab). Currently reachable only via bottom nav tab.
+
+- [ ] **Correct-placement animation** — subtle "ink drop" effect when a digit is placed correctly
+  (not just a fade-in). Requires knowing at entry time whether the digit was right.
+
+### Phase 3 — Monetisation
+
+- [ ] **In-app purchases (IAP)** — platform-specific billing
+  - Android: Google Play Billing Library
+  - iOS: StoreKit 2
+  - Gate: Edo difficulty and/or unlimited hints behind "Sumi Pro"
+
+- [ ] **Restore purchases** — required for App Store submission
+
+### Phase 4 — Future Features
+
+- [ ] **Seasonal themes** — alternate colour palettes (Spring cherry, Autumn maple, Winter indigo)
+  - Design tokens already support `isDark` toggle; seasons would need a third axis
+- [ ] **Daily challenge leaderboard** — same seed for all users on a given day; share solve time
+- [ ] **Puzzle replay** — `fromSeed()` exists in PuzzleRepository; needs UI entry point
+- [ ] **Settings expansion** — theme picker, sound/haptic toggles, difficulty preference
+
+---
+
+## Known Limitations
+
+- `recordSolve()` counts every win as +1 to total puzzles; if the app is killed mid-solve and
+  re-launched, the win event fires correctly via WinEntry. No double-count risk.
+- Best streak is only updated on a NEW day's solve (not when continuing the same day).
+- Paywall screen buttons (`onSubscribe`, `onRestore`) are no-ops — not wired to IAP.
