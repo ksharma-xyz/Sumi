@@ -9,6 +9,7 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.koin.compose.viewmodel.koinViewModel
 import xyz.ksharma.sumi.FREE_QUOTES
+import xyz.ksharma.sumi.haptic.rememberHapticEngine
 import xyz.ksharma.sumi.navigation.GameRoute
 import xyz.ksharma.sumi.navigation.HomeRoute
 import xyz.ksharma.sumi.navigation.SumiNavigator
@@ -23,9 +24,13 @@ import kotlin.time.ExperimentalTime
 fun EntryProviderScope<NavKey>.WinEntry(navigator: SumiNavigator) {
     entry<WinRoute> { key ->
         val vm: WinViewModel = koinViewModel()
+        val haptic = rememberHapticEngine()
         val streak by vm.streak.collectAsState()
 
-        LaunchedEffect(Unit) { vm.onPuzzleCompleted() }
+        LaunchedEffect(Unit) {
+            haptic.win()
+            vm.onPuzzleCompleted()
+        }
 
         @OptIn(ExperimentalTime::class)
         val dayOfYear = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).dayOfYear
