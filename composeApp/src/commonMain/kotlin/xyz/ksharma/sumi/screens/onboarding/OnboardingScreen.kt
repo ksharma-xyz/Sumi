@@ -1,6 +1,10 @@
+@file:Suppress("MagicNumber")
+
 package xyz.ksharma.sumi.screens.onboarding
 
-import androidx.compose.animation.AnimatedContent
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,8 +14,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -20,24 +22,47 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import xyz.ksharma.sumi.design.components.SumiButtonVariant
-import xyz.ksharma.sumi.design.components.SumiTextButton
+import androidx.compose.ui.unit.em
+import androidx.compose.ui.unit.sp
+import xyz.ksharma.sumi.design.components.LogoEnso
+import xyz.ksharma.sumi.design.components.LogoGrid
+import xyz.ksharma.sumi.design.components.LogoNine
+import xyz.ksharma.sumi.design.components.LogoStrokes
+import xyz.ksharma.sumi.design.components.SumiButton
+import xyz.ksharma.sumi.design.components.SumiButtonSize
 import xyz.ksharma.sumi.design.components.WashiBG
 import xyz.ksharma.sumi.theme.SumiTheme
 import xyz.ksharma.sumi.theme.SumiTokens as Sumi
 
-private data class OnboardingSlide(val title: String, val body: String)
+private data class OnboardingSlide(
+    val headline: String,
+    val body: String,
+    val visual: @Composable () -> Unit,
+)
 
-private val SLIDES = listOf(
-    OnboardingSlide("Sumi 墨", "The daily practice."),
-    OnboardingSlide("Nine lines.\nNine columns.", "One patience."),
-    OnboardingSlide("Begin gently.", "Go as far as you like."),
-    OnboardingSlide("No ads during play.\nNo noise.", "No streaks to keep."),
+private val SLIDES: List<OnboardingSlide> = listOf(
+    OnboardingSlide(
+        headline = "Every row,\nevery column,\nevery house.",
+        body = "The numbers 一 through 九, each placed once — no more, no less. The rest is patience.",
+        visual = { LogoGrid(size = 100.dp) },
+    ),
+    OnboardingSlide(
+        headline = "One digit in\neach house.\nNine times.",
+        body = "No guessing. No luck. Every move follows from what you already know.",
+        visual = { LogoStrokes(size = 100.dp) },
+    ),
+    OnboardingSlide(
+        headline = "Hint, erase,\nreflect.",
+        body = "Take your time. The board waits. Three marks are all you get — use them wisely.",
+        visual = { LogoNine(size = 100.dp) },
+    ),
+    OnboardingSlide(
+        headline = "Begin with\nstillness.",
+        body = "A daily practice. A moment of quiet. The grid has always been here.",
+        visual = { LogoEnso(size = 100.dp) },
+    ),
 )
 
 @Composable
@@ -46,84 +71,96 @@ fun OnboardingScreen(
     modifier: Modifier = Modifier,
 ) {
     var page by remember { mutableIntStateOf(0) }
+    val slide = SLIDES[page]
     val isLast = page == SLIDES.lastIndex
 
     WashiBG(modifier = modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = Sumi.Space.s6, vertical = Sumi.Space.s7),
+                .padding(horizontal = Sumi.Space.s6)
+                .padding(top = Sumi.Space.s8, bottom = Sumi.Space.s7),
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End,
-            ) {
-                if (!isLast) {
-                    SumiTextButton(
-                        text = "Skip",
-                        onClick = onComplete,
-                        variant = SumiButtonVariant.Ghost,
-                    )
-                }
-            }
-
+            ProgressBars(total = SLIDES.size, filled = page + 1)
+            Spacer(Modifier.height(Sumi.Space.s8))
+            Box(modifier = Modifier.align(Alignment.CenterHorizontally)) { slide.visual() }
+            Spacer(Modifier.height(Sumi.Space.s7))
+            SlideContent(slide = slide)
             Spacer(Modifier.weight(1f))
-
-            AnimatedContent(targetState = page) { idx ->
-                val slide = SLIDES[idx]
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text(
-                        text = slide.title,
-                        style = SumiTheme.typography.h1,
-                        color = Sumi.Color.ink,
-                        textAlign = TextAlign.Center,
-                    )
-                    Spacer(Modifier.height(Sumi.Space.s4))
-                    Text(
-                        text = slide.body,
-                        style = SumiTheme.typography.body,
-                        color = Sumi.Color.inkSoft,
-                        textAlign = TextAlign.Center,
-                    )
-                }
-            }
-
-            Spacer(Modifier.weight(1f))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center,
-            ) {
-                DotIndicator(count = SLIDES.size, current = page)
-            }
-
-            Spacer(Modifier.height(Sumi.Space.s5))
-
-            SumiTextButton(
-                text = if (isLast) "Begin" else "Continue",
-                onClick = { if (isLast) onComplete() else page++ },
-                modifier = Modifier.fillMaxWidth(),
+            OnboardingActions(
+                isLast = isLast,
+                onContinue = { if (isLast) onComplete() else page++ },
+                onSkip = onComplete,
             )
         }
     }
 }
 
 @Composable
-private fun DotIndicator(count: Int, current: Int, modifier: Modifier = Modifier) {
+private fun SlideContent(slide: OnboardingSlide) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = slide.headline,
+            style = SumiTheme.typography.h2.copy(
+                fontSize = 40.sp,
+                lineHeight = (40 * 1.05f).sp,
+                letterSpacing = (-0.03f).em,
+            ),
+            color = Sumi.Color.ink,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Spacer(Modifier.height(Sumi.Space.s4))
+        Text(
+            text = slide.body,
+            style = SumiTheme.typography.body.copy(lineHeight = (15 * 1.6f).sp),
+            color = Sumi.Color.inkSoft,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth(),
+        )
+    }
+}
+
+@Composable
+private fun OnboardingActions(isLast: Boolean, onContinue: () -> Unit, onSkip: () -> Unit) {
+    val skipSrc = remember { MutableInteractionSource() }
+    Column(modifier = Modifier.fillMaxWidth()) {
+        SumiButton(
+            onClick = onContinue,
+            modifier = Modifier.fillMaxWidth(),
+            size = SumiButtonSize.Lg,
+        ) {
+            Text(
+                text = if (isLast) "Begin →" else "Continue",
+                style = SumiTheme.typography.uiButton,
+            )
+        }
+        Spacer(Modifier.height(Sumi.Space.s3))
+        Text(
+            text = "SKIP",
+            style = SumiTheme.typography.uiLabel.copy(letterSpacing = 2.sp),
+            color = Sumi.Color.inkFaint,
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(interactionSource = skipSrc, indication = null, onClick = onSkip)
+                .padding(vertical = Sumi.Space.s2),
+        )
+    }
+}
+
+@Composable
+private fun ProgressBars(total: Int, filled: Int) {
     Row(
-        horizontalArrangement = Arrangement.spacedBy(Sumi.Space.s2),
-        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        modifier = Modifier.fillMaxWidth(),
     ) {
-        repeat(count) { idx ->
-            val color = if (idx == current) Sumi.Color.ink else Sumi.Color.inkGhost
+        repeat(total) { i ->
             Box(
                 modifier = Modifier
-                    .size(6.dp)
-                    .clip(CircleShape)
-                    .drawBehind { drawRect(color) },
+                    .weight(1f)
+                    .height(2.dp)
+                    .background(if (i < filled) Sumi.Color.ink else Sumi.Color.paperEdge),
             )
         }
     }
