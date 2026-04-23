@@ -5,7 +5,6 @@ import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
 import xyz.ksharma.sumi.di.androidModule
 import xyz.ksharma.sumi.di.appModule
-import xyz.ksharma.sumi.game.di.gameModule
 
 class SumiApp : Application() {
 
@@ -13,7 +12,7 @@ class SumiApp : Application() {
         super.onCreate()
         startKoin {
             androidContext(this@SumiApp)
-            modules(appModule, androidModule, gameModule)
+            modules(appModule, androidModule)
         }
     }
 }
