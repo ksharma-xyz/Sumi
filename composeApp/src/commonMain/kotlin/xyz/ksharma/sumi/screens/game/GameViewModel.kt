@@ -2,8 +2,11 @@ package xyz.ksharma.sumi.screens.game
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import xyz.ksharma.sumi.game.manager.BoardManager
 import xyz.ksharma.sumi.game.manager.RealBoardManager
@@ -15,15 +18,27 @@ class GameViewModel(
     private val puzzleRepository: PuzzleRepository,
 ) : ViewModel() {
 
-    private lateinit var boardManager: BoardManager
+    private val _state = MutableStateFlow(EMPTY_BOARD)
+    val state: StateFlow<BoardState> = _state.asStateFlow()
 
-    val state: StateFlow<BoardState>
-        get() = boardManager.state
+    private var boardManager: BoardManager = RealBoardManager(EMPTY_BOARD)
+    private var timerJob: Job? = null
+    private var syncJob: Job? = null
 
     fun init(difficulty: Difficulty) {
-        val initialState = puzzleRepository.daily(difficulty)
-        boardManager = RealBoardManager(initialState)
-        startTimer()
+        timerJob?.cancel()
+        syncJob?.cancel()
+        boardManager = RealBoardManager(puzzleRepository.daily(difficulty))
+        _state.value = boardManager.state.value
+        syncJob = viewModelScope.launch {
+            boardManager.state.collect { _state.value = it }
+        }
+        timerJob = viewModelScope.launch {
+            while (true) {
+                delay(TIMER_TICK_MS)
+                boardManager.tick(TIMER_TICK_MS)
+            }
+        }
     }
 
     fun select(row: Int, col: Int) = boardManager.select(row, col)
@@ -33,16 +48,12 @@ class GameViewModel(
     fun hint() = boardManager.hint()
     fun toggleNotes() = boardManager.toggleNotes()
 
-    private fun startTimer() {
-        viewModelScope.launch {
-            while (true) {
-                delay(TIMER_TICK_MS)
-                boardManager.tick(TIMER_TICK_MS)
-            }
-        }
-    }
-
     private companion object {
         const val TIMER_TICK_MS = 1000L
+        val EMPTY_BOARD = BoardState(
+            cells = List(9) { List(9) { xyz.ksharma.sumi.game.model.Cell(0, false) } },
+            difficulty = Difficulty.Medium,
+            solution = List(9) { List(9) { 0 } },
+        )
     }
 }
