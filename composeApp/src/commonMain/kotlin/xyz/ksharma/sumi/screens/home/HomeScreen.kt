@@ -86,17 +86,19 @@ private fun HomeTopChrome(onSettings: () -> Unit) {
     ) {
         LogoWordmark(scale = 0.48f, color = SumiTheme.colors.ink, accent = SumiTheme.colors.red)
         Spacer(Modifier.weight(1f))
-        SumiIcon(
-            icon = SumiIcons.Settings,
-            contentDescription = "Settings",
-            tint = SumiTheme.colors.inkSoft,
-            size = 22.dp,
-            modifier = Modifier.clickable(
-                interactionSource = settingsSrc,
-                indication = null,
-                onClick = onSettings,
-            ),
-        )
+        Box(
+            modifier = Modifier
+                .size(Sumi.Layout.minTap)
+                .clickable(interactionSource = settingsSrc, indication = null, onClick = onSettings),
+            contentAlignment = Alignment.Center,
+        ) {
+            SumiIcon(
+                icon = SumiIcons.Settings,
+                contentDescription = "Settings",
+                tint = SumiTheme.colors.inkSoft,
+                size = 22.dp,
+            )
+        }
     }
 }
 
