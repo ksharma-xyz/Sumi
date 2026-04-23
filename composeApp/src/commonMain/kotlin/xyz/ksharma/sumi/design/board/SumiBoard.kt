@@ -3,6 +3,8 @@
 package xyz.ksharma.sumi.design.board
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -22,6 +24,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.unit.Dp
@@ -177,10 +180,24 @@ private fun CellText(
     textColor: Color,
 ) {
     val alpha = remember { Animatable(0f) }
+    val scale = remember { Animatable(1f) }
+
     LaunchedEffect(cell.value) {
         if (cell.value != 0) {
             alpha.snapTo(0f)
-            alpha.animateTo(1f, animationSpec = tween(120, easing = Sumi.Ease.paper))
+            if (!cell.given) scale.snapTo(0.80f)
+            launch { alpha.animateTo(1f, animationSpec = tween(160, easing = Sumi.Ease.paper)) }
+            if (!cell.given) {
+                launch {
+                    scale.animateTo(
+                        targetValue = 1f,
+                        animationSpec = spring(
+                            dampingRatio = Spring.DampingRatioMediumBouncy,
+                            stiffness = Spring.StiffnessMediumLow,
+                        ),
+                    )
+                }
+            }
         }
     }
 
@@ -188,31 +205,58 @@ private fun CellText(
     val offsetY = cellSize * row
 
     if (cell.value != 0) {
-        Layout(
-            content = {
-                Text(
-                    text = cell.value.toString(),
-                    style = if (cell.given) {
-                        SumiTheme.typography.numeral.copy(color = textColor.copy(alpha = alpha.value))
-                    } else {
-                        SumiTheme.typography.hand.copy(
-                            color = textColor.copy(alpha = alpha.value),
-                            fontSize = 24.sp,
-                        )
-                    },
-                )
-            },
-            modifier = Modifier,
-        ) { measurables, constraints ->
-            val placeable = measurables[0].measure(constraints)
-            layout(cellSize.roundToPx(), cellSize.roundToPx()) {
-                val x = offsetX.roundToPx() + (cellSize.roundToPx() - placeable.width) / 2
-                val y = offsetY.roundToPx() + (cellSize.roundToPx() - placeable.height) / 2
-                placeable.placeRelative(x, y)
-            }
-        }
+        CellDigitLayout(
+            cell = cell,
+            offsetX = offsetX,
+            offsetY = offsetY,
+            cellSize = cellSize,
+            textColor = textColor,
+            alpha = alpha.value,
+            scale = scale.value,
+        )
     } else if (cell.notes.isNotEmpty()) {
         NoteGrid(notes = cell.notes, cellSize = cellSize, offsetX = offsetX, offsetY = offsetY)
+    }
+}
+
+@Composable
+private fun CellDigitLayout(
+    cell: Cell,
+    offsetX: Dp,
+    offsetY: Dp,
+    cellSize: Dp,
+    textColor: Color,
+    alpha: Float,
+    scale: Float,
+) {
+    Layout(
+        content = {
+            Text(
+                text = cell.value.toString(),
+                style = if (cell.given) {
+                    SumiTheme.typography.numeral.copy(color = textColor.copy(alpha = alpha))
+                } else {
+                    SumiTheme.typography.hand.copy(color = textColor, fontSize = 24.sp)
+                },
+                modifier = if (!cell.given) {
+                    Modifier.graphicsLayer {
+                        scaleX = scale
+                        scaleY = scale
+                        this.alpha = alpha
+                    }
+                } else {
+                    Modifier
+                },
+            )
+        },
+        modifier = Modifier,
+    ) { measurables, constraints ->
+        val placeable = measurables[0].measure(constraints)
+        layout(cellSize.roundToPx(), cellSize.roundToPx()) {
+            val x = offsetX.roundToPx() + (cellSize.roundToPx() - placeable.width) / 2
+            val y = offsetY.roundToPx() + (cellSize.roundToPx() - placeable.height) / 2
+            placeable.placeRelative(x, y)
+        }
     }
 }
 

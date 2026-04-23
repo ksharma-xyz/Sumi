@@ -336,7 +336,7 @@ private fun NumberPad(state: BoardState, onDigit: (Int) -> Unit) {
                 modifier = Modifier
                     .weight(1f)
                     .aspectRatio(1f)
-                    .clickable(interactionSource = src, indication = null) { onDigit(n) },
+                    .clickable(interactionSource = src, indication = null, enabled = remaining > 0) { onDigit(n) },
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center,
             ) {
