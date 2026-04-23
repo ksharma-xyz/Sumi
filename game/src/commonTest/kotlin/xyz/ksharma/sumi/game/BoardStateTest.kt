@@ -332,6 +332,125 @@ class BoardStateTest {
         }
     }
 
+    // ── Completion detection ──────────────────────────────────────────────────
+
+    @Test
+    fun completedRowsEmptyOnFreshBoard() {
+        assertTrue(board.completedRows.isEmpty(), "Fresh board should have no completed rows")
+    }
+
+    @Test
+    fun completedColsEmptyOnFreshBoard() {
+        assertTrue(board.completedCols.isEmpty(), "Fresh board should have no completed cols")
+    }
+
+    @Test
+    fun completedBoxesEmptyOnFreshBoard() {
+        assertTrue(board.completedBoxes.isEmpty(), "Fresh board should have no completed boxes")
+    }
+
+    @Test
+    fun completedDigitsEmptyOnFreshBoard() {
+        assertTrue(board.completedDigits.isEmpty(), "Fresh board should have no completed digits")
+    }
+
+    @Test
+    fun completedRowsContainsRowWhenFullyCorrect() {
+        val b = board
+        // Fill a specific row completely and correctly
+        val targetRow = findRowWithMostGivens(b)
+        var state = b
+        for (c in 0..8) {
+            if (!state.cells[targetRow][c].given) {
+                state = state.select(targetRow, c).enter(state.solution[targetRow][c])
+            }
+        }
+        assertTrue(targetRow in state.completedRows, "Row $targetRow should be in completedRows")
+    }
+
+    @Test
+    fun completedRowsDoesNotIncludeRowWithWrongDigit() {
+        val b = board
+        val targetRow = findRowWithMostGivens(b)
+        var state = b
+        for (c in 0..8) {
+            if (!state.cells[targetRow][c].given) {
+                val correct = state.solution[targetRow][c]
+                val wrong = (1..9).first { it != correct }
+                state = state.select(targetRow, c).enter(wrong)
+            }
+        }
+        assertFalse(targetRow in state.completedRows, "Row with wrong digit must not be completed")
+    }
+
+    @Test
+    fun completedColsContainsColWhenFullyCorrect() {
+        val b = board
+        val targetCol = findColWithMostGivens(b)
+        var state = b
+        for (r in 0..8) {
+            if (!state.cells[r][targetCol].given) {
+                state = state.select(r, targetCol).enter(state.solution[r][targetCol])
+            }
+        }
+        assertTrue(targetCol in state.completedCols, "Col $targetCol should be in completedCols")
+    }
+
+    @Test
+    fun completedBoxesContainsBoxWhenFullyCorrect() {
+        val b = board
+        val targetBox = findBoxWithMostGivens(b)
+        var state = b
+        val br = (targetBox / 3) * 3
+        val bc = (targetBox % 3) * 3
+        for (dr in 0..2) for (dc in 0..2) {
+            if (!state.cells[br + dr][bc + dc].given) {
+                state = state.select(br + dr, bc + dc).enter(state.solution[br + dr][bc + dc])
+            }
+        }
+        assertTrue(targetBox in state.completedBoxes, "Box $targetBox should be in completedBoxes")
+    }
+
+    @Test
+    fun completedDigitsContainsDigitWhenAllNinePlaced() {
+        val b = board
+        // Find a digit that has the fewest remaining empty cells
+        val targetDigit = (1..9).minByOrNull { d ->
+            (0..8).sumOf { r -> (0..8).count { c -> b.cells[r][c].value != d && b.solution[r][c] == d && !b.cells[r][c].given } }
+        } ?: 1
+        var state = b
+        for (r in 0..8) for (c in 0..8) {
+            if (state.solution[r][c] == targetDigit && !state.cells[r][c].given) {
+                state = state.select(r, c).enter(targetDigit)
+            }
+        }
+        assertTrue(targetDigit in state.completedDigits, "Digit $targetDigit should be in completedDigits")
+    }
+
+    @Test
+    fun allHousesCompleteOnSolvedBoard() {
+        val b = fillBoardCorrectly(board)
+        assertEquals((0..8).toSet(), b.completedRows, "All rows should be complete on solved board")
+        assertEquals((0..8).toSet(), b.completedCols, "All cols should be complete on solved board")
+        assertEquals((0..8).toSet(), b.completedBoxes, "All boxes should be complete on solved board")
+        assertEquals((1..9).toSet(), b.completedDigits, "All digits should be complete on solved board")
+    }
+
+    @Test
+    fun remainingCountsZeroForCompletedDigit() {
+        val b = board
+        val targetDigit = (1..9).minByOrNull { d ->
+            (0..8).sumOf { r -> (0..8).count { c -> b.solution[r][c] == d && !b.cells[r][c].given } }
+        } ?: 1
+        var state = b
+        for (r in 0..8) for (c in 0..8) {
+            if (state.solution[r][c] == targetDigit && !state.cells[r][c].given) {
+                state = state.select(r, c).enter(targetDigit)
+            }
+        }
+        assertEquals(0, state.remainingCounts[targetDigit - 1], "Remaining count should be 0 for completed digit")
+    }
+
     // ── Remaining counts ──────────────────────────────────────────────────────
 
     @Test
@@ -378,4 +497,16 @@ class BoardStateTest {
         }
         return state
     }
+
+    private fun findRowWithMostGivens(b: BoardState): Int =
+        (0..8).maxByOrNull { r -> (0..8).count { c -> b.cells[r][c].given } } ?: 0
+
+    private fun findColWithMostGivens(b: BoardState): Int =
+        (0..8).maxByOrNull { c -> (0..8).count { r -> b.cells[r][c].given } } ?: 0
+
+    private fun findBoxWithMostGivens(b: BoardState): Int =
+        (0..8).maxByOrNull { b ->
+            val br = (b / 3) * 3; val bc = (b % 3) * 3
+            (0..2).sumOf { dr -> (0..2).count { dc -> board.cells[br + dr][bc + dc].given } }
+        } ?: 0
 }
