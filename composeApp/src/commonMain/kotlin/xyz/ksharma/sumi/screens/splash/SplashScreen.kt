@@ -20,13 +20,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import androidx.navigation3.runtime.NavKey
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import xyz.ksharma.sumi.design.components.LogoEnso
-import xyz.ksharma.sumi.design.components.LogoWordmark
 import xyz.ksharma.sumi.design.components.SumiEyebrow
 import xyz.ksharma.sumi.design.components.SumiPetals
 import xyz.ksharma.sumi.design.components.WashiBG
@@ -72,14 +72,17 @@ private fun SplashCenter(ensoProgress: Float, wordmarkAlpha: Float, eyebrowAlpha
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             LogoEnso(size = 120.dp, color = Sumi.Color.ink, progress = ensoProgress)
-            Spacer(Modifier.height(Sumi.Space.s4))
-            LogoWordmark(
-                scale = 1.4f,
+            Spacer(Modifier.height(Sumi.Space.s2))
+            Text(
+                text = "Sumi",
+                style = SumiTheme.typography.h1.copy(
+                    fontSize = 56.sp,
+                    letterSpacing = (-0.03f).em,
+                ),
                 color = Sumi.Color.ink,
-                accent = Sumi.Color.red,
                 modifier = Modifier.alpha(wordmarkAlpha),
             )
-            Spacer(Modifier.height(Sumi.Space.s2))
+            Spacer(Modifier.height(Sumi.Space.s1))
             SumiEyebrow(
                 text = "A Quiet Practice",
                 color = Sumi.Color.inkSoft,
