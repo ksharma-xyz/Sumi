@@ -2,10 +2,11 @@
 
 package xyz.ksharma.sumi.game.model
 
+private const val MAX_MISTAKES = 3
+
 data class BoardState(
     val cells: List<List<Cell>>,
     val selected: Pair<Int, Int>? = null,
-    val conflict: Pair<Int, Int>? = null,
     val notesMode: Boolean = false,
     val hintsRemaining: Int = 3,
     val mistakeCount: Int = 0,
@@ -14,6 +15,15 @@ data class BoardState(
     val solution: List<List<Int>>,
     private val history: List<List<List<Cell>>> = emptyList(),
 ) {
+    // Cells where the user's entry doesn't match the solution — computed, never stale.
+    val errorCells: Set<Pair<Int, Int>>
+        get() = buildSet {
+            for (r in 0..8) for (c in 0..8) {
+                val v = cells[r][c].value
+                if (v != 0 && v != solution[r][c]) add(r to c)
+            }
+        }
+
     val counts: IntArray
         get() {
             val arr = IntArray(9)
@@ -24,32 +34,12 @@ data class BoardState(
     val remainingCounts: IntArray
         get() = IntArray(9) { i -> 9 - counts[i] }
 
+    // Complete when every cell matches the solution exactly.
     val isComplete: Boolean
-        get() = cells.all { row -> row.all { cell -> cell.value != 0 } } && !hasConflicts
+        get() = cells.indices.all { r -> cells[r].indices.all { c -> cells[r][c].value == solution[r][c] } }
 
-    val hasConflicts: Boolean
-        get() {
-            for (r in 0..8) {
-                val rowVals = cells[r].filter { !it.isEmpty }.map { it.value }
-                if (rowVals.size != rowVals.toSet().size) return true
-            }
-            for (c in 0..8) {
-                val colVals = cells.map { it[c] }.filter { !it.isEmpty }.map { it.value }
-                if (colVals.size != colVals.toSet().size) return true
-            }
-            for (br in 0..2) {
-                for (bc in 0..2) {
-                    val boxVals = mutableListOf<Int>()
-                    for (r in (br * 3)..(br * 3 + 2)) {
-                        for (c in (bc * 3)..(bc * 3 + 2)) {
-                            if (!cells[r][c].isEmpty) boxVals.add(cells[r][c].value)
-                        }
-                    }
-                    if (boxVals.size != boxVals.toSet().size) return true
-                }
-            }
-            return false
-        }
+    val isGameOver: Boolean
+        get() = mistakeCount >= MAX_MISTAKES
 
     fun select(row: Int, col: Int): BoardState {
         val newSelected = if (selected == Pair(row, col)) null else Pair(row, col)
@@ -57,6 +47,7 @@ data class BoardState(
     }
 
     fun enter(digit: Int): BoardState {
+        if (isGameOver || isComplete) return this
         val (row, col) = selected ?: return this
         val cell = cells[row][col]
         if (cell.given) return this
@@ -64,19 +55,22 @@ data class BoardState(
             val newNotes = if (digit in cell.notes) cell.notes - digit else cell.notes + digit
             updateCell(row, col, cell.copy(notes = newNotes, value = 0))
         } else {
-            val conflict = checkConflict(row, col, digit)
+            // Count a mistake only on first entry of a wrong digit for this cell.
+            val wasEmpty = cell.value == 0
+            val wasCorrect = cell.value == solution[row][col]
             val isWrong = digit != 0 && digit != solution[row][col]
+            val incrementMistake = (wasEmpty || wasCorrect) && isWrong
             val newCells = updatedCells(row, col, cell.copy(value = digit, notes = emptySet()))
             copy(
                 cells = newCells,
-                conflict = if (conflict) Pair(row, col) else null,
-                mistakeCount = if (isWrong) mistakeCount + 1 else mistakeCount,
+                mistakeCount = if (incrementMistake) mistakeCount + 1 else mistakeCount,
                 history = history + listOf(cells),
             )
         }
     }
 
     fun erase(): BoardState {
+        if (isGameOver) return this
         val (row, col) = selected ?: return this
         val cell = cells[row][col]
         if (cell.given) return this
@@ -85,33 +79,26 @@ data class BoardState(
 
     fun undo(): BoardState {
         if (history.isEmpty()) return this
-        val previous = history.last()
-        return copy(cells = previous, history = history.dropLast(1), conflict = null)
+        return copy(cells = history.last(), history = history.dropLast(1))
     }
 
     fun hint(): BoardState {
-        if (hintsRemaining <= 0) return this
-        val emptyCells = mutableListOf<Pair<Int, Int>>()
-        for (r in 0..8) for (c in 0..8) if (cells[r][c].isEmpty || cells[r][c].value != solution[r][c]) emptyCells.add(r to c)
-        if (emptyCells.isEmpty()) return this
-        val (r, c) = emptyCells.random()
+        if (isGameOver || hintsRemaining <= 0) return this
+        val candidates = mutableListOf<Pair<Int, Int>>()
+        for (r in 0..8) for (c in 0..8) {
+            if (!cells[r][c].given && cells[r][c].value != solution[r][c]) candidates.add(r to c)
+        }
+        if (candidates.isEmpty()) return this
+        val (r, c) = candidates.random()
         val newCells = updatedCells(r, c, cells[r][c].copy(value = solution[r][c], given = true, notes = emptySet()))
         return copy(cells = newCells, hintsRemaining = hintsRemaining - 1, history = history + listOf(cells))
     }
 
     fun toggleNotes(): BoardState = copy(notesMode = !notesMode)
 
-    fun tick(deltaMs: Long): BoardState = copy(elapsedMs = elapsedMs + deltaMs)
-
-    private fun checkConflict(row: Int, col: Int, digit: Int): Boolean {
-        if (digit == 0) return false
-        for (c in 0..8) if (c != col && cells[row][c].value == digit) return true
-        for (r in 0..8) if (r != row && cells[r][col].value == digit) return true
-        val br = (row / 3) * 3
-        val bc = (col / 3) * 3
-        for (r in br..(br + 2)) for (c in bc..(bc + 2)) if ((r != row || c != col) && cells[r][c].value == digit) return true
-        return false
-    }
+    // Timer stops automatically once the game ends.
+    fun tick(deltaMs: Long): BoardState =
+        if (isGameOver || isComplete) this else copy(elapsedMs = elapsedMs + deltaMs)
 
     private fun updateCell(row: Int, col: Int, cell: Cell): BoardState =
         copy(cells = updatedCells(row, col, cell), history = history + listOf(cells))

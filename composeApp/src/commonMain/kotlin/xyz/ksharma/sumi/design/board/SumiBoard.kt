@@ -45,7 +45,7 @@ fun SumiBoard(
     val red = colors.red
     val tone = if (SumiTheme.isDark) AuroraTone.Night else AuroraTone.Paper
     val selected = state.selected
-    val conflict = state.conflict
+    val errorCells = state.errorCells
 
     Box(modifier = modifier.size(boardSize)) {
         Canvas(
@@ -62,7 +62,7 @@ fun SumiBoard(
         ) {
             val px = cellSize.toPx()
 
-            drawCellBackgrounds(state, selected, conflict, px, CellColors(ink, teal, red))
+            drawCellBackgrounds(state, selected, errorCells, px, CellColors(ink, teal, red))
             drawGridLines(px, ink)
         }
 
@@ -93,14 +93,14 @@ private fun CellContents(
     teal: Color,
     red: Color,
 ) {
-    val conflict = state.conflict
+    val errorCells = state.errorCells
     for (r in 0..8) {
         for (c in 0..8) {
             val cell = state.cells[r][c]
             if (cell.value == 0 && cell.notes.isEmpty()) continue
-            val isConflict = conflict?.first == r && conflict.second == c
+            val isError = (r to c) in errorCells
             val textColor = when {
-                isConflict -> red
+                isError -> red
                 cell.given -> ink
                 else -> teal
             }
@@ -215,14 +215,14 @@ private data class CellColors(val ink: Color, val teal: Color, val red: Color)
 private fun DrawScope.drawCellBackgrounds(
     state: BoardState,
     selected: Pair<Int, Int>?,
-    conflict: Pair<Int, Int>?,
+    errorCells: Set<Pair<Int, Int>>,
     px: Float,
     colors: CellColors,
 ) {
     val selectedValue = selected?.let { (r, c) -> state.cells[r][c].value }
     for (r in 0..8) {
         for (c in 0..8) {
-            val bg = cellBg(state.cells[r][c], r, c, selected, conflict, selectedValue, colors)
+            val bg = cellBg(state.cells[r][c], r, c, selected, errorCells, selectedValue, colors)
             if (bg != Color.Transparent) {
                 drawRect(color = bg, topLeft = Offset(c * px, r * px), size = Size(px, px))
             }
@@ -235,17 +235,17 @@ private fun cellBg(
     r: Int,
     c: Int,
     selected: Pair<Int, Int>?,
-    conflict: Pair<Int, Int>?,
+    errorCells: Set<Pair<Int, Int>>,
     selectedValue: Int?,
     colors: CellColors,
 ): Color {
     val isSelected = selected?.first == r && selected.second == c
-    val isConflict = conflict?.first == r && conflict.second == c
+    val isError = (r to c) in errorCells
     val isInUnit = selected != null && !isSelected && sharesUnit(r, c, selected)
     val isSameDigit = selectedValue != null && selectedValue != 0 &&
         cell.value == selectedValue && !isSelected
     return when {
-        isConflict -> colors.red.copy(alpha = 0.10f)
+        isError -> colors.red.copy(alpha = 0.10f)
         isSelected -> colors.red.copy(alpha = 0.08f)
         isSameDigit -> colors.teal.copy(alpha = 0.08f)
         isInUnit -> colors.ink.copy(alpha = 0.03f)
