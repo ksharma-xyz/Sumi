@@ -22,7 +22,11 @@ data class GameRoute(
     val puzzleId: Long = 0L,
 ) : SumiRoute
 
-@Serializable data object WinRoute : SumiRoute
+@Serializable data class WinRoute(
+    val elapsedMs: Long = 0L,
+    val mistakeCount: Int = 0,
+    val difficulty: String = "Easy",
+) : SumiRoute
 
 // ── Utility ───────────────────────────────────────────────────────────────────
 @Serializable data object SettingsRoute : SumiRoute

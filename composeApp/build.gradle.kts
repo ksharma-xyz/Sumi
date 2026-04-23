@@ -68,6 +68,7 @@ kotlin {
             implementation(libs.ktor.serialization.json)
             implementation(libs.sqldelight.coroutines)
             implementation(libs.datastore.preferences)
+            implementation(libs.kotlinx.datetime)
             implementation(projects.game)
         }
 
