@@ -45,9 +45,60 @@ composeApp/src/commonMain/kotlin/xyz/ksharma/sumi/
 ├── design/
 │   └── components/ WashiBG, SumiButton, SumiChip, …
 ├── screens/        One subpackage per screen
+├── navigation/
+│   └── entries/    NavEntry composables (own the ViewModels)
 ├── di/             Koin modules
 └── App.kt          Root composable
 ```
+
+### ViewModel pattern (mandatory)
+
+ViewModels are created **only** inside `Entry` composables (the `entry<Route> { ... }` blocks in `navigation/entries/`). Screen composables are pure — they receive only plain state values and callback lambdas.
+
+```kotlin
+// CORRECT — VM created at Entry level
+entry<GameRoute> { key ->
+    val vm: GameViewModel = koinViewModel()
+    val state by vm.state.collectAsState()
+    GameScreen(state = state, onSelect = { r, c -> vm.select(r, c) })
+}
+
+// WRONG — never create VMs inside screen composables
+@Composable
+fun GameScreen(...) {
+    val vm: GameViewModel = koinViewModel()  // ❌
+}
+```
+
+### Business logic in ViewModel
+
+Screens and components are **display-only**. All calculations, formatting, mapping, and business logic live in the ViewModel and are resolved before data reaches the UI.
+
+- Time formatting → ViewModel (or helper called from VM), not inside `Text { ... }`
+- Derived values (e.g. remaining counts, streak labels) → computed in VM, passed as plain fields
+- Condition checks beyond simple `if (visible)` → ViewModel
+
+### Immutable collections
+
+Use standard immutable `List<T>` / `Set<T>` with `remember { mutableStateOf(emptyList()) }`. Never use `mutableStateListOf()` or `mutableStateMapOf()` for state that is replaced atomically.
+
+```kotlin
+// CORRECT
+var sweeps by remember { mutableStateOf(emptyList<Sweep>()) }
+sweeps = sweeps + newItem       // creates a new list
+sweeps = sweeps - oldItem
+
+// WRONG
+val sweeps = remember { mutableStateListOf<Sweep>() }  // ❌
+```
+
+For complex stable data passed to composables, use `ImmutableList`/`ImmutableSet` from `kotlinx-collections-immutable` (tells Compose the type is stable so it can skip recomposition).
+
+### rememberSaveable vs remember
+
+- **`rememberSaveable`** — use for primitive/String UI state that must survive screen rotation and process death (e.g. `paused`, `gameOver`, selected tab). It's the right default for simple flags and strings.
+- **`remember`** — use for transient animation state, interaction sources, or objects that can't be serialised (e.g. `Animatable`, `MutableInteractionSource`, short-lived sweep lists).
+- Complex cross-screen state lives in the ViewModel's `StateFlow`, not in composable memory.
 
 ## Detekt suppression policy
 
