@@ -13,7 +13,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -25,6 +27,8 @@ import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import xyz.ksharma.sumi.game.model.BoardState
 import xyz.ksharma.sumi.game.model.Cell
 import xyz.ksharma.sumi.theme.SumiTheme
@@ -47,41 +51,94 @@ fun SumiBoard(
     val selected = state.selected
     val errorCells = state.errorCells
 
+    val activeSweeps = rememberHouseSweeps(state)
+    val currentOnCellTap by rememberUpdatedState(onCellTap)
+
     Box(modifier = modifier.size(boardSize)) {
         Canvas(
             modifier = Modifier
                 .size(boardSize)
-                .pointerInput(onCellTap) {
+                .pointerInput(Unit) {
                     detectTapGestures { offset ->
                         val px = cellSize.toPx()
                         val r = (offset.y / px).toInt().coerceIn(0, 8)
                         val c = (offset.x / px).toInt().coerceIn(0, 8)
-                        onCellTap?.invoke(r, c)
+                        currentOnCellTap?.invoke(r, c)
                     }
                 },
         ) {
             val px = cellSize.toPx()
-
             drawCellBackgrounds(state, selected, errorCells, px, CellColors(ink, teal, red))
             drawGridLines(px, ink)
         }
 
-        CellContents(
-            state = state,
-            cellSize = cellSize,
-            ink = ink,
-            teal = teal,
-            red = red,
-        )
+        CellContents(state = state, cellSize = cellSize, ink = ink, teal = teal, red = red)
 
-        if (sweep != null) {
-            AuroraSweep(
-                kind = sweep,
-                cellSize = cellSize,
-                modifier = Modifier.size(boardSize),
-                tone = tone,
-            )
+        SweepLayer(
+            activeSweeps = activeSweeps,
+            externalSweep = sweep,
+            cellSize = cellSize,
+            boardSize = boardSize,
+            tone = tone,
+        )
+    }
+}
+
+@Composable
+private fun rememberHouseSweeps(state: BoardState): List<BoardSweep> {
+    var activeSweeps by remember { mutableStateOf(emptyList<BoardSweep>()) }
+    var prevRows by remember { mutableStateOf(emptySet<Int>()) }
+    var prevCols by remember { mutableStateOf(emptySet<Int>()) }
+    var prevBoxes by remember { mutableStateOf(emptySet<Int>()) }
+
+    LaunchedEffect(state.completedRows, state.completedCols, state.completedBoxes) {
+        (state.completedRows - prevRows).forEach { r ->
+            launch {
+                val s = BoardSweep.Row(r)
+                activeSweeps = activeSweeps + s
+                delay(1200L)
+                activeSweeps = activeSweeps - s
+            }
         }
+        (state.completedCols - prevCols).forEach { c ->
+            launch {
+                val s = BoardSweep.Col(c)
+                activeSweeps = activeSweeps + s
+                delay(1200L)
+                activeSweeps = activeSweeps - s
+            }
+        }
+        (state.completedBoxes - prevBoxes).forEach { b ->
+            launch {
+                val s = BoardSweep.Box(b)
+                activeSweeps = activeSweeps + s
+                delay(1400L)
+                activeSweeps = activeSweeps - s
+            }
+        }
+        prevRows = state.completedRows
+        prevCols = state.completedCols
+        prevBoxes = state.completedBoxes
+    }
+
+    return activeSweeps
+}
+
+@Composable
+private fun SweepLayer(
+    activeSweeps: List<BoardSweep>,
+    externalSweep: BoardSweep?,
+    cellSize: Dp,
+    boardSize: Dp,
+    tone: AuroraTone,
+) {
+    activeSweeps.forEach { kind ->
+        key(kind) {
+            AuroraSweep(kind = kind, cellSize = cellSize, modifier = Modifier.size(boardSize), tone = tone)
+        }
+    }
+    if (externalSweep != null) {
+        AuroraSweep(kind = externalSweep, cellSize = cellSize, modifier = Modifier.size(boardSize), tone = tone)
     }
 }
 
@@ -105,13 +162,7 @@ private fun CellContents(
                 else -> teal
             }
             key(r, c) {
-                CellText(
-                    cell = cell,
-                    row = r,
-                    col = c,
-                    cellSize = cellSize,
-                    textColor = textColor,
-                )
+                CellText(cell = cell, row = r, col = c, cellSize = cellSize, textColor = textColor)
             }
         }
     }
@@ -161,12 +212,7 @@ private fun CellText(
             }
         }
     } else if (cell.notes.isNotEmpty()) {
-        NoteGrid(
-            notes = cell.notes,
-            cellSize = cellSize,
-            offsetX = offsetX,
-            offsetY = offsetY,
-        )
+        NoteGrid(notes = cell.notes, cellSize = cellSize, offsetX = offsetX, offsetY = offsetY)
     }
 }
 
@@ -197,7 +243,9 @@ private fun NoteGrid(
         modifier = Modifier,
     ) { measurables, _ ->
         val noteSize = (cellSize.roundToPx() / 3)
-        val placeables = measurables.map { it.measure(androidx.compose.ui.unit.Constraints.fixed(noteSize, noteSize)) }
+        val placeables = measurables.map {
+            it.measure(androidx.compose.ui.unit.Constraints.fixed(noteSize, noteSize))
+        }
         layout(cellSize.roundToPx(), cellSize.roundToPx()) {
             placeables.forEachIndexed { i, p ->
                 val nr = i / 3

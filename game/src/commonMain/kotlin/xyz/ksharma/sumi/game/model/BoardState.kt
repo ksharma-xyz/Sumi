@@ -24,6 +24,36 @@ data class BoardState(
             }
         }
 
+    // Which rows are fully and correctly filled (all 9 cells match solution).
+    val completedRows: Set<Int>
+        get() = (0..8).filterTo(mutableSetOf()) { r ->
+            (0..8).all { c -> cells[r][c].value != 0 && cells[r][c].value == solution[r][c] }
+        }
+
+    val completedCols: Set<Int>
+        get() = (0..8).filterTo(mutableSetOf()) { c ->
+            (0..8).all { r -> cells[r][c].value != 0 && cells[r][c].value == solution[r][c] }
+        }
+
+    // Boxes indexed 0–8 in reading order (0 = top-left 3×3, 8 = bottom-right 3×3).
+    val completedBoxes: Set<Int>
+        get() = (0..8).filterTo(mutableSetOf()) { b ->
+            val br = (b / 3) * 3
+            val bc = (b % 3) * 3
+            (0..2).all { dr ->
+                (0..2).all { dc ->
+                    val cell = cells[br + dr][bc + dc]
+                    cell.value != 0 && cell.value == solution[br + dr][bc + dc]
+                }
+            }
+        }
+
+    // Digits 1–9 that have all 9 instances correctly placed.
+    val completedDigits: Set<Int>
+        get() = (1..9).filterTo(mutableSetOf()) { d ->
+            cells.sumOf { row -> row.count { it.value == d } } == 9
+        }
+
     val counts: IntArray
         get() {
             val arr = IntArray(9)
