@@ -53,6 +53,8 @@ kotlin {
             implementation(libs.di.koinCore)
             implementation(libs.di.koinCompose)
             implementation(libs.di.koinComposeViewmodel)
+            implementation(libs.navigation3.ui)
+            implementation(libs.navigation3.viewmodel)
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.ktor.client.core)

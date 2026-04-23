@@ -1,0 +1,57 @@
+package xyz.ksharma.sumi.navigation
+
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.navigation3.runtime.NavEntry
+import androidx.navigation3.runtime.NavKey
+import androidx.navigation3.runtime.entryProvider
+import androidx.navigation3.ui.NavDisplay
+import xyz.ksharma.sumi.navigation.entries.DailyEntry
+import xyz.ksharma.sumi.navigation.entries.GameEntry
+import xyz.ksharma.sumi.navigation.entries.HomeEntry
+import xyz.ksharma.sumi.navigation.entries.LicensesEntry
+import xyz.ksharma.sumi.navigation.entries.OnboardingEntry
+import xyz.ksharma.sumi.navigation.entries.PaywallEntry
+import xyz.ksharma.sumi.navigation.entries.SettingsEntry
+import xyz.ksharma.sumi.navigation.entries.SplashEntry
+import xyz.ksharma.sumi.navigation.entries.StatsEntry
+import xyz.ksharma.sumi.navigation.entries.WinEntry
+
+@Composable
+fun SumiNavHost(modifier: Modifier = Modifier) {
+    val state = rememberSumiNavigationState()
+    val navigator = rememberSumiNavigator(state)
+
+    val entries: (NavKey) -> NavEntry<NavKey> = entryProvider {
+        SplashEntry(navigator)
+        OnboardingEntry(navigator)
+        HomeEntry(navigator)
+        DailyEntry()
+        StatsEntry()
+        GameEntry(navigator)
+        WinEntry(navigator)
+        PaywallEntry(navigator)
+        SettingsEntry(navigator)
+        LicensesEntry(navigator)
+    }
+
+    Scaffold(
+        modifier = modifier,
+        bottomBar = {
+            if (!state.isSetupFlow) {
+                BottomNavBar(
+                    currentTab = state.topLevelRoute,
+                    onTabClick = { navigator.switchTab(it) },
+                )
+            }
+        },
+    ) { innerPadding ->
+        NavDisplay(
+            entries = state.toEntries(entries),
+            modifier = Modifier.padding(innerPadding),
+            onBack = { navigator.pop() },
+        )
+    }
+}
