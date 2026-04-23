@@ -19,23 +19,24 @@ import xyz.ksharma.sumi.theme.SumiTokens as Sumi
 fun QuoteRule(
     modifier: Modifier = Modifier,
     ornament: String = "墨",
-    color: Color = Sumi.Color.paperEdge,
+    color: Color = Color.Unspecified,
 ) {
+    val resolvedColor = if (color == Color.Unspecified) SumiTheme.colors.paperEdge else color
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        HorizontalDivider(modifier = Modifier.weight(1f), color = color, thickness = 1.dp)
+        HorizontalDivider(modifier = Modifier.weight(1f), color = resolvedColor, thickness = 1.dp)
         Spacer(Modifier.width(14.dp))
         Text(
             text = ornament,
             style = SumiTheme.typography.cjk.copy(
                 fontSize = 16.sp,
             ),
-            color = Sumi.Color.inkFaint,
+            color = SumiTheme.colors.inkFaint,
             modifier = Modifier.padding(horizontal = Sumi.Space.s1),
         )
         Spacer(Modifier.width(14.dp))
-        HorizontalDivider(modifier = Modifier.weight(1f), color = color, thickness = 1.dp)
+        HorizontalDivider(modifier = Modifier.weight(1f), color = resolvedColor, thickness = 1.dp)
     }
 }

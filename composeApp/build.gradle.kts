@@ -20,6 +20,11 @@ kotlin {
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_21)
         }
+
+        // MANDATORY for AGP 9 to include assets (compose multiplatform resources)
+        androidResources {
+            enable = true
+        }
     }
 
     listOf(
@@ -82,4 +87,10 @@ sqldelight {
             packageName.set("xyz.ksharma.sumi.database")
         }
     }
+}
+
+compose.resources {
+    publicResClass = true
+    packageOfResClass = "xyz.ksharma.sumi.resources"
+    generateResClass = auto
 }

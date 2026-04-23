@@ -53,7 +53,7 @@ fun PauseOverlay(
             Text(
                 text = "休",
                 style = SumiTheme.typography.cjk.copy(fontSize = 52.sp),
-                color = Sumi.Color.paper,
+                color = SumiTheme.colors.paper,
             )
             Text(
                 text = "A moment of rest",
@@ -61,7 +61,7 @@ fun PauseOverlay(
                     fontSize = 34.sp,
                     fontStyle = FontStyle.Italic,
                 ),
-                color = Sumi.Color.paper,
+                color = SumiTheme.colors.paper,
                 textAlign = TextAlign.Center,
             )
             Text(
@@ -73,16 +73,16 @@ fun PauseOverlay(
             PauseButton(
                 label = "RESUME",
                 onClick = onResume,
-                bg = Sumi.Color.paper,
-                fg = Sumi.Color.ink,
+                bg = SumiTheme.colors.paper,
+                fg = SumiTheme.colors.ink,
                 modifier = Modifier.fillMaxWidth().padding(top = Sumi.Space.s4),
             )
             PauseButton(
                 label = "NEW PUZZLE",
                 onClick = onNewPuzzle,
                 bg = Color.Transparent,
-                fg = Sumi.Color.paper,
-                borderColor = Sumi.Color.paper,
+                fg = SumiTheme.colors.paper,
+                borderColor = SumiTheme.colors.paper,
                 modifier = Modifier.fillMaxWidth(),
             )
             PauseTextLink(label = "RETURN HOME", color = NIGHT_PAPER, onClick = onHome)

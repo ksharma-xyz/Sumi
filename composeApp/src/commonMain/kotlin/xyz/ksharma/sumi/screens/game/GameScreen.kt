@@ -90,8 +90,8 @@ fun GameScreen(
             Spacer(Modifier.height(Sumi.Space.s3))
             Box(
                 modifier = Modifier
-                    .border(1.dp, Sumi.Color.ink)
-                    .background(Sumi.Color.paperGlow)
+                    .border(1.dp, SumiTheme.colors.ink)
+                    .background(SumiTheme.colors.paperGlow)
                     .padding(2.dp),
             ) {
                 SumiBoard(state = state, onCellTap = { r, c -> vm.select(r, c) })
@@ -138,7 +138,7 @@ private fun GameTopBar(difficulty: Difficulty, elapsedMs: Long, onBack: () -> Un
             SumiIcon(
                 icon = SumiIcons.Back,
                 contentDescription = "Back",
-                tint = Sumi.Color.ink,
+                tint = SumiTheme.colors.ink,
                 size = 22.dp,
                 modifier = Modifier.clickable(interactionSource = backSrc, indication = null, onClick = onBack),
             )
@@ -146,18 +146,18 @@ private fun GameTopBar(difficulty: Difficulty, elapsedMs: Long, onBack: () -> Un
                 Text(
                     text = "$kanji · ${difficulty.label}",
                     style = SumiTheme.typography.uiMeta.copy(letterSpacing = 2.5.sp),
-                    color = Sumi.Color.inkFaint,
+                    color = SumiTheme.colors.inkFaint,
                 )
                 Text(
                     text = formatTime(elapsedMs),
                     style = SumiTheme.typography.quote.copy(fontSize = 22.sp, lineHeight = 22.sp),
-                    color = Sumi.Color.ink,
+                    color = SumiTheme.colors.ink,
                 )
             }
             SumiIcon(
                 icon = SumiIcons.Pause,
                 contentDescription = "Pause",
-                tint = Sumi.Color.ink,
+                tint = SumiTheme.colors.ink,
                 size = 22.dp,
                 modifier = Modifier.clickable(interactionSource = pauseSrc, indication = null, onClick = onPause),
             )
@@ -174,8 +174,8 @@ private fun MarksHintsRow(mistakeCount: Int, hintsRemaining: Int) {
     ) {
         Text(
             text = buildAnnotatedString {
-                withStyle(SpanStyle(color = Sumi.Color.inkSoft)) { append("MARKS ") }
-                withStyle(SpanStyle(color = Sumi.Color.red, fontWeight = FontWeight.Bold)) {
+                withStyle(SpanStyle(color = SumiTheme.colors.inkSoft)) { append("MARKS ") }
+                withStyle(SpanStyle(color = SumiTheme.colors.red, fontWeight = FontWeight.Bold)) {
                     append("$mistakeCount / 3")
                 }
             },
@@ -183,8 +183,8 @@ private fun MarksHintsRow(mistakeCount: Int, hintsRemaining: Int) {
         )
         Text(
             text = buildAnnotatedString {
-                withStyle(SpanStyle(color = Sumi.Color.inkSoft)) { append("HINTS ") }
-                withStyle(SpanStyle(color = Sumi.Color.gold, fontWeight = FontWeight.Bold)) {
+                withStyle(SpanStyle(color = SumiTheme.colors.inkSoft)) { append("HINTS ") }
+                withStyle(SpanStyle(color = SumiTheme.colors.gold, fontWeight = FontWeight.Bold)) {
                     append("$hintsRemaining")
                 }
             },
@@ -222,13 +222,13 @@ private fun ToolsRow(
                 Box(
                     modifier = Modifier
                         .size(Sumi.Layout.minTap)
-                        .border(1.dp, Sumi.Color.paperEdge),
+                        .border(1.dp, SumiTheme.colors.paperEdge),
                     contentAlignment = Alignment.Center,
                 ) {
                     SumiIcon(
                         icon = tool.icon,
                         contentDescription = tool.label,
-                        tint = if (tool.active) Sumi.Color.teal else Sumi.Color.ink,
+                        tint = if (tool.active) SumiTheme.colors.teal else SumiTheme.colors.ink,
                         size = 20.dp,
                     )
                 }
@@ -239,7 +239,7 @@ private fun ToolsRow(
                         letterSpacing = 1.5.sp,
                         fontWeight = FontWeight(600),
                     ),
-                    color = Sumi.Color.inkFaint,
+                    color = SumiTheme.colors.inkFaint,
                 )
             }
         }
@@ -251,7 +251,7 @@ private fun NumberPad(state: BoardState, onDigit: (Int) -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .border(width = 1.dp, color = Sumi.Color.paperEdge)
+            .border(width = 1.dp, color = SumiTheme.colors.paperEdge)
             .padding(vertical = Sumi.Space.s2),
     ) {
         for (n in 1..9) {
@@ -262,7 +262,7 @@ private fun NumberPad(state: BoardState, onDigit: (Int) -> Unit) {
                     modifier = Modifier
                         .width(1.dp)
                         .height(40.dp)
-                        .background(Sumi.Color.paperEdge),
+                        .background(SumiTheme.colors.paperEdge),
                 )
             }
             Column(
@@ -276,12 +276,12 @@ private fun NumberPad(state: BoardState, onDigit: (Int) -> Unit) {
                 Text(
                     text = n.toString(),
                     style = SumiTheme.typography.numeral.copy(fontSize = 26.sp),
-                    color = if (remaining > 0) Sumi.Color.ink else Sumi.Color.inkGhost,
+                    color = if (remaining > 0) SumiTheme.colors.ink else SumiTheme.colors.inkGhost,
                 )
                 Text(
                     text = if (remaining > 0) remaining.toString() else "",
                     style = SumiTheme.typography.uiMeta.copy(fontSize = 9.sp),
-                    color = Sumi.Color.inkFaint,
+                    color = SumiTheme.colors.inkFaint,
                 )
             }
         }

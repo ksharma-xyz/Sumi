@@ -15,6 +15,78 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 
+data class SumiColors(
+    val paper: Color,
+    val paperWarm: Color,
+    val paperDeep: Color,
+    val paperEdge: Color,
+    val paperGlow: Color,
+    val ink: Color,
+    val inkSoft: Color,
+    val inkFaint: Color,
+    val inkGhost: Color,
+    val red: Color,
+    val redDeep: Color,
+    val teal: Color,
+    val tealSoft: Color,
+    val gold: Color,
+    val goldLight: Color,
+    val success: Color,
+    val warning: Color,
+    val error: Color,
+    val hint: Color,
+)
+
+private val SumiLightColors = SumiColors(
+    paper = SumiTokens.Color.paper,
+    paperWarm = SumiTokens.Color.paperWarm,
+    paperDeep = SumiTokens.Color.paperDeep,
+    paperEdge = SumiTokens.Color.paperEdge,
+    paperGlow = SumiTokens.Color.paperGlow,
+    ink = SumiTokens.Color.ink,
+    inkSoft = SumiTokens.Color.inkSoft,
+    inkFaint = SumiTokens.Color.inkFaint,
+    inkGhost = SumiTokens.Color.inkGhost,
+    red = SumiTokens.Color.red,
+    redDeep = SumiTokens.Color.redDeep,
+    teal = SumiTokens.Color.teal,
+    tealSoft = SumiTokens.Color.tealSoft,
+    gold = SumiTokens.Color.gold,
+    goldLight = SumiTokens.Color.goldLight,
+    success = SumiTokens.Color.success,
+    warning = SumiTokens.Color.warning,
+    error = SumiTokens.Color.error,
+    hint = SumiTokens.Color.hint,
+)
+
+private val SumiDarkColors = SumiColors(
+    paper = SumiTokens.Color.Night.paper,
+    paperWarm = SumiTokens.Color.Night.paperWarm,
+    paperDeep = SumiTokens.Color.Night.paperDeep,
+    paperEdge = SumiTokens.Color.Night.paperEdge,
+    paperGlow = SumiTokens.Color.Night.paperDeep,
+    ink = SumiTokens.Color.Night.ink,
+    inkSoft = SumiTokens.Color.Night.inkSoft,
+    inkFaint = SumiTokens.Color.Night.inkFaint,
+    inkGhost = SumiTokens.Color.Night.inkGhost,
+    red = SumiTokens.Color.Night.red,
+    redDeep = SumiTokens.Color.Night.red,
+    teal = SumiTokens.Color.Night.teal,
+    tealSoft = SumiTokens.Color.Night.teal,
+    gold = SumiTokens.Color.Night.gold,
+    goldLight = SumiTokens.Color.Night.gold,
+    success = SumiTokens.Color.success,
+    warning = SumiTokens.Color.warning,
+    error = SumiTokens.Color.Night.red,
+    hint = SumiTokens.Color.Night.gold,
+)
+
+val LocalSumiColors = staticCompositionLocalOf<SumiColors> {
+    error("SumiColors not provided — wrap your app in SumiTheme.")
+}
+
+val LocalSumiIsDark = staticCompositionLocalOf { false }
+
 data class SumiTypeRoles(
     val h1: TextStyle,
     val h2: TextStyle,
@@ -100,32 +172,38 @@ fun SumiTheme(
     dark: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit,
 ) {
+    val sumiColors = if (dark) SumiDarkColors else SumiLightColors
     val colorScheme = if (dark) {
         darkColorScheme(
-            background = SumiTokens.Color.Night.paper,
-            surface = SumiTokens.Color.Night.paperWarm,
-            onBackground = SumiTokens.Color.Night.ink,
-            onSurface = SumiTokens.Color.Night.ink,
-            primary = SumiTokens.Color.Night.red,
-            onPrimary = SumiTokens.Color.Night.paper,
-            secondary = SumiTokens.Color.Night.teal,
-            tertiary = SumiTokens.Color.Night.gold,
-            error = SumiTokens.Color.Night.red,
+            background = sumiColors.paper,
+            surface = sumiColors.paperWarm,
+            onBackground = sumiColors.ink,
+            onSurface = sumiColors.ink,
+            primary = sumiColors.red,
+            onPrimary = sumiColors.paper,
+            secondary = sumiColors.teal,
+            tertiary = sumiColors.gold,
+            error = sumiColors.red,
         )
     } else {
         lightColorScheme(
-            background = SumiTokens.Color.paper,
-            surface = SumiTokens.Color.paperWarm,
-            onBackground = SumiTokens.Color.ink,
-            onSurface = SumiTokens.Color.ink,
-            primary = SumiTokens.Color.red,
-            onPrimary = SumiTokens.Color.paper,
-            secondary = SumiTokens.Color.teal,
-            tertiary = SumiTokens.Color.gold,
-            error = SumiTokens.Color.red,
+            background = sumiColors.paper,
+            surface = sumiColors.paperWarm,
+            onBackground = sumiColors.ink,
+            onSurface = sumiColors.ink,
+            primary = sumiColors.red,
+            onPrimary = sumiColors.paper,
+            secondary = sumiColors.teal,
+            tertiary = sumiColors.gold,
+            error = sumiColors.red,
         )
     }
-    CompositionLocalProvider(LocalSumiTypography provides typography) {
+    CompositionLocalProvider(
+        LocalSumiColors provides sumiColors,
+        LocalSumiIsDark provides dark,
+        LocalSumiTypography provides typography,
+        LocalSumiDimensions provides sumiDimensions,
+    ) {
         MaterialTheme(
             colorScheme = colorScheme,
             content = content,
@@ -134,6 +212,12 @@ fun SumiTheme(
 }
 
 object SumiTheme {
+    val colors: SumiColors
+        @Composable get() = LocalSumiColors.current
+    val isDark: Boolean
+        @Composable get() = LocalSumiIsDark.current
     val typography: SumiTypeRoles
         @Composable get() = LocalSumiTypography.current
+    val dimensions: SumiDimensions
+        @Composable get() = LocalSumiDimensions.current
 }

@@ -6,19 +6,19 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import org.jetbrains.compose.resources.Font
-import sumi.composeapp.generated.resources.Res
-import sumi.composeapp.generated.resources.caveat_medium
-import sumi.composeapp.generated.resources.cormorant_garamond_medium
-import sumi.composeapp.generated.resources.cormorant_garamond_medium_italic
-import sumi.composeapp.generated.resources.cormorant_garamond_semibold
-import sumi.composeapp.generated.resources.cormorant_garamond_semibold_italic
-import sumi.composeapp.generated.resources.inter_bold
-import sumi.composeapp.generated.resources.inter_medium
-import sumi.composeapp.generated.resources.inter_semibold
-import sumi.composeapp.generated.resources.shippori_mincho_medium
-import sumi.composeapp.generated.resources.shippori_mincho_semibold
-import sumi.composeapp.generated.resources.source_serif_4_medium
-import sumi.composeapp.generated.resources.source_serif_4_regular
+import xyz.ksharma.sumi.resources.Res
+import xyz.ksharma.sumi.resources.caveat_medium
+import xyz.ksharma.sumi.resources.cormorant_garamond_medium
+import xyz.ksharma.sumi.resources.cormorant_garamond_medium_italic
+import xyz.ksharma.sumi.resources.cormorant_garamond_semibold
+import xyz.ksharma.sumi.resources.cormorant_garamond_semibold_italic
+import xyz.ksharma.sumi.resources.inter_bold
+import xyz.ksharma.sumi.resources.inter_medium
+import xyz.ksharma.sumi.resources.inter_semibold
+import xyz.ksharma.sumi.resources.shippori_mincho_medium
+import xyz.ksharma.sumi.resources.shippori_mincho_semibold
+import xyz.ksharma.sumi.resources.source_serif_4_medium
+import xyz.ksharma.sumi.resources.source_serif_4_regular
 
 @Composable
 fun rememberSumiFonts(): SumiFontBundle {

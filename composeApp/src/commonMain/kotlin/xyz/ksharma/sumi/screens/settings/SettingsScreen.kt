@@ -130,7 +130,7 @@ private fun SettingsTopBar(onBack: () -> Unit) {
         Text(
             text = "←",
             style = SumiTheme.typography.h3,
-            color = Sumi.Color.ink,
+            color = SumiTheme.colors.ink,
             modifier = Modifier.clickable(
                 interactionSource = interactionSource,
                 indication = null,
@@ -141,7 +141,7 @@ private fun SettingsTopBar(onBack: () -> Unit) {
         Text(
             text = "Settings",
             style = SumiTheme.typography.uiLabel,
-            color = Sumi.Color.inkSoft,
+            color = SumiTheme.colors.inkSoft,
         )
         Spacer(Modifier.weight(1f))
     }
@@ -152,7 +152,7 @@ private fun SettingsSectionLabel(text: String) {
     Text(
         text = text.uppercase(),
         style = SumiTheme.typography.uiLabel,
-        color = Sumi.Color.red,
+        color = SumiTheme.colors.red,
     )
 }
 
@@ -166,7 +166,7 @@ private fun SettingsPanel(
             .fillMaxWidth()
             .padding(vertical = Sumi.Space.s2),
     ) {
-        HorizontalDivider(color = Sumi.Color.paperEdge, thickness = 1.dp)
+        HorizontalDivider(color = SumiTheme.colors.paperEdge, thickness = 1.dp)
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -174,7 +174,7 @@ private fun SettingsPanel(
         ) {
             content()
         }
-        HorizontalDivider(color = Sumi.Color.paperEdge, thickness = 1.dp)
+        HorizontalDivider(color = SumiTheme.colors.paperEdge, thickness = 1.dp)
     }
 }
 
@@ -190,13 +190,13 @@ private fun SettingsRow(
             style = SumiTheme.typography.bodySmall.copy(
                 fontWeight = androidx.compose.ui.text.font.FontWeight(Sumi.Weight.SEMI),
             ),
-            color = Sumi.Color.ink,
+            color = SumiTheme.colors.ink,
         )
         Spacer(Modifier.height(2.dp))
         Text(
             text = description,
             style = SumiTheme.typography.caption,
-            color = Sumi.Color.inkFaint,
+            color = SumiTheme.colors.inkFaint,
         )
     }
 }

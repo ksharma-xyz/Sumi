@@ -35,15 +35,15 @@ fun SumiBoard(
     state: BoardState,
     modifier: Modifier = Modifier,
     cellSize: Dp = Sumi.Layout.cellSize,
-    dark: Boolean = false,
     sweep: BoardSweep? = null,
     onCellTap: ((r: Int, c: Int) -> Unit)? = null,
 ) {
     val boardSize = cellSize * 9
-    val ink = if (dark) Sumi.Color.Night.ink else Sumi.Color.ink
-    val teal = if (dark) Sumi.Color.Night.teal else Sumi.Color.teal
-    val red = if (dark) Sumi.Color.Night.red else Sumi.Color.red
-    val tone = if (dark) AuroraTone.Night else AuroraTone.Paper
+    val colors = SumiTheme.colors
+    val ink = colors.ink
+    val teal = colors.teal
+    val red = colors.red
+    val tone = if (SumiTheme.isDark) AuroraTone.Night else AuroraTone.Paper
     val selected = state.selected
     val conflict = state.conflict
 
@@ -69,7 +69,6 @@ fun SumiBoard(
         CellContents(
             state = state,
             cellSize = cellSize,
-            dark = dark,
             ink = ink,
             teal = teal,
             red = red,
@@ -90,7 +89,6 @@ fun SumiBoard(
 private fun CellContents(
     state: BoardState,
     cellSize: Dp,
-    dark: Boolean,
     ink: Color,
     teal: Color,
     red: Color,
@@ -113,7 +111,6 @@ private fun CellContents(
                     col = c,
                     cellSize = cellSize,
                     textColor = textColor,
-                    dark = dark,
                 )
             }
         }
@@ -127,7 +124,6 @@ private fun CellText(
     col: Int,
     cellSize: Dp,
     textColor: Color,
-    dark: Boolean,
 ) {
     val alpha = remember { Animatable(0f) }
     LaunchedEffect(cell.value) {
@@ -170,7 +166,6 @@ private fun CellText(
             cellSize = cellSize,
             offsetX = offsetX,
             offsetY = offsetY,
-            dark = dark,
         )
     }
 }
@@ -181,9 +176,8 @@ private fun NoteGrid(
     cellSize: Dp,
     offsetX: Dp,
     offsetY: Dp,
-    dark: Boolean,
 ) {
-    val noteColor = (if (dark) Sumi.Color.Night.ink else Sumi.Color.ink).copy(alpha = 0.45f)
+    val noteColor = SumiTheme.colors.ink.copy(alpha = 0.45f)
     Layout(
         content = {
             for (d in 1..9) {

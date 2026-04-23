@@ -5,10 +5,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import xyz.ksharma.sumi.theme.SumiTheme
 import xyz.ksharma.sumi.ui.theme.AppTheme
-import xyz.ksharma.sumi.theme.SumiTokens as Sumi
 
 @Composable
 fun AppPreviewTheme(
@@ -19,7 +18,7 @@ fun AppPreviewTheme(
     AppTheme(dark = dark) {
         Box(
             modifier = modifier
-                .background(if (dark) Sumi.Color.Night.paper else Sumi.Color.paper)
+                .background(SumiTheme.colors.paper)
                 .padding(16.dp),
         ) {
             content()

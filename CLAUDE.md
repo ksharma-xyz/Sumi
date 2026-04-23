@@ -74,3 +74,25 @@ To enable host tests in a new module, add `withHostTestBuilder {}` inside `andro
 - `composeApp` uses `com.android.kotlin.multiplatform.library` (AGP 9)
 - `androidLibrary {}` block (NOT `androidTarget {}`) inside `kotlin {}`
 - Always call `applyDefaultHierarchyTemplate()` in `kotlin {}` block
+
+### Compose Multiplatform resources (AGP 9)
+
+Any module that ships `composeResources/` (fonts, images, XML drawables) **must** have both of these or resources are silently dropped from Android builds:
+
+```kotlin
+// inside androidLibrary {}
+androidResources {
+    enable = true   // MANDATORY for AGP 9 — packages composeResources/ as Android assets
+}
+```
+
+```kotlin
+// top-level, outside kotlin {}
+compose.resources {
+    publicResClass = true
+    packageOfResClass = "xyz.ksharma.sumi.resources"
+    generateResClass = auto
+}
+```
+
+Without `androidResources { enable = true }`, AGP 9 skips the asset merging step and fonts/icons will be missing at runtime on Android.

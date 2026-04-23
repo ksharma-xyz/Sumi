@@ -39,11 +39,12 @@ fun BottomNavBar(
     onTabClick: (NavKey) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val colors = SumiTheme.colors
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .border(width = 1.dp, color = Sumi.Color.paperEdge)
-            .background(Sumi.Color.paper)
+            .border(width = 1.dp, color = colors.paperEdge)
+            .background(colors.paper)
             .padding(horizontal = Sumi.Space.s4, vertical = Sumi.Space.s3),
         horizontalArrangement = Arrangement.SpaceAround,
     ) {
@@ -66,7 +67,8 @@ private fun BottomNavItem(
     onClick: () -> Unit,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
-    val color = if (selected) Sumi.Color.red else Sumi.Color.inkFaint
+    val colors = SumiTheme.colors
+    val color = if (selected) colors.red else colors.inkFaint
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.clickable(

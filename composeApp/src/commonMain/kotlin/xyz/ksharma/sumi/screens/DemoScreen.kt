@@ -53,22 +53,22 @@ fun DemoScreen(modifier: Modifier = Modifier) {
 @Composable
 private fun TypographySection() {
     Column(verticalArrangement = Arrangement.spacedBy(Sumi.Space.s2)) {
-        Text("Display italic", style = SumiTheme.typography.h1, color = Sumi.Color.ink)
-        Text("Heading two", style = SumiTheme.typography.h2, color = Sumi.Color.ink)
-        Text("Heading three", style = SumiTheme.typography.h3, color = Sumi.Color.ink)
-        Text("Subheading text", style = SumiTheme.typography.subhead, color = Sumi.Color.ink)
+        Text("Display italic", style = SumiTheme.typography.h1, color = SumiTheme.colors.ink)
+        Text("Heading two", style = SumiTheme.typography.h2, color = SumiTheme.colors.ink)
+        Text("Heading three", style = SumiTheme.typography.h3, color = SumiTheme.colors.ink)
+        Text("Subheading text", style = SumiTheme.typography.subhead, color = SumiTheme.colors.ink)
         Text(
             "Body — each puzzle is a small practice in patience. The grid asks nothing of you but attention.",
             style = SumiTheme.typography.body,
-            color = Sumi.Color.inkSoft,
+            color = SumiTheme.colors.inkSoft,
         )
-        Text("Caption text", style = SumiTheme.typography.caption, color = Sumi.Color.inkFaint)
-        Text("UI BUTTON LABEL", style = SumiTheme.typography.uiButton, color = Sumi.Color.ink)
-        Text("UI SMALL LABEL", style = SumiTheme.typography.uiLabel, color = Sumi.Color.ink)
-        Text("486 puzzles solved, all time.", style = SumiTheme.typography.quote, color = Sumi.Color.inkSoft)
-        Text("墨 休 完", style = SumiTheme.typography.cjk.copy(fontSize = Sumi.Size.h2), color = Sumi.Color.red)
-        Text("7  4  9", style = SumiTheme.typography.numeral, color = Sumi.Color.ink)
-        Text("3  1  8", style = SumiTheme.typography.hand, color = Sumi.Color.teal)
+        Text("Caption text", style = SumiTheme.typography.caption, color = SumiTheme.colors.inkFaint)
+        Text("UI BUTTON LABEL", style = SumiTheme.typography.uiButton, color = SumiTheme.colors.ink)
+        Text("UI SMALL LABEL", style = SumiTheme.typography.uiLabel, color = SumiTheme.colors.ink)
+        Text("486 puzzles solved, all time.", style = SumiTheme.typography.quote, color = SumiTheme.colors.inkSoft)
+        Text("墨 休 完", style = SumiTheme.typography.cjk.copy(fontSize = Sumi.Size.h2), color = SumiTheme.colors.red)
+        Text("7  4  9", style = SumiTheme.typography.numeral, color = SumiTheme.colors.ink)
+        Text("3  1  8", style = SumiTheme.typography.hand, color = SumiTheme.colors.teal)
     }
 }
 
@@ -124,10 +124,10 @@ private fun ChipSection() {
 
 @Composable
 private fun SectionLabel(text: String) {
-    Text(text = text.uppercase(), style = SumiTheme.typography.uiLabel, color = Sumi.Color.red)
+    Text(text = text.uppercase(), style = SumiTheme.typography.uiLabel, color = SumiTheme.colors.red)
 }
 
 @Composable
 private fun SectionDivider() {
-    HorizontalDivider(color = Sumi.Color.paperEdge, thickness = 1.dp)
+    HorizontalDivider(color = SumiTheme.colors.paperEdge, thickness = 1.dp)
 }

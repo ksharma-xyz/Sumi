@@ -25,10 +25,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.jetbrains.compose.resources.painterResource
-import sumi.composeapp.generated.resources.Res
-import sumi.composeapp.generated.resources.enso_ink
+import xyz.ksharma.sumi.resources.Res
+import xyz.ksharma.sumi.resources.enso_ink
 import xyz.ksharma.sumi.theme.SumiTheme
-import xyz.ksharma.sumi.theme.SumiTokens as Sumi
 
 // Enso path mirrors enso_ink.xml (1024×1024 viewBox scaled to 120×120):
 // M694,356 A218.4,218.4 121.4,1 0,626.4 678.4 Q574.4,688.8 512,678.4
@@ -54,16 +53,17 @@ private fun ensoFullPath(s: Float): Path = Path().apply {
 fun LogoEnso(
     modifier: Modifier = Modifier,
     size: Dp = 120.dp,
-    color: Color = Sumi.Color.ink,
+    color: Color = Color.Unspecified,
     progress: Float = 1f,
 ) {
+    val resolvedColor = if (color == Color.Unspecified) SumiTheme.colors.ink else color
     if (progress >= 1f) {
         Image(
             painter = painterResource(Res.drawable.enso_ink),
             contentDescription = null,
             modifier = modifier.size(size),
             contentScale = ContentScale.Fit,
-            colorFilter = ColorFilter.tint(color),
+            colorFilter = ColorFilter.tint(resolvedColor),
         )
     } else {
         Canvas(modifier = modifier.size(size)) {
@@ -73,17 +73,7 @@ fun LogoEnso(
             val pm = PathMeasure().also { it.setPath(fullPath, false) }
             val drawPath = Path().also { seg -> pm.getSegment(0f, progress * pm.length, seg, true) }
 
-            drawPath(
-                path = drawPath,
-                color = color.copy(alpha = 0.10f),
-                style = Stroke(strokeW * 1.8f, cap = StrokeCap.Round),
-            )
-            drawPath(
-                path = drawPath,
-                color = color.copy(alpha = 0.30f),
-                style = Stroke(strokeW * 1.3f, cap = StrokeCap.Round),
-            )
-            drawPath(path = drawPath, color = color, style = Stroke(strokeW, cap = StrokeCap.Round))
+            drawPath(path = drawPath, color = resolvedColor, style = Stroke(strokeW, cap = StrokeCap.Round))
         }
     }
 }
@@ -92,9 +82,11 @@ fun LogoEnso(
 fun LogoGrid(
     modifier: Modifier = Modifier,
     size: Dp = 120.dp,
-    color: Color = Sumi.Color.ink,
-    accent: Color = Sumi.Color.red,
+    color: Color = Color.Unspecified,
+    accent: Color = Color.Unspecified,
 ) {
+    val resolvedColor = if (color == Color.Unspecified) SumiTheme.colors.ink else color
+    val resolvedAccent = if (accent == Color.Unspecified) SumiTheme.colors.red else accent
     Canvas(modifier = modifier.size(size)) {
         val w = this.size.width
         val pad = w * 0.15f
@@ -102,24 +94,22 @@ fun LogoGrid(
         val strokePx = w * 0.025f
         val accentStroke = w * 0.04f
 
-        // 4 horizontal + 4 vertical lines forming 3×3 grid
         for (i in 0..3) {
             val x = pad + i * cellW
             val y = pad + i * cellW
-            drawLine(color, Offset(x, pad), Offset(x, w - pad), strokePx)
-            drawLine(color, Offset(pad, y), Offset(w - pad, y), strokePx)
+            drawLine(resolvedColor, Offset(x, pad), Offset(x, w - pad), strokePx)
+            drawLine(resolvedColor, Offset(pad, y), Offset(w - pad, y), strokePx)
         }
 
-        // Red center cell highlight
         val cx = pad + cellW
         val cy = pad + cellW
         drawRect(
-            color = accent.copy(alpha = 0.15f),
+            color = resolvedAccent.copy(alpha = 0.15f),
             topLeft = Offset(cx, cy),
             size = androidx.compose.ui.geometry.Size(cellW, cellW),
         )
         drawRect(
-            color = accent,
+            color = resolvedAccent,
             topLeft = Offset(cx, cy),
             size = androidx.compose.ui.geometry.Size(cellW, cellW),
             style = Stroke(width = accentStroke),
@@ -139,8 +129,9 @@ fun LogoChop(
 fun LogoNine(
     modifier: Modifier = Modifier,
     size: Dp = 120.dp,
-    color: Color = Sumi.Color.ink,
+    color: Color = Color.Unspecified,
 ) {
+    val resolvedColor = if (color == Color.Unspecified) SumiTheme.colors.ink else color
     Canvas(modifier = modifier.size(size)) {
         val w = this.size.width
         val r = w * 0.12f
@@ -152,7 +143,7 @@ fun LogoNine(
         )
         positions.forEachIndexed { i, pos ->
             drawCircle(
-                color = if (i == 4) color else color.copy(alpha = 0.4f),
+                color = if (i == 4) resolvedColor else resolvedColor.copy(alpha = 0.4f),
                 radius = if (i == 4) r * 1.2f else r,
                 center = pos,
                 style = Stroke(width = strokePx),
@@ -165,9 +156,11 @@ fun LogoNine(
 fun LogoStrokes(
     modifier: Modifier = Modifier,
     size: Dp = 120.dp,
-    color: Color = Sumi.Color.ink,
-    accent: Color = Sumi.Color.red,
+    color: Color = Color.Unspecified,
+    accent: Color = Color.Unspecified,
 ) {
+    val resolvedColor = if (color == Color.Unspecified) SumiTheme.colors.ink else color
+    val resolvedAccent = if (accent == Color.Unspecified) SumiTheme.colors.red else accent
     Canvas(modifier = modifier.size(size)) {
         val w = this.size.width
         val pad = w * 0.2f
@@ -180,7 +173,7 @@ fun LogoStrokes(
             val isAccent = i == 2
             val topOff = if (isAccent) 0f else w * 0.05f * (i % 2)
             drawLine(
-                color = if (isAccent) accent else color,
+                color = if (isAccent) resolvedAccent else resolvedColor,
                 start = Offset(x, pad + topOff),
                 end = Offset(x, w - pad - topOff),
                 strokeWidth = if (isAccent) strokePx * 1.4f else strokePx,
@@ -194,9 +187,11 @@ fun LogoStrokes(
 fun LogoWordmark(
     modifier: Modifier = Modifier,
     scale: Float = 1f,
-    color: Color = Sumi.Color.ink,
-    accent: Color = Sumi.Color.red,
+    color: Color = Color.Unspecified,
+    accent: Color = Color.Unspecified,
 ) {
+    val resolvedColor = if (color == Color.Unspecified) SumiTheme.colors.ink else color
+    val resolvedAccent = if (accent == Color.Unspecified) SumiTheme.colors.red else accent
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
@@ -205,7 +200,7 @@ fun LogoWordmark(
             text = "Sumi",
             style = SumiTheme.typography.h3.copy(
                 fontSize = (26 * scale).sp,
-                color = color,
+                color = resolvedColor,
             ),
         )
         Spacer(Modifier.width((4 * scale).dp))
@@ -213,7 +208,7 @@ fun LogoWordmark(
             text = "墨",
             style = SumiTheme.typography.cjk.copy(
                 fontSize = (22 * scale).sp,
-                color = accent,
+                color = resolvedAccent,
             ),
         )
     }

@@ -60,10 +60,11 @@ fun SumiButton(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val pressed by interactionSource.collectIsPressedAsState()
+    val colors = SumiTheme.colors
 
-    val bg = variantBg(variant)
-    val fg = variantFg(variant)
-    val borderColor = variantBorder(variant)
+    val bg = variantBg(variant, colors)
+    val fg = variantFg(variant, colors)
+    val borderColor = variantBorder(variant, colors)
 
     // 1-frame ink-darken press state — no ripple
     val pressAlpha = if (pressed && enabled) 0.12f else 0f
@@ -83,7 +84,7 @@ fun SumiButton(
             .clip(shape)
             .drawBehind {
                 drawRect(color = bg.copy(alpha = bg.alpha * disabledAlpha))
-                if (pressAlpha > 0f) drawRect(color = Sumi.Color.ink.copy(alpha = pressAlpha))
+                if (pressAlpha > 0f) drawRect(color = colors.ink.copy(alpha = pressAlpha))
             }
             .border(1.dp, borderColor.copy(alpha = borderColor.alpha * disabledAlpha), shape)
             .clickable(
@@ -125,23 +126,23 @@ fun SumiTextButton(
     }
 }
 
-private fun variantBg(variant: SumiButtonVariant): Color = when (variant) {
-    SumiButtonVariant.Primary -> Sumi.Color.ink
+private fun variantBg(variant: SumiButtonVariant, c: xyz.ksharma.sumi.theme.SumiColors): Color = when (variant) {
+    SumiButtonVariant.Primary -> c.ink
     SumiButtonVariant.Ghost -> Color.Transparent
-    SumiButtonVariant.Subtle -> Sumi.Color.paperWarm
-    SumiButtonVariant.Red -> Sumi.Color.red
+    SumiButtonVariant.Subtle -> c.paperWarm
+    SumiButtonVariant.Red -> c.red
 }
 
-private fun variantFg(variant: SumiButtonVariant): Color = when (variant) {
-    SumiButtonVariant.Primary -> Sumi.Color.paper
-    SumiButtonVariant.Ghost -> Sumi.Color.ink
-    SumiButtonVariant.Subtle -> Sumi.Color.ink
-    SumiButtonVariant.Red -> Sumi.Color.paper
+private fun variantFg(variant: SumiButtonVariant, c: xyz.ksharma.sumi.theme.SumiColors): Color = when (variant) {
+    SumiButtonVariant.Primary -> c.paper
+    SumiButtonVariant.Ghost -> c.ink
+    SumiButtonVariant.Subtle -> c.ink
+    SumiButtonVariant.Red -> c.paper
 }
 
-private fun variantBorder(variant: SumiButtonVariant): Color = when (variant) {
-    SumiButtonVariant.Primary -> Sumi.Color.ink
-    SumiButtonVariant.Ghost -> Sumi.Color.ink
-    SumiButtonVariant.Subtle -> Sumi.Color.paperEdge
-    SumiButtonVariant.Red -> Sumi.Color.red
+private fun variantBorder(variant: SumiButtonVariant, c: xyz.ksharma.sumi.theme.SumiColors): Color = when (variant) {
+    SumiButtonVariant.Primary -> c.ink
+    SumiButtonVariant.Ghost -> c.ink
+    SumiButtonVariant.Subtle -> c.paperEdge
+    SumiButtonVariant.Red -> c.red
 }

@@ -71,7 +71,7 @@ fun SplashScreen(
 private fun SplashCenter(ensoProgress: Float, wordmarkAlpha: Float, eyebrowAlpha: Float) {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            LogoEnso(size = 120.dp, color = Sumi.Color.ink, progress = ensoProgress)
+            LogoEnso(size = 120.dp, color = SumiTheme.colors.ink, progress = ensoProgress)
             Spacer(Modifier.height(Sumi.Space.s2))
             Text(
                 text = "Sumi",
@@ -79,13 +79,13 @@ private fun SplashCenter(ensoProgress: Float, wordmarkAlpha: Float, eyebrowAlpha
                     fontSize = 56.sp,
                     letterSpacing = (-0.03f).em,
                 ),
-                color = Sumi.Color.ink,
+                color = SumiTheme.colors.ink,
                 modifier = Modifier.alpha(wordmarkAlpha),
             )
             Spacer(Modifier.height(Sumi.Space.s1))
             SumiEyebrow(
                 text = "A Quiet Practice",
-                color = Sumi.Color.inkSoft,
+                color = SumiTheme.colors.inkSoft,
                 modifier = Modifier.alpha(eyebrowAlpha),
             )
         }
@@ -101,7 +101,7 @@ private fun SplashVersion() {
         Text(
             text = "v 1.0",
             style = SumiTheme.typography.uiMeta.copy(fontSize = 10.sp, letterSpacing = 3.sp),
-            color = Sumi.Color.inkFaint.copy(alpha = 0.6f),
+            color = SumiTheme.colors.inkFaint.copy(alpha = 0.6f),
         )
     }
 }

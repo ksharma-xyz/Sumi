@@ -9,10 +9,10 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import xyz.ksharma.sumi.theme.SumiTheme
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.random.Random
-import xyz.ksharma.sumi.theme.SumiTokens as Sumi
 
 /**
  * Paper-texture background. Every full-screen surface uses this as the base.
@@ -22,18 +22,16 @@ import xyz.ksharma.sumi.theme.SumiTokens as Sumi
 @Composable
 fun WashiBG(
     modifier: Modifier = Modifier,
-    dark: Boolean = false,
     intensity: Float = 1f,
     content: @Composable BoxScope.() -> Unit = {},
 ) {
-    val baseColor = if (dark) Sumi.Color.Night.paper else Sumi.Color.paper
-    // Fiber color: dark fibers on light paper, faint light fibers on dark paper
-    val fiberR = if (dark) 1f else 0.24f
-    val fiberG = if (dark) 0.97f else 0.17f
-    val fiberB = if (dark) 0.94f else 0.04f
+    val colors = SumiTheme.colors
+    val isDark = SumiTheme.isDark
+    val baseColor = colors.paper
+    val fiberColor = colors.ink
+    val vignetteColor = if (isDark) Color(0x55000000) else Color(0x26644619)
 
-    // Cache noise data so it doesn't regenerate every frame
-    val fibers = remember(dark, intensity) {
+    val fibers = remember(isDark, intensity) {
         val rng = Random(0x53756D69L) // "Sumi" seed
         List(1000) {
             FiberLine(
@@ -49,24 +47,20 @@ fun WashiBG(
 
     Box(
         modifier = modifier.drawBehind {
-            // Base paper fill
             drawRect(color = baseColor)
 
-            // Paper fiber texture — short near-horizontal strokes
             for (fiber in fibers) {
                 val x1 = fiber.x * size.width
                 val y1 = fiber.y * size.height
                 val len = fiber.length * size.width
                 drawLine(
-                    color = Color(fiberR, fiberG, fiberB, fiber.alpha),
+                    color = fiberColor.copy(alpha = fiber.alpha),
                     start = Offset(x1, y1),
                     end = Offset(x1 + len * cos(fiber.angle), y1 + len * sin(fiber.angle)),
                     strokeWidth = fiber.width,
                 )
             }
 
-            // Vignette — soft warm shadow at edges
-            val vignetteColor = if (dark) Color(0x55000000) else Color(0x26644619)
             drawRect(
                 brush = Brush.radialGradient(
                     colors = listOf(Color.Transparent, vignetteColor),

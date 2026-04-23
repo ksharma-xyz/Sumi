@@ -20,8 +20,9 @@ fun SumiChip(
     modifier: Modifier = Modifier,
     tone: SumiChipTone = SumiChipTone.Ink,
 ) {
-    val textColor = chipTextColor(tone)
-    val borderColor = chipBorderColor(tone)
+    val colors = SumiTheme.colors
+    val textColor = chipTextColor(tone, colors)
+    val borderColor = chipBorderColor(tone, colors)
     val shape = RoundedCornerShape(Sumi.Radius.xs)
 
     Box(
@@ -39,18 +40,18 @@ fun SumiChip(
     }
 }
 
-private fun chipTextColor(tone: SumiChipTone): Color = when (tone) {
-    SumiChipTone.Ink -> Sumi.Color.ink
-    SumiChipTone.Red -> Sumi.Color.red
-    SumiChipTone.Teal -> Sumi.Color.teal
-    SumiChipTone.Gold -> Sumi.Color.gold
-    SumiChipTone.Muted -> Sumi.Color.inkFaint
+private fun chipTextColor(tone: SumiChipTone, c: xyz.ksharma.sumi.theme.SumiColors): Color = when (tone) {
+    SumiChipTone.Ink -> c.ink
+    SumiChipTone.Red -> c.red
+    SumiChipTone.Teal -> c.teal
+    SumiChipTone.Gold -> c.gold
+    SumiChipTone.Muted -> c.inkFaint
 }
 
-private fun chipBorderColor(tone: SumiChipTone): Color = when (tone) {
-    SumiChipTone.Ink -> Sumi.Color.ink
-    SumiChipTone.Red -> Sumi.Color.red
-    SumiChipTone.Teal -> Sumi.Color.teal
-    SumiChipTone.Gold -> Sumi.Color.gold
-    SumiChipTone.Muted -> Sumi.Color.inkGhost
+private fun chipBorderColor(tone: SumiChipTone, c: xyz.ksharma.sumi.theme.SumiColors): Color = when (tone) {
+    SumiChipTone.Ink -> c.ink
+    SumiChipTone.Red -> c.red
+    SumiChipTone.Teal -> c.teal
+    SumiChipTone.Gold -> c.gold
+    SumiChipTone.Muted -> c.inkGhost
 }

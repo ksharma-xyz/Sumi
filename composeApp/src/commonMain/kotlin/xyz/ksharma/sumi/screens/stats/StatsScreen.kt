@@ -23,17 +23,17 @@ fun StatsScreen(modifier: Modifier = Modifier) {
             Text(
                 text = "Stats",
                 style = SumiTheme.typography.uiLabel,
-                color = Sumi.Color.red,
+                color = SumiTheme.colors.red,
             )
             Text(
                 text = "486",
                 style = SumiTheme.typography.h1,
-                color = Sumi.Color.ink,
+                color = SumiTheme.colors.ink,
             )
             Text(
                 text = "puzzles solved, all time.",
                 style = SumiTheme.typography.body,
-                color = Sumi.Color.inkSoft,
+                color = SumiTheme.colors.inkSoft,
             )
         }
     }

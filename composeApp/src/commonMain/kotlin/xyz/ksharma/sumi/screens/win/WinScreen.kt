@@ -49,13 +49,13 @@ fun WinScreen(
     Box(modifier = modifier.fillMaxSize()) {
         WashiBG(modifier = Modifier.fillMaxSize())
         InkBleedAccent(
-            color = Sumi.Color.red,
+            color = SumiTheme.colors.red,
             size = 180.dp,
             seed = 1,
             modifier = Modifier.padding(start = 30.dp, top = 80.dp),
         )
         InkBleedAccent(
-            color = Sumi.Color.teal,
+            color = SumiTheme.colors.teal,
             size = 160.dp,
             seed = 2,
             modifier = Modifier.align(Alignment.TopEnd).padding(end = (-20).dp, top = 320.dp),
@@ -67,7 +67,7 @@ fun WinScreen(
                 .padding(top = Sumi.Space.s11, bottom = Sumi.Space.s7),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            SumiEyebrow(text = "完 · Complete", color = Sumi.Color.red)
+            SumiEyebrow(text = "完 · Complete", color = SumiTheme.colors.red)
             Spacer(Modifier.height(Sumi.Space.s2))
             Text(
                 text = "Sumi",
@@ -75,7 +75,7 @@ fun WinScreen(
                     fontSize = 68.sp,
                     letterSpacing = (-0.03f).em,
                 ),
-                color = Sumi.Color.ink,
+                color = SumiTheme.colors.ink,
             )
             Spacer(Modifier.height(Sumi.Space.s2))
             Text(
@@ -84,7 +84,7 @@ fun WinScreen(
                     fontSize = 14.sp,
                     fontStyle = FontStyle.Italic,
                 ),
-                color = Sumi.Color.inkSoft,
+                color = SumiTheme.colors.inkSoft,
             )
             Spacer(Modifier.height(Sumi.Space.s5))
             SealComplete(size = 80.dp)
@@ -94,7 +94,7 @@ fun WinScreen(
             Text(
                 text = "“${quote.text}”",
                 style = SumiTheme.typography.quote.copy(fontSize = 14.sp),
-                color = Sumi.Color.inkSoft,
+                color = SumiTheme.colors.inkSoft,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(horizontal = Sumi.Space.s4),
             )
@@ -109,7 +109,7 @@ private fun WinStatsRow(timeDisplay: String, mistakeCount: Int, streakDays: Int)
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .border(width = 1.dp, color = Sumi.Color.paperEdge),
+            .border(width = 1.dp, color = SumiTheme.colors.paperEdge),
     ) {
         listOf(
             "Time" to timeDisplay,
@@ -119,14 +119,14 @@ private fun WinStatsRow(timeDisplay: String, mistakeCount: Int, streakDays: Int)
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .then(if (i > 0) Modifier.border(width = 1.dp, color = Sumi.Color.paperEdge) else Modifier)
+                    .then(if (i > 0) Modifier.border(width = 1.dp, color = SumiTheme.colors.paperEdge) else Modifier)
                     .padding(vertical = Sumi.Space.s4, horizontal = Sumi.Space.s2),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
                     text = label.uppercase(),
                     style = SumiTheme.typography.uiMeta.copy(letterSpacing = 2.sp),
-                    color = Sumi.Color.inkFaint,
+                    color = SumiTheme.colors.inkFaint,
                 )
                 Spacer(Modifier.height(Sumi.Space.s1))
                 Text(
@@ -135,7 +135,7 @@ private fun WinStatsRow(timeDisplay: String, mistakeCount: Int, streakDays: Int)
                         fontSize = 24.sp,
                         fontStyle = FontStyle.Italic,
                     ),
-                    color = Sumi.Color.ink,
+                    color = SumiTheme.colors.ink,
                 )
             }
         }

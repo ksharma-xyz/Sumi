@@ -42,7 +42,7 @@ fun PaywallScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    WashiBG(dark = true, modifier = modifier.fillMaxSize()) {
+    WashiBG(modifier = modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -61,14 +61,14 @@ fun PaywallScreen(
 @Composable
 private fun PaywallHeader() {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        LogoEnso(size = Sumi.Space.s11, color = Sumi.Color.Night.gold)
+        LogoEnso(size = Sumi.Space.s11, color = SumiTheme.colors.gold)
         Spacer(Modifier.height(Sumi.Space.s5))
-        Text(text = "Sumi Pro", style = SumiTheme.typography.h1, color = Sumi.Color.Night.ink)
+        Text(text = "Sumi Pro", style = SumiTheme.typography.h1, color = SumiTheme.colors.ink)
         Spacer(Modifier.height(Sumi.Space.s2))
         Text(
             text = "An uninterrupted practice.",
             style = SumiTheme.typography.subhead,
-            color = Sumi.Color.Night.inkSoft,
+            color = SumiTheme.colors.inkSoft,
         )
         Spacer(Modifier.height(Sumi.Space.s6))
     }
@@ -87,7 +87,7 @@ private fun PaywallFeatures() {
 @Composable
 private fun PaywallPricing(onRestorePurchase: () -> Unit) {
     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-        QuoteRule(color = Sumi.Color.Night.paperEdge, ornament = "墨")
+        QuoteRule(color = SumiTheme.colors.paperEdge, ornament = "墨")
         Spacer(Modifier.height(Sumi.Space.s5))
         SumiTextButton(
             text = "$29 / year  ·  Save 38%",
@@ -106,7 +106,7 @@ private fun PaywallPricing(onRestorePurchase: () -> Unit) {
         Text(
             text = "Restore purchase  ·  Terms  ·  Privacy",
             style = SumiTheme.typography.uiMeta,
-            color = Sumi.Color.Night.inkFaint,
+            color = SumiTheme.colors.inkFaint,
             modifier = Modifier.clickable(
                 interactionSource = restoreSource,
                 indication = null,
@@ -125,9 +125,9 @@ private fun FeatureRow(text: String) {
         SumiIcon(
             icon = SumiIcons.Check,
             contentDescription = null,
-            tint = Sumi.Color.Night.gold,
+            tint = SumiTheme.colors.gold,
             size = Sumi.Space.s4,
         )
-        Text(text = text, style = SumiTheme.typography.bodySmall, color = Sumi.Color.Night.inkSoft)
+        Text(text = text, style = SumiTheme.typography.bodySmall, color = SumiTheme.colors.inkSoft)
     }
 }

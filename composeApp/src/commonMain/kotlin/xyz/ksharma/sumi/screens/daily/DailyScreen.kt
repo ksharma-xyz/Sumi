@@ -23,12 +23,12 @@ fun DailyScreen(modifier: Modifier = Modifier) {
             Text(
                 text = "Daily",
                 style = SumiTheme.typography.uiLabel,
-                color = Sumi.Color.red,
+                color = SumiTheme.colors.red,
             )
             Text(
                 text = "Fourteen days, quietly.",
                 style = SumiTheme.typography.h2,
-                color = Sumi.Color.ink,
+                color = SumiTheme.colors.ink,
             )
         }
     }

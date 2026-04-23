@@ -106,7 +106,7 @@ private fun SlideContent(slide: OnboardingSlide) {
                 lineHeight = (40 * 1.05f).sp,
                 letterSpacing = (-0.03f).em,
             ),
-            color = Sumi.Color.ink,
+            color = SumiTheme.colors.ink,
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth(),
         )
@@ -114,7 +114,7 @@ private fun SlideContent(slide: OnboardingSlide) {
         Text(
             text = slide.body,
             style = SumiTheme.typography.body.copy(lineHeight = (15 * 1.6f).sp),
-            color = Sumi.Color.inkSoft,
+            color = SumiTheme.colors.inkSoft,
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth(),
         )
@@ -139,7 +139,7 @@ private fun OnboardingActions(isLast: Boolean, onContinue: () -> Unit, onSkip: (
         Text(
             text = "SKIP",
             style = SumiTheme.typography.uiLabel.copy(letterSpacing = 2.sp),
-            color = Sumi.Color.inkFaint,
+            color = SumiTheme.colors.inkFaint,
             textAlign = TextAlign.Center,
             modifier = Modifier
                 .fillMaxWidth()
@@ -160,7 +160,7 @@ private fun ProgressBars(total: Int, filled: Int) {
                 modifier = Modifier
                     .weight(1f)
                     .height(2.dp)
-                    .background(if (i < filled) Sumi.Color.ink else Sumi.Color.paperEdge),
+                    .background(if (i < filled) SumiTheme.colors.ink else SumiTheme.colors.paperEdge),
             )
         }
     }

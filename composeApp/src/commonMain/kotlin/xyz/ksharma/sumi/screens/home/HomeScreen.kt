@@ -88,19 +88,19 @@ private fun HomeTopChrome(onSettings: () -> Unit) {
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        LogoWordmark(scale = 0.48f, color = Sumi.Color.ink, accent = Sumi.Color.red)
+        LogoWordmark(scale = 0.48f, color = SumiTheme.colors.ink, accent = SumiTheme.colors.red)
         Spacer(Modifier.weight(1f))
         SumiIcon(
             icon = SumiIcons.Chart,
             contentDescription = "Stats",
-            tint = Sumi.Color.inkSoft,
+            tint = SumiTheme.colors.inkSoft,
             size = 22.dp,
         )
         Spacer(Modifier.width(Sumi.Space.s4))
         SumiIcon(
             icon = SumiIcons.Settings,
             contentDescription = "Settings",
-            tint = Sumi.Color.inkSoft,
+            tint = SumiTheme.colors.inkSoft,
             size = 22.dp,
             modifier = Modifier.clickable(
                 interactionSource = settingsSrc,
@@ -114,18 +114,18 @@ private fun HomeTopChrome(onSettings: () -> Unit) {
 @Composable
 private fun DailyQuoteBlock(quote: Quote) {
     Column {
-        SumiEyebrow(text = "Today · Practice", color = Sumi.Color.red)
+        SumiEyebrow(text = "Today · Practice", color = SumiTheme.colors.red)
         Spacer(Modifier.height(Sumi.Space.s2))
         Text(
             text = "“${quote.text}”",
             style = SumiTheme.typography.quote.copy(lineHeight = 30.sp),
-            color = Sumi.Color.ink,
+            color = SumiTheme.colors.ink,
         )
         Spacer(Modifier.height(Sumi.Space.s1))
         Text(
             text = "— ${quote.attribution}".uppercase(),
             style = SumiTheme.typography.uiMeta.copy(letterSpacing = 2.sp),
-            color = Sumi.Color.gold,
+            color = SumiTheme.colors.gold,
         )
     }
 }
@@ -140,17 +140,17 @@ private fun StreakCard(streakDays: Int) {
             modifier = Modifier
                 .size(64.dp)
                 .clip(CircleShape)
-                .border(width = 1.5.dp, color = Sumi.Color.red, shape = CircleShape)
-                .background(Sumi.Color.red.copy(alpha = 0.04f)),
+                .border(width = 1.5.dp, color = SumiTheme.colors.red, shape = CircleShape)
+                .background(SumiTheme.colors.red.copy(alpha = 0.04f)),
             contentAlignment = Alignment.Center,
         ) {
-            SumiIcon(icon = SumiIcons.Flame, contentDescription = null, tint = Sumi.Color.red, size = 28.dp)
+            SumiIcon(icon = SumiIcons.Flame, contentDescription = null, tint = SumiTheme.colors.red, size = 28.dp)
         }
         Column {
             Text(
                 text = "STREAK",
                 style = SumiTheme.typography.uiMeta.copy(letterSpacing = 2.sp),
-                color = Sumi.Color.inkFaint,
+                color = SumiTheme.colors.inkFaint,
             )
             Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
@@ -160,7 +160,7 @@ private fun StreakCard(streakDays: Int) {
                         fontStyle = FontStyle.Italic,
                         fontWeight = FontWeight(500),
                     ),
-                    color = Sumi.Color.ink,
+                    color = SumiTheme.colors.ink,
                 )
                 Text(
                     text = "days",
@@ -168,7 +168,7 @@ private fun StreakCard(streakDays: Int) {
                         fontSize = 16.sp,
                         fontStyle = FontStyle.Normal,
                     ),
-                    color = Sumi.Color.inkSoft,
+                    color = SumiTheme.colors.inkSoft,
                 )
             }
             Spacer(Modifier.height(Sumi.Space.s1))
@@ -177,7 +177,7 @@ private fun StreakCard(streakDays: Int) {
                     Box(
                         modifier = Modifier
                             .size(width = 8.dp, height = 4.dp)
-                            .background(Sumi.Color.red.copy(alpha = 0.5f + i * 0.035f)),
+                            .background(SumiTheme.colors.red.copy(alpha = 0.5f + i * 0.035f)),
                     )
                 }
             }
@@ -188,7 +188,7 @@ private fun StreakCard(streakDays: Int) {
 @Composable
 private fun NewPracticeGrid(onStartGame: (String) -> Unit) {
     Column {
-        SumiEyebrow(text = "New Practice", color = Sumi.Color.inkFaint)
+        SumiEyebrow(text = "New Practice", color = SumiTheme.colors.inkFaint)
         Spacer(Modifier.height(Sumi.Space.s3))
         val rows = DIFFICULTY_TILES.chunked(2)
         Column(verticalArrangement = Arrangement.spacedBy(Sumi.Space.s2)) {
@@ -220,7 +220,7 @@ private fun DifficultyTile(
     val src = remember { MutableInteractionSource() }
     Row(
         modifier = modifier
-            .border(1.dp, Sumi.Color.paperEdge)
+            .border(1.dp, SumiTheme.colors.paperEdge)
             .clickable(interactionSource = src, indication = null, onClick = onClick)
             .padding(horizontal = Sumi.Space.s3, vertical = Sumi.Space.s3),
         verticalAlignment = Alignment.CenterVertically,
@@ -229,7 +229,7 @@ private fun DifficultyTile(
         Text(
             text = kanji,
             style = SumiTheme.typography.cjk.copy(fontSize = 26.sp),
-            color = Sumi.Color.red,
+            color = SumiTheme.colors.red,
         )
         Column {
             Text(
@@ -239,12 +239,12 @@ private fun DifficultyTile(
                     fontStyle = FontStyle.Italic,
                     fontWeight = FontWeight(500),
                 ),
-                color = Sumi.Color.ink,
+                color = SumiTheme.colors.ink,
             )
             Text(
                 text = avgTime,
                 style = SumiTheme.typography.uiMeta.copy(letterSpacing = 1.sp),
-                color = Sumi.Color.inkFaint,
+                color = SumiTheme.colors.inkFaint,
             )
         }
     }
@@ -261,12 +261,16 @@ private fun HomeBottomNav() {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .border(width = 1.dp, color = Sumi.Color.paperEdge, shape = androidx.compose.ui.graphics.RectangleShape)
+            .border(
+                width = 1.dp,
+                color = SumiTheme.colors.paperEdge,
+                shape = androidx.compose.ui.graphics.RectangleShape,
+            )
             .padding(top = Sumi.Space.s3, bottom = Sumi.Space.s4),
         horizontalArrangement = Arrangement.SpaceAround,
     ) {
         tabs.forEach { (icon, label, active) ->
-            val tint = if (active) Sumi.Color.ink else Sumi.Color.inkFaint
+            val tint = if (active) SumiTheme.colors.ink else SumiTheme.colors.inkFaint
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(4.dp),

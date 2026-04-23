@@ -117,7 +117,7 @@ fun LicensesScreen(
                 Spacer(Modifier.height(Sumi.Space.s3))
                 FONT_LICENSES.forEach { entry ->
                     LicenseRow(entry)
-                    HorizontalDivider(color = Sumi.Color.paperEdge, thickness = 1.dp)
+                    HorizontalDivider(color = SumiTheme.colors.paperEdge, thickness = 1.dp)
                 }
 
                 Spacer(Modifier.height(Sumi.Space.s7))
@@ -126,7 +126,7 @@ fun LicensesScreen(
                 Spacer(Modifier.height(Sumi.Space.s3))
                 LIBRARY_LICENSES.forEach { entry ->
                     LicenseRow(entry)
-                    HorizontalDivider(color = Sumi.Color.paperEdge, thickness = 1.dp)
+                    HorizontalDivider(color = SumiTheme.colors.paperEdge, thickness = 1.dp)
                 }
             }
         }
@@ -145,7 +145,7 @@ private fun LicensesTopBar(onBack: () -> Unit) {
         Text(
             text = "←",
             style = SumiTheme.typography.h3,
-            color = Sumi.Color.ink,
+            color = SumiTheme.colors.ink,
             modifier = Modifier.clickable(
                 interactionSource = interactionSource,
                 indication = null,
@@ -156,7 +156,7 @@ private fun LicensesTopBar(onBack: () -> Unit) {
         Text(
             text = "Open Licenses",
             style = SumiTheme.typography.uiLabel,
-            color = Sumi.Color.inkSoft,
+            color = SumiTheme.colors.inkSoft,
         )
         Spacer(Modifier.weight(1f))
     }
@@ -167,7 +167,7 @@ private fun SectionEyebrow(text: String) {
     Text(
         text = text.uppercase(),
         style = SumiTheme.typography.uiLabel,
-        color = Sumi.Color.red,
+        color = SumiTheme.colors.red,
     )
 }
 
@@ -183,26 +183,26 @@ private fun LicenseRow(entry: LicenseEntry) {
             style = SumiTheme.typography.bodySmall.copy(
                 fontWeight = androidx.compose.ui.text.font.FontWeight(Sumi.Weight.SEMI),
             ),
-            color = Sumi.Color.ink,
+            color = SumiTheme.colors.ink,
         )
         Spacer(Modifier.height(2.dp))
         Text(
             text = entry.author,
             style = SumiTheme.typography.caption,
-            color = Sumi.Color.inkFaint,
+            color = SumiTheme.colors.inkFaint,
         )
         Spacer(Modifier.height(4.dp))
         Text(
             text = entry.license,
             style = SumiTheme.typography.uiMeta,
-            color = Sumi.Color.teal,
+            color = SumiTheme.colors.teal,
         )
         if (entry.note.isNotBlank()) {
             Spacer(Modifier.height(4.dp))
             Text(
                 text = entry.note,
                 style = SumiTheme.typography.caption,
-                color = Sumi.Color.inkGhost,
+                color = SumiTheme.colors.inkGhost,
             )
         }
     }
