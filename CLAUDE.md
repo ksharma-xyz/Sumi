@@ -57,6 +57,17 @@ composeApp/src/commonMain/kotlin/xyz/ksharma/sumi/
 - Everything else (`MatchingDeclarationName`, `LongMethod`, `ComposableParamOrder`, etc.): **fix properly, do not suppress**
 - If you think a suppression is the right call, **ask the user** before adding `@file:Suppress` or `@Suppress`
 
+## Test commands
+
+KMP modules with `androidLibrary { withHostTestBuilder {} }` expose `testAndroidHostTest` — **not** `testDebugUnitTest`, `jvmTest`, or `allTests`.
+
+| Scope | Command |
+|---|---|
+| Single module | `./gradlew :game:testAndroidHostTest` |
+| All modules | `./gradlew testAndroidHostTest --continue` |
+
+To enable host tests in a new module, add `withHostTestBuilder {}` inside `androidLibrary {}` in its `build.gradle.kts`.
+
 ## Build structure
 
 - Convention plugins in `gradle/build-logic/`

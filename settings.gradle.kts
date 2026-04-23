@@ -36,3 +36,4 @@ dependencyResolutionManagement {
 
 include(":androidApp")
 include(":composeApp")
+include(":game")

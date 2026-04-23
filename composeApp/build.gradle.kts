@@ -62,6 +62,7 @@ kotlin {
             implementation(libs.ktor.client.logging)
             implementation(libs.ktor.serialization.json)
             implementation(libs.sqldelight.coroutines)
+            implementation(projects.game)
         }
 
         iosMain.dependencies {
