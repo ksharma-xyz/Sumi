@@ -1,20 +1,41 @@
 package xyz.ksharma.sumi.screens.paywall
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import xyz.ksharma.sumi.design.components.LogoEnso
+import xyz.ksharma.sumi.design.components.QuoteRule
 import xyz.ksharma.sumi.design.components.SumiButtonVariant
+import xyz.ksharma.sumi.design.components.SumiIcon
 import xyz.ksharma.sumi.design.components.SumiTextButton
 import xyz.ksharma.sumi.design.components.WashiBG
+import xyz.ksharma.sumi.design.icons.SumiIcons
 import xyz.ksharma.sumi.theme.SumiTheme
 import xyz.ksharma.sumi.theme.SumiTokens as Sumi
+
+private val PRO_FEATURES = listOf(
+    "Remove all ads · Forever quiet",
+    "Unlimited hints · Use what you need",
+    "The full quote library · 600 passages",
+    "Hard, Master, Edo difficulties",
+    "The Salon · weekly global register",
+    "Practice log · stats + streaks",
+    "Gold, Indigo, Edo themes",
+    "iCloud / Drive sync · across devices",
+    "Export PDF puzzle books",
+)
 
 @Composable
 fun PaywallScreen(
@@ -25,33 +46,88 @@ fun PaywallScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = Sumi.Space.s6, vertical = Sumi.Space.s7),
+                .padding(horizontal = Sumi.Space.s6)
+                .padding(top = Sumi.Space.s7, bottom = Sumi.Space.s6),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(Sumi.Space.s4),
         ) {
+            PaywallHeader()
+            PaywallFeatures()
             Spacer(Modifier.weight(1f))
-            Text(
-                text = "Sumi Pro",
-                style = SumiTheme.typography.h1,
-                color = Sumi.Color.Night.paper,
-            )
-            Text(
-                text = "An uninterrupted practice.",
-                style = SumiTheme.typography.subhead,
-                color = Sumi.Color.Night.inkSoft,
-            )
-            Spacer(Modifier.weight(1f))
-            SumiTextButton(
-                text = "$29 / year",
-                onClick = {},
-                modifier = Modifier.fillMaxWidth(),
-            )
-            SumiTextButton(
-                text = "Restore purchase",
-                onClick = onBack,
-                variant = SumiButtonVariant.Ghost,
-                modifier = Modifier.fillMaxWidth(),
-            )
+            PaywallPricing(onRestorePurchase = onBack)
         }
+    }
+}
+
+@Composable
+private fun PaywallHeader() {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        LogoEnso(size = Sumi.Space.s11, color = Sumi.Color.Night.gold)
+        Spacer(Modifier.height(Sumi.Space.s5))
+        Text(text = "Sumi Pro", style = SumiTheme.typography.h1, color = Sumi.Color.Night.ink)
+        Spacer(Modifier.height(Sumi.Space.s2))
+        Text(
+            text = "An uninterrupted practice.",
+            style = SumiTheme.typography.subhead,
+            color = Sumi.Color.Night.inkSoft,
+        )
+        Spacer(Modifier.height(Sumi.Space.s6))
+    }
+}
+
+@Composable
+private fun PaywallFeatures() {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(Sumi.Space.s3),
+    ) {
+        PRO_FEATURES.forEach { feature -> FeatureRow(text = feature) }
+    }
+}
+
+@Composable
+private fun PaywallPricing(onRestorePurchase: () -> Unit) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+        QuoteRule(color = Sumi.Color.Night.paperEdge, ornament = "墨")
+        Spacer(Modifier.height(Sumi.Space.s5))
+        SumiTextButton(
+            text = "$29 / year  ·  Save 38%",
+            onClick = {},
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Spacer(Modifier.height(Sumi.Space.s2))
+        SumiTextButton(
+            text = "$3.99 / month",
+            onClick = {},
+            variant = SumiButtonVariant.Ghost,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Spacer(Modifier.height(Sumi.Space.s4))
+        val restoreSource = remember { MutableInteractionSource() }
+        Text(
+            text = "Restore purchase  ·  Terms  ·  Privacy",
+            style = SumiTheme.typography.uiMeta,
+            color = Sumi.Color.Night.inkFaint,
+            modifier = Modifier.clickable(
+                interactionSource = restoreSource,
+                indication = null,
+                onClick = onRestorePurchase,
+            ),
+        )
+    }
+}
+
+@Composable
+private fun FeatureRow(text: String) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(Sumi.Space.s3),
+    ) {
+        SumiIcon(
+            icon = SumiIcons.Check,
+            contentDescription = null,
+            tint = Sumi.Color.Night.gold,
+            size = Sumi.Space.s4,
+        )
+        Text(text = text, style = SumiTheme.typography.bodySmall, color = Sumi.Color.Night.inkSoft)
     }
 }

@@ -7,25 +7,30 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.NavKey
+import xyz.ksharma.sumi.design.components.SumiIcon
+import xyz.ksharma.sumi.design.icons.SumiIcons
 import xyz.ksharma.sumi.theme.SumiTheme
 import xyz.ksharma.sumi.theme.SumiTokens as Sumi
 
-private data class NavTab(val route: NavKey, val label: String)
+private data class NavTab(val route: NavKey, val label: String, val icon: ImageVector)
 
 private val TABS = listOf(
-    NavTab(HomeRoute, "Home"),
-    NavTab(DailyRoute, "Daily"),
-    NavTab(StatsRoute, "Stats"),
-    NavTab(PaywallRoute, "Pro"),
+    NavTab(HomeRoute, "Home", SumiIcons.Menu),
+    NavTab(DailyRoute, "Daily", SumiIcons.Calendar),
+    NavTab(StatsRoute, "Stats", SumiIcons.Chart),
+    NavTab(PaywallRoute, "Pro", SumiIcons.Trophy),
 )
 
 @Composable
@@ -45,6 +50,7 @@ fun BottomNavBar(
         TABS.forEach { tab ->
             BottomNavItem(
                 label = tab.label,
+                icon = tab.icon,
                 selected = currentTab == tab.route,
                 onClick = { onTabClick(tab.route) },
             )
@@ -55,6 +61,7 @@ fun BottomNavBar(
 @Composable
 private fun BottomNavItem(
     label: String,
+    icon: ImageVector,
     selected: Boolean,
     onClick: () -> Unit,
 ) {
@@ -68,6 +75,8 @@ private fun BottomNavItem(
             onClick = onClick,
         ),
     ) {
+        SumiIcon(icon = icon, contentDescription = label, tint = color, size = 20.dp)
+        Spacer(Modifier.height(Sumi.Space.s1))
         Text(
             text = label.uppercase(),
             style = SumiTheme.typography.uiMeta,
