@@ -43,8 +43,8 @@ private fun generatePetals(count: Int): List<PetalData> = List(count) { i ->
         startXFraction = ((i * 37 + 17) % 100) / 100f,
         delayMs = (i * 2300f) % 12000f,
         durationMs = 14000f + (i * 1700f) % 10000f,
-        swayPx = 28f + (i * 9) % 40f,
-        sizePx = 26f + (i * 5) % 24f,
+        swayPx = 35f + (i * 9) % 50f,
+        sizePx = 38f + (i * 7) % 34f,
         initialRotation = (i * 43) % 360f,
         totalSpin = (if (i % 2 == 0) 1f else -1f) * (60f + (i * 11) % 120f),
         color = SPRING_COLORS[i % SPRING_COLORS.size],
@@ -65,7 +65,7 @@ private fun sakuraPath(scale: Float): Path = Path().apply {
 @Composable
 fun SumiPetals(
     modifier: Modifier = Modifier,
-    count: Int = 12,
+    count: Int = 24,
 ) {
     val petals = remember { generatePetals(count) }
 
