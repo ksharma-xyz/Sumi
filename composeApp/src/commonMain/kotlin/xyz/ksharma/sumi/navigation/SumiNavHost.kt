@@ -25,6 +25,12 @@ fun SumiNavHost(modifier: Modifier = Modifier) {
     val state = rememberSumiNavigationState()
     val navigator = rememberSumiNavigator(state)
 
+    // On a non-Play tab (Daily/Stats/Zen) system back returns to Play rather than exiting the app.
+    // The Play tab is rooted at SplashRoute — any other topLevelRoute is a secondary tab.
+    TabBackHandler(enabled = state.topLevelRoute != SplashRoute) {
+        navigator.switchTab(SplashRoute)
+    }
+
     val entries: (NavKey) -> NavEntry<NavKey> = entryProvider {
         SplashEntry(navigator)
         OnboardingEntry(navigator)
@@ -44,7 +50,7 @@ fun SumiNavHost(modifier: Modifier = Modifier) {
         modifier = modifier,
         contentWindowInsets = WindowInsets(0),
         bottomBar = {
-            if (!state.isSetupFlow) {
+            if (state.showBottomNav) {
                 BottomNavBar(
                     currentTab = state.topLevelRoute,
                     onTabClick = { navigator.switchTab(it) },

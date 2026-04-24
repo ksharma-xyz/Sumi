@@ -38,12 +38,11 @@ class SumiNavigationState(
 ) {
     var topLevelRoute: NavKey by topLevelRouteState
 
-    // True only while Splash or Onboarding is the visible top screen.
-    // topLevelRoute never changes from SplashRoute (resetRoot mutates the stack, not the tab),
-    // so we check the actual top of the active stack instead.
-    val isSetupFlow: Boolean
-        get() = backStacks[topLevelRoute]?.lastOrNull()
-            .let { it == SplashRoute || it == OnboardingRoute }
+    // Bottom nav is hidden on these routes — full-screen flows where the tab bar adds no value.
+    private val noNavBarRoutes = setOf(SplashRoute, OnboardingRoute, SettingsRoute, LicensesRoute)
+
+    val showBottomNav: Boolean
+        get() = backStacks[topLevelRoute]?.lastOrNull().let { it != null && it !in noNavBarRoutes }
 
     private val stacksInUse: List<NavKey>
         get() = listOf(topLevelRoute)
