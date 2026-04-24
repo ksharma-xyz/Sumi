@@ -463,6 +463,99 @@ class BoardStateTest {
         }
     }
 
+    @Test
+    fun remainingCountsUpdateAfterCorrectEntry() {
+        val b = board
+        val (r, c) = findEmptyCell(b)
+        val digit = b.solution[r][c]
+        val before = b.remainingCounts[digit - 1]
+        val b2 = b.select(r, c).enter(digit)
+        assertEquals(before - 1, b2.remainingCounts[digit - 1])
+    }
+
+    @Test
+    fun remainingCountsSumToCorrectTotal() {
+        val b = board
+        val totalEmpty = b.cells.sumOf { row -> row.count { it.value == 0 } }
+        val sumRemaining = b.remainingCounts.sum()
+        // Each remaining count = 9 - placed; sum = 81 - total placed = totalEmpty + 0-valued cells.
+        // More precisely: sum of remaining = 9*9 - sum of placed = 81 - (81 - emptyCount) = emptyCount.
+        assertEquals(totalEmpty, sumRemaining)
+    }
+
+    // ── Notes cleared on digit entry ──────────────────────────────────────────
+
+    @Test
+    fun notesAreCleared_whenDigitEnteredInNormalMode() {
+        val b = board
+        val (r, c) = findEmptyCell(b)
+        // First add some notes in notes mode
+        val withNotes = b.toggleNotes().select(r, c).enter(3).enter(5)
+        assertTrue(3 in withNotes.cells[r][c].notes)
+        assertTrue(5 in withNotes.cells[r][c].notes)
+        // Switch back to normal mode and enter a digit
+        val afterDigit = withNotes.toggleNotes().enter(withNotes.solution[r][c])
+        assertTrue(afterDigit.cells[r][c].notes.isEmpty(), "Notes must be cleared when a digit is entered")
+    }
+
+    @Test
+    fun notesAreCleared_whenErasing() {
+        val b = board
+        val (r, c) = findEmptyCell(b)
+        val withNotes = b.toggleNotes().select(r, c).enter(7)
+        assertTrue(7 in withNotes.cells[r][c].notes)
+        val afterErase = withNotes.erase()
+        assertTrue(afterErase.cells[r][c].notes.isEmpty(), "Erase must clear notes")
+    }
+
+    @Test
+    fun enteringSameNoteToggleItOff() {
+        val b = board.toggleNotes()
+        val (r, c) = findEmptyCell(b)
+        val with4 = b.select(r, c).enter(4)
+        assertTrue(4 in with4.cells[r][c].notes)
+        val without4 = with4.enter(4)
+        assertFalse(4 in without4.cells[r][c].notes, "Re-entering same note should remove it")
+    }
+
+    // ── Multiple difficulties ─────────────────────────────────────────────────
+
+    @Test
+    fun allDifficultiesProduceValidBoardState() {
+        Difficulty.entries.forEach { diff ->
+            val b = SudokuGenerator.generate(diff, seed = 2024L)
+            assertEquals(diff, b.difficulty)
+            assertFalse(b.isComplete, "Fresh board must not be complete ($diff)")
+            assertFalse(b.isGameOver, "Fresh board must not be game over ($diff)")
+            assertTrue(b.errorCells.isEmpty(), "Fresh board must have no errors ($diff)")
+            assertEquals(3, b.hintsRemaining)
+        }
+    }
+
+    @Test
+    fun harderDifficultiesHaveFewerGivens() {
+        val easy = SudokuGenerator.generate(Difficulty.Easy, seed = 42L)
+        val hard = SudokuGenerator.generate(Difficulty.Hard, seed = 42L)
+        val easyGivens = easy.cells.sumOf { row -> row.count { it.given } }
+        val hardGivens = hard.cells.sumOf { row -> row.count { it.given } }
+        assertTrue(easyGivens > hardGivens, "Easy must have more givens than Hard")
+    }
+
+    @Test
+    fun selectEnterEraseUndoWorkOnAllDifficulties() {
+        Difficulty.entries.forEach { diff ->
+            val b = SudokuGenerator.generate(diff, seed = 777L)
+            val (r, c) = findEmptyCell(b)
+            val correct = b.solution[r][c]
+            val b2 = b.select(r, c).enter(correct)
+            assertEquals(correct, b2.cells[r][c].value, "enter should place digit ($diff)")
+            val b3 = b2.erase()
+            assertEquals(0, b3.cells[r][c].value, "erase should clear digit ($diff)")
+            val b4 = b2.undo()
+            assertEquals(0, b4.cells[r][c].value, "undo should revert entry ($diff)")
+        }
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private fun findEmptyCell(b: BoardState): Pair<Int, Int> {
