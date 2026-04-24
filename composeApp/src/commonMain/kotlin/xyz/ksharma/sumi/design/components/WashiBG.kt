@@ -1,84 +1,82 @@
+@file:Suppress("MagicNumber")
+
 package xyz.ksharma.sumi.design.components
 
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import org.jetbrains.compose.resources.painterResource
+import xyz.ksharma.sumi.design.components.WashiVariant.Faint
+import xyz.ksharma.sumi.design.components.WashiVariant.Full
+import xyz.ksharma.sumi.design.components.WashiVariant.Quiet
+import xyz.ksharma.sumi.resources.Res
+import xyz.ksharma.sumi.resources.washi_ink_dark
+import xyz.ksharma.sumi.resources.washi_paper_dark
+import xyz.ksharma.sumi.resources.washi_paper_light
 import xyz.ksharma.sumi.theme.SumiTheme
-import kotlin.math.cos
-import kotlin.math.sin
-import kotlin.random.Random
+import xyz.ksharma.sumi.theme.SumiTokens as Sumi
+
+enum class WashiVariant { Full, Quiet, Faint }
 
 /**
- * Paper-texture background. Every full-screen surface uses this as the base.
- *
- * @param intensity 0..1 — how strongly the fibre texture reads
+ * Three-layer paper background: base color → PNG texture → radial vignette.
+ * Never use procedural noise — always ship the PNG/JPEG assets.
  */
 @Composable
 fun WashiBG(
     modifier: Modifier = Modifier,
-    intensity: Float = 1f,
+    variant: WashiVariant = Full,
+    inkMode: Boolean = false,
     content: @Composable BoxScope.() -> Unit = {},
 ) {
-    val colors = SumiTheme.colors
-    val isDark = SumiTheme.isDark
-    val baseColor = colors.paper
-    val fiberColor = colors.ink
-    val vignetteColor = if (isDark) Color(0x55000000) else Color(0x26644619)
-
-    val fibers = remember(isDark, intensity) {
-        val rng = Random(0x53756D69L) // "Sumi" seed
-        List(1000) {
-            FiberLine(
-                x = rng.nextFloat(),
-                y = rng.nextFloat(),
-                length = rng.nextFloat() * 0.06f + 0.01f,
-                angle = rng.nextFloat() * 0.4f - 0.2f,
-                alpha = (rng.nextFloat() * 0.5f + 0.3f) * 0.09f * intensity,
-                width = rng.nextFloat() * 0.6f + 0.3f,
-            )
-        }
+    val dark = SumiTheme.isDark
+    val resource = when {
+        inkMode -> Res.drawable.washi_ink_dark
+        dark    -> Res.drawable.washi_paper_dark
+        else    -> Res.drawable.washi_paper_light
     }
+    val baseColor = if (dark) Sumi.Color.Night.paper else Sumi.Color.paper
 
-    Box(
-        modifier = modifier.drawBehind {
-            drawRect(color = baseColor)
+    Box(modifier = modifier.fillMaxSize()) {
+        // Layer 1 — base color (visible even if PNG fails to load)
+        Spacer(Modifier.fillMaxSize().background(baseColor))
 
-            for (fiber in fibers) {
-                val x1 = fiber.x * size.width
-                val y1 = fiber.y * size.height
-                val len = fiber.length * size.width
-                drawLine(
-                    color = fiberColor.copy(alpha = fiber.alpha),
-                    start = Offset(x1, y1),
-                    end = Offset(x1 + len * cos(fiber.angle), y1 + len * sin(fiber.angle)),
-                    strokeWidth = fiber.width,
+        // Layer 2 — washi texture, cropped to fill
+        Image(
+            painter = painterResource(resource),
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop,
+            alpha = when (variant) {
+                Full  -> 1f
+                Quiet -> 0.7f
+                Faint -> 0.35f
+            },
+        )
+
+        // Layer 3 — inner vignette ring (warm shadow at edges)
+        Box(
+            Modifier.fillMaxSize().drawBehind {
+                val vigColor = if (dark) Color(0x660A0704) else Color(0x33645820)
+                drawRect(
+                    brush = Brush.radialGradient(
+                        colors = listOf(Color.Transparent, Color.Transparent, vigColor),
+                        center = center,
+                        radius = size.maxDimension * 0.8f,
+                    ),
                 )
-            }
+            },
+        )
 
-            drawRect(
-                brush = Brush.radialGradient(
-                    colors = listOf(Color.Transparent, vignetteColor),
-                    center = Offset(size.width * 0.5f, size.height * 0.5f),
-                    radius = maxOf(size.width, size.height) * 0.72f,
-                ),
-            )
-        },
-    ) {
         content()
     }
 }
-
-private data class FiberLine(
-    val x: Float,
-    val y: Float,
-    val length: Float,
-    val angle: Float,
-    val alpha: Float,
-    val width: Float,
-)

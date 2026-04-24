@@ -26,9 +26,6 @@ import androidx.compose.ui.unit.sp
 import xyz.ksharma.sumi.theme.SumiTheme
 import xyz.ksharma.sumi.theme.SumiTokens as Sumi
 
-private val NIGHT_PAPER = Color(0xFFE8DCC5)
-private val OVERLAY_BG = Color(0xFF0A0705).copy(alpha = 0.82f)
-
 @Composable
 fun PauseOverlay(
     onResume: () -> Unit,
@@ -36,10 +33,16 @@ fun PauseOverlay(
     onHome: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // BG-5: paper-tinted frosted glass — 0.82 light / 0.88 dark (BACKGROUNDS.md §BG-5)
+    val scrimColor = if (SumiTheme.isDark)
+        SumiTheme.colors.paper.copy(alpha = 0.88f)
+    else
+        SumiTheme.colors.paper.copy(alpha = 0.82f)
+
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(OVERLAY_BG),
+            .background(scrimColor),
         contentAlignment = Alignment.Center,
     ) {
         Column(
@@ -53,7 +56,7 @@ fun PauseOverlay(
             Text(
                 text = "休",
                 style = SumiTheme.typography.cjk.copy(fontSize = 52.sp),
-                color = SumiTheme.colors.paper,
+                color = SumiTheme.colors.red,
             )
             Text(
                 text = "A moment of rest",
@@ -61,31 +64,31 @@ fun PauseOverlay(
                     fontSize = 34.sp,
                     fontStyle = FontStyle.Italic,
                 ),
-                color = SumiTheme.colors.paper,
+                color = SumiTheme.colors.ink,
                 textAlign = TextAlign.Center,
             )
             Text(
                 text = "Your time is paused. Return when you are ready.",
                 style = SumiTheme.typography.body.copy(lineHeight = (15 * 1.5f).sp),
-                color = NIGHT_PAPER,
+                color = SumiTheme.colors.inkSoft,
                 textAlign = TextAlign.Center,
             )
             PauseButton(
                 label = "RESUME",
                 onClick = onResume,
-                bg = SumiTheme.colors.paper,
-                fg = SumiTheme.colors.ink,
+                bg = SumiTheme.colors.ink,
+                fg = SumiTheme.colors.paper,
                 modifier = Modifier.fillMaxWidth().padding(top = Sumi.Space.s4),
             )
             PauseButton(
                 label = "NEW PUZZLE",
                 onClick = onNewPuzzle,
                 bg = Color.Transparent,
-                fg = SumiTheme.colors.paper,
-                borderColor = SumiTheme.colors.paper,
+                fg = SumiTheme.colors.ink,
+                borderColor = SumiTheme.colors.ink,
                 modifier = Modifier.fillMaxWidth(),
             )
-            PauseTextLink(label = "RETURN HOME", color = NIGHT_PAPER, onClick = onHome)
+            PauseTextLink(label = "RETURN HOME", color = SumiTheme.colors.inkSoft, onClick = onHome)
         }
     }
 }

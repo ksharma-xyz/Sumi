@@ -26,6 +26,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.BlurredEdgeTreatment
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.SpanStyle
@@ -39,6 +41,7 @@ import xyz.ksharma.sumi.design.board.SumiBoard
 import xyz.ksharma.sumi.design.components.SumiIcon
 import xyz.ksharma.sumi.design.components.SumiPetalBurst
 import xyz.ksharma.sumi.design.components.WashiBG
+import xyz.ksharma.sumi.design.components.WashiVariant
 import xyz.ksharma.sumi.design.icons.SumiIcons
 import xyz.ksharma.sumi.game.model.BoardState
 import xyz.ksharma.sumi.game.model.Difficulty
@@ -65,8 +68,12 @@ fun GameScreen(
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier.fillMaxSize()) {
-        WashiBG(modifier = Modifier.fillMaxSize())
-        GameBody(state = state, elapsedMs = elapsedMs, diff = difficulty, callbacks = callbacks)
+        // Game content — blurred when paused so the scrim reads as frosted glass
+        val blurMod = if (paused) Modifier.blur(24.dp, BlurredEdgeTreatment.Unbounded) else Modifier
+        Box(modifier = Modifier.fillMaxSize().then(blurMod)) {
+            WashiBG(modifier = Modifier.fillMaxSize(), variant = WashiVariant.Quiet)
+            GameBody(state = state, elapsedMs = elapsedMs, diff = difficulty, callbacks = callbacks)
+        }
         SumiPetalBurst(trigger = celebrationCount, modifier = Modifier.fillMaxSize())
         if (paused) {
             PauseOverlay(
