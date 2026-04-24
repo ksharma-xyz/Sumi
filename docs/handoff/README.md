@@ -10,13 +10,28 @@ This package contains everything you need to build Sumi on a **Compose Multiplat
 ```
 handoff/
 ├── README.md                    ← you are here
+├── VERIFICATION.md              ← grading rubric — run this to audit any build
+├── ADAPTIVE.md                  ← breakpoints, tablet layouts, font-scale reflow
+├── ACCESSIBILITY.md             ← WCAG, semantics, reduced-motion contract
+├── CATALOGUE_APP.md             ← living design-system showcase app
 ├── START_HERE.md                ← first prompt to give Claude Code
 ├── DESIGN_PRINCIPLES.md         ← the voice, the rhythm, the non-negotiables
 ├── BRAND.md                     ← name, kanji, wordmark usage
 ├── COMPONENTS.md                ← Compose component API contracts
-├── SCREENS.md                   ← all 9 screens, layout specs
+├── SCREENS.md                   ← index of 9 screens (see screens/ subfolder)
+├── screens/                     ← one prescriptive spec per screen
+│   ├── 01_SPLASH.md
+│   ├── 02_ONBOARDING.md
+│   ├── 03_HOME.md
+│   ├── 04_GAME.md
+│   ├── 05_WIN.md
+│   ├── 06_PAUSE.md
+│   ├── 07_DAILY.md
+│   ├── 08_STATS.md
+│   └── 09_PAYWALL.md
 ├── BOARD.md                     ← Sudoku board rendering + state
 ├── ANIMATIONS.md                ← aurora sweep, petal fall, paper breath
+├── BACKGROUNDS.md               ← paper noise, vignettes, ink bleeds, foxing (per-screen recipes + image-gen prompts)
 ├── SOUND_HAPTICS.md             ← sound + haptic spec
 ├── FONTS.md                     ← typography — what to license / download
 ├── PRODUCT.md                   ← free vs Pro, ads, The Salon
@@ -121,6 +136,7 @@ Don't try to build everything at once. Follow this order — each stage should f
 
 ## Non-negotiables (read before you start)
 
+0. **Use shipped asset files for logos and icons.** Never hand-draw the Ensō with `Canvas` / `drawArc`, never recreate an icon as a Compose `Path`. Import the SVGs from `handoff/svg/` as Android Vector Drawables or `ImageVector`, then `Image(painter = painterResource(...))`. The brush-ink texture only survives through the asset import path.
 1. **Paper, not Material.** No ripples, no elevation shadows except the ones in `SumiTokens.elevation`. Use `Modifier.clickable(indication = null)` and draw your own press states.
 2. **No gradients** except the aurora sweep and the seasonal border bloom. The rest is flat paper and flat ink.
 3. **No rounded corners** except on buttons (`radius.xs = 2.dp`) and sheets (`radius.lg = 12.dp`). Cells, chips, and panels are sharp-edged.

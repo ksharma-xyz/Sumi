@@ -70,25 +70,32 @@ object SumiTokens {
         const val CJK     = "ShipporiMincho"     // kanji chops, 墨 休 完
     }
 
+    // Legibility-first scale. See ADAPTIVE.md §3. Nothing below 12sp.
     object Size {
-        val caption = 11.sp
-        val small   = 12.sp
-        val body    = 15.sp
-        val bodyLg  = 17.sp
-        val subhead = 20.sp
-        val h3      = 26.sp
-        val h2      = 34.sp
-        val h1      = 46.sp
-        val display = 62.sp
-        val hero    = 88.sp
+        val caption = 12.sp      // was 11 — min legible
+        val small   = 14.sp      // was 12 — min body-s
+        val body    = 16.sp      // was 15 — WCAG comfortable
+        val bodyLg  = 18.sp      // was 17
+        val subhead = 22.sp      // was 20
+        val h3      = 28.sp      // was 26
+        val h2      = 36.sp      // was 34
+        val h1      = 48.sp      // was 46
+        val display = 64.sp
+        val hero    = 92.sp
+        // UI roles
+        val uiMeta    = 12.sp
+        val uiLabel   = 12.sp
+        val uiButton  = 13.sp
     }
 
+    // Italic display at 600 (not 500) — holds weight on small screens.
+    // Buttons at 700 — reads as a control, not body.
     object Weight {
         const val LIGHT   = 300
         const val REGULAR = 400
         const val MEDIUM  = 500
-        const val SEMI    = 600
-        const val BOLD    = 700
+        const val SEMI    = 600   // display italic default
+        const val BOLD    = 700   // buttons, UI labels
     }
 
     object Track {  // letter-spacing as em

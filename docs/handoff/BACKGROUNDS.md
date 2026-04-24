@@ -1,331 +1,273 @@
-# Backgrounds, Textures & Paper Noise
+# Backgrounds — the authoritative recipe
 
-This doc covers all the "not quite flat" surfaces in Sumi — the washi noise, ink bleeds, vignettes, edge foxing, faint grid watermarks, and seasonal ambient layers. These are what make the app feel like a *printed object* rather than a screen. In the HTML reference they're drawn live with SVG filters (`feTurbulence` + `feDisplacementMap`). On a real mobile app, you have three options per surface; this doc tells you **which to use where**, and how each behaves in light vs. dark mode.
-
----
-
-## The layer stack (mental model)
-
-Every Sumi screen composes up to **five layers**, back to front. Most screens use 2–3. Never more than five.
-
-```
-┌──────────────────────────────────────────┐
-│ 5. Ink bleeds / seals      (optional, decorative)
-│ 4. Edge vignette           (always — soft inner shadow)
-│ 3. Ambient tint            (optional — red/teal/gold wash)
-│ 2. Paper noise / fibre     (always — the washi texture)
-│ 1. Flat paper / ink fill   (always — Sumi.Color.paper | Night.paper)
-└──────────────────────────────────────────┘
-```
-
-Layers 1–2–4 together = the `WashiBG` composable. Layer 3 is sometimes added per screen; layer 5 is used only on Win, Paywall, and Splash.
+This is the single source of truth for every background in Sumi. If you read nothing else, read this. The first implementation got this wrong — this doc fixes it with exact values and resource paths.
 
 ---
 
-## Layer 1 · Flat fill
+## TL;DR for the LLM implementer
 
-Just `Sumi.Color.paper` (light) or `Sumi.Color.Night.paper` (dark). No gradient, no stops. This is the base.
-
----
-
-## Layer 2 · Paper noise (the washi fibre)
-
-This is the most important texture in the app — it's what sells "paper". Every full-screen surface has it.
-
-### What it looks like
-
-Fine, non-repeating fibre grain: cloudy low-frequency base (`baseFrequency ~0.85`) + a subtle high-frequency overlay (`baseFrequency ~3.2`) giving occasional fibre specks. Not a uniform static-noise hiss. Think: cotton washi under a loupe.
-
-### Light mode
-
-- Base: warm beige Perlin noise multiplied onto `paper`.
-- Tint: slight brown-gold tone (`~#C9B48A` at 8% alpha through a `multiply` blend).
-- Intensity: `0.6–0.8` of full noise strength.
-
-### Dark mode
-
-- Base: warm-dark Perlin noise multiplied onto `Night.paper`.
-- Tint: dark-umber undertone (`~#3D3022` at 18% alpha, lightly screened).
-- Intensity: `0.4–0.5` — more restrained so the grain doesn't shimmer on OLED.
-
-### Three ways to produce it (pick one per platform target)
-
-**Option A — Pre-baked PNGs (recommended for v1).** Simplest, most reliable, no runtime cost.
-
-- Generate two 2048×2048 tileable PNGs: `washi_paper_light.png`, `washi_paper_dark.png`.
-- Use Photoshop / Affinity / Procreate / `imagemagick`, or run the SVG noise filter in a browser and screenshot a 2K crop, then tile-clean it.
-- Prompt for an image-gen LLM (Midjourney / SDXL / DALL-E):
-  > *"Seamless 2K tileable texture of warm cream washi paper. Subtle plant-fibre specks and cotton grain. Very soft, uniform, muted. Warm beige `#F4ECE0` base, gentle darker flecks of `#C9B48A`. No watermark, no text, no strong lighting, no creases. Render as a flat top-down scan."*
-  > *Dark variant:* *"Same seamless washi paper texture but in warm black ink tones — base `#1A1410`, fibre specks `#3D3022`. Still warm, not cold. Feels like paper at night by lamplight, never like a screen."*
-- Drop into `composeResources/drawable/`. Tile with `TileMode.Repeated` and apply at ~30–40% alpha on top of the flat fill.
-
-**Option B — Procedural Perlin noise at runtime.** More work, but infinite variation (no tile seams) and theoretically perfect DPI.
-
-- In `commonMain`, generate a 256×256 noise bitmap at first composition. Seed from `stableRandom(0)`. Cache in a `remember`.
-- Use Kotlin noise lib like [`kotlin-noise`](https://github.com/SudoPlayGames/JNoise) (JVM-only — write an `expect`/`actual` wrapper; iOS can use a direct port of Ken Perlin's reference impl, it's ~100 LOC).
-- Draw as a `Brush.bitmap(...)` with `TileMode.Mirror`.
-- Regenerate only on theme switch, never on every frame.
-
-**Option C — SVG filter via `compose-resources` loadSvg.** Only on Android/desktop; iOS's Compose SVG loader ignores `feTurbulence`. Avoid for MVP.
-
-### Which to pick
-
-Ship **Option A** for v1. It's a day of texture work and zero runtime cost. If the grain ever feels flat or users notice tiling, upgrade to Option B in a later release.
+1. **Never** paint a background procedurally with noise generators at render time unless the spec below says so. Use the shipped PNG assets.
+2. **Never** invent opacity values. Use the exact values in this doc.
+3. **Pause overlay is 82% opaque, not 40%.** If pause looks transparent and you can read the game underneath, it is wrong. Fix.
+4. **Paper is warm (#F4ECE0), not white.** If you see white anywhere, it is wrong.
+5. **Win screen is paper + faint ink bleed + seal.** Not dark. Not blurred. Not gradient.
 
 ---
 
-## Layer 3 · Ambient tint (screen-specific)
+## The 5 canonical backgrounds
 
-A very soft colored wash that sits above the noise but below the vignette. Used sparingly to set emotional temperature per screen.
+Sumi uses exactly **5** background treatments. Every screen picks one. Do not invent new ones.
 
-| Screen | Tint | Light alpha | Dark alpha | Position |
-|---|---|---|---|---|
-| Home | none | — | — | — |
-| Game (active) | none | — | — | — |
-| Win | `red` | 4% | 8% | Radial from center |
-| Pause | `teal` | 3% | 6% | Radial from top |
-| Paywall | `gold` | 5% | 10% | Radial from top-left |
-| Splash | `red` | 3% | 5% | Radial from center-bottom (behind seal area) |
-| Daily | none | — | — | — |
-| Stats (Pro unlocked) | `gold` | 3% | 6% | Top-right corner bloom |
-| Onboarding (slide 4) | seasonal | 4% | 8% | Radial from off-screen edge |
-
-Implementation: a `Box` with `Modifier.background(Brush.radialGradient(...))` over the noise layer. Compose radial brush takes `colors`, `center`, `radius` — keep radius ~1.4× screen diagonal so the gradient is a very slow falloff.
-
-**Prompt for image-gen if you'd rather bake these:**
-> *"A soft radial bloom of warm vermilion red (#A8342A) at the center fading to transparent. Subtle, like candlelight through paper. 2K square. Used as an overlay, so the surrounding area is pure transparent PNG. No hard edges."*
-
----
-
-## Layer 4 · Edge vignette
-
-Every full-screen surface has a soft inner shadow — the feeling of looking *into* the paper, not at it. This also grounds content away from the screen edges.
-
-### Light mode
-
-- Inset shadow, 60.dp soft blur, color `rgba(100, 70, 30, 0.18)` (warm brown, not black).
-- Stronger at corners (radial falloff) than edges.
-
-### Dark mode
-
-- Inset shadow, 60.dp soft blur, color `rgba(0, 0, 0, 0.42)`.
-- Slightly more pronounced — deepens the lamplight feel.
-
-### Implementation
-
-Compose doesn't have a built-in inset shadow modifier. Draw it manually with a `Canvas` that fills the Box bounds and strokes a soft-blurred path just inside, or use a 9-patch PNG overlay (`vignette_light.9.png` / `vignette_dark.9.png`).
-
-Prompt if you bake it:
-> *"Transparent PNG vignette overlay for a mobile screen, 1080×2400 portrait. Soft inner shadow around all edges, strongest in corners, fading to fully transparent in the center 60% of frame. Color: warm brown rgba(100,70,30,0.18). No hard edges. Intended as a multiply overlay."*
-
----
-
-## Layer 5 · Ink bleeds, seals, foxing (decorative)
-
-These are the scattered ink spots and age marks that appear on specific screens. They are **not** random — each has a fixed position and seed to be reproducible between sessions.
-
-### Ink bleeds
-
-Small irregular ink-blots at 15–25% opacity. Placed off-grid so they feel accidental.
-
-- **Home:** one small bleed behind the daily card's eyebrow. `size=80.dp, seed=1, opacity=0.18`.
-- **Win:** a larger one behind the seal stamp. `size=160.dp, seed=3, opacity=0.22`.
-- **Paywall:** a gold bleed in the top-right. `size=220.dp, seed=4, opacity=0.20`.
-- **Splash:** a red bleed at the exact pixel under where the seal will land. `size=120.dp, seed=7, opacity=0.25`.
-
-Implementation: the `InkBleed` composable (see `COMPONENTS.md`). Three concentric circles displaced by Perlin noise.
-
-### Seals (chops)
-
-Red square stamps with kanji. Only on:
-- **Splash** — the "墨" chop lands at t=900ms under the Enso.
-- **Win** — the "完" chop stamps into center at completion.
-- **Salon** (Pro) — small red "墨会" chop in the register header.
-
-See `Seal` in `COMPONENTS.md`.
-
-### Edge foxing (optional, recommended for Paywall + Win only)
-
-The faint brown age-specks you see on old paper. Irregularly scattered 2–4.dp dots at 20–30% opacity using `paperEdge`.
-
-- 25–40 foxing specks per screen, fixed positions by seed.
-- Never near the center. Always within 40.dp of an edge.
-- Light mode: `rgba(139, 107, 74, 0.22)`
-- Dark mode: `rgba(110, 90, 55, 0.35)`
-
-Bake as a transparent PNG overlay (`foxing_light.png` / `foxing_dark.png`) or draw programmatically with seeded random.
-
-**Prompt for bake:**
-> *"Transparent PNG overlay, 1080×2400. Scattered tiny brown specks and foxing marks (old paper age spots), concentrated near edges and corners, almost none in the center. 30 specks, each 2–6 pixels, color rgba(139,107,74,0.22). Feels like a 50-year-old paperback. Pure transparent elsewhere."*
-
----
-
-## Screen-by-screen background recipes
-
-Exactly which layers each screen uses.
-
-### Splash
-1. Flat `paper`
-2. Washi noise at 0.8 intensity
-3. Red radial tint (3% light / 5% dark) from center-bottom
-4. Vignette
-5. One large red ink bleed under seal position
-6. Falling petals (optional first-run only — see `ANIMATIONS.md`)
-
-### Onboarding
-1. Flat `paper`
-2. Washi noise at 0.7
-3. Seasonal tint on slide 4 only
-4. Vignette
-5. (No ink bleeds)
-
-### Home
-1. Flat `paper`
-2. Washi noise at 0.8
-3. (No ambient tint)
-4. Vignette
-5. One small ink bleed behind daily card eyebrow
-6. Seasonal border bloom at very low intensity (see `ANIMATIONS.md` — `PaperBreath`)
-
-### Game (active solve)
-1. Flat `paperGlow` (a hair lighter than `paper` — the board is elevated)
-2. Washi noise at **0.4** (reduced — don't distract from numerals)
-3. (No ambient tint)
-4. Vignette at 60% normal strength
-5. (No ink bleeds on the board area — sacred)
-
-Board background specifically uses `paperGlow` to visually lift it above the surrounding paper. The surrounding chrome (timer, tools) sits on normal `paper`.
-
-### Win
-1. Flat `paper`
-2. Washi noise at 0.8
-3. Red radial tint at 4% light / 8% dark from center
-4. Vignette
-5. Large red ink bleed behind seal
-6. Seal "完" stamps in
-7. Optional: foxing overlay at 50% for extra "old puzzle book" feel
-
-### Pause
-1. Gaussian-blurred snapshot of the paused game (16.dp blur)
-2. `paper` overlay at 88% alpha (this becomes the "paper" layer)
-3. Washi noise at 0.5 on top of that
-4. Teal radial tint 3% from top
-5. Vignette
-
-### Daily
-1. Flat `paper`
-2. Washi noise at 0.8
-3. (No ambient tint)
-4. Vignette
-5. The heatmap cells themselves use a mini-noise texture (smaller scale) to differentiate from flat color
-
-### Stats (Pro)
-1. Flat `paper`
-2. Washi noise at 0.8
-3. Gold radial bloom from top-right (3% light / 6% dark)
-4. Vignette
-5. (No ink bleeds)
-
-### Paywall
-1. Flat `Night.paper` (always dark)
-2. Washi noise at 0.5 (dark mode intensity)
-3. Gold radial bloom from top-left at 5% light / 10% dark
-4. Vignette (dark, stronger)
-5. Gold ink bleed top-right
-6. Foxing overlay for texture
-
----
-
-## Dark mode translation rules
-
-When the active theme is dark, every layer swaps by rule (not by invert):
-
-| Layer | Light mode | Dark mode |
-|---|---|---|
-| 1 flat | `paper` `#F4ECE0` | `Night.paper` `#1A1410` |
-| 2 noise | beige fibre PNG, 35% alpha | umber fibre PNG, 25% alpha |
-| 3 red tint | `rgba(168,52,42,0.04)` | `rgba(232,74,62,0.08)` |
-| 3 gold tint | `rgba(138,107,42,0.05)` | `rgba(217,168,85,0.10)` |
-| 3 teal tint | `rgba(42,90,110,0.03)` | `rgba(111,168,188,0.06)` |
-| 4 vignette | warm-brown inner shadow 18% | pure warm-black inner shadow 42% |
-| 5 bleeds | use night accent variants | use night accent variants |
-| 5 foxing | beige specks 22% | warmer beige specks 35% |
-
-The rule: dark mode tints are **more saturated** and **more alpha** than light, because warm-dark surfaces absorb color more than paper does. A 3% red wash on cream looks equivalent to a 6–8% red wash on sumi-black.
-
----
-
-## Asset list (to build)
-
-If you're doing Option A (baked PNGs), this is your texture-asset shopping list. Deliver as `composeResources/drawable/` PNGs.
-
-| File | Size | Role | Notes |
+| Id | Name | Used on | Resource |
 |---|---|---|---|
-| `washi_paper_light.png` | 2048×2048 | Light washi fibre | Seamless tileable, ~400KB |
-| `washi_paper_dark.png` | 2048×2048 | Dark washi fibre | Seamless tileable |
-| `washi_paper_glow.png` | 2048×2048 | Slightly brighter board surface | Lighter than the default |
-| `vignette_light.9.png` | 1080×2400 | Soft inner shadow, brown | 9-patch |
-| `vignette_dark.9.png` | 1080×2400 | Soft inner shadow, black | 9-patch |
-| `foxing_light.png` | 1080×2400 | Age specks overlay | Transparent PNG |
-| `foxing_dark.png` | 1080×2400 | Age specks overlay for night | Transparent PNG |
-| `bloom_red.png` | 2048×2048 | Soft red radial bloom | Center, alpha falloff |
-| `bloom_gold.png` | 2048×2048 | Soft gold radial bloom | For Paywall/Stats |
-| `bloom_teal.png` | 2048×2048 | Soft teal radial bloom | For Pause |
-| `bloom_seasonal_spring.png` | 2048×2048 | Soft pink bloom | Home seasonal tint |
-| `bloom_seasonal_summer.png` | 2048×2048 | Soft green bloom | |
-| `bloom_seasonal_autumn.png` | 2048×2048 | Soft maple-red bloom | |
-| `bloom_seasonal_winter.png` | 2048×2048 | Soft indigo bloom | |
-| `petal_shape_1.png` through `petal_shape_5.png` | 256×256 | Cherry-petal silhouettes | Transparent, for PetalFall |
+| **BG-1** | Paper (light) | Splash, Onboarding, Home, Daily, Stats (unlocked), Win | `washi_paper_light.png` |
+| **BG-2** | Paper (night) | Same as above in dark mode | `washi_paper_dark.png` |
+| **BG-3** | Paper quiet | Game (active solve) — less fibre, more stillness | `washi_paper_light.png` at 70% noise intensity |
+| **BG-4** | Ink night | Paywall, Pro screens, Stats (locked) | `washi_ink_dark.png` |
+| **BG-5** | Pause scrim | Pause overlay — layered on top of whatever is behind | Composed in code (see §Pause) |
 
-**Total asset weight budget:** ≤3 MB. If exceeded, subsample to 1024×1024 (noise still reads fine at scale).
+## Resources to ship
 
----
+Create these PNGs and drop them into:
 
-## Prompt cookbook (for image-gen LLMs)
+```
+composeApp/src/commonMain/composeResources/drawable/
+  ├── washi_paper_light.png      2048 × 2048, sRGB, 8-bit, tileable
+  ├── washi_paper_dark.png       2048 × 2048, sRGB, 8-bit, tileable
+  ├── washi_ink_dark.png         2048 × 2048, sRGB, 8-bit, tileable
+  ├── ink_bleed_01.png           512  × 512,  sRGB + alpha, tileable no
+  ├── ink_bleed_02.png           512  × 512,  sRGB + alpha, tileable no
+  └── ink_bleed_03.png           512  × 512,  sRGB + alpha, tileable no
+```
 
-Paste these into Midjourney / SDXL / DALL-E / Firefly to generate the source art. Then clean up in Affinity / Photoshop — remove watermarks, retouch any obvious repeats, ensure tileability.
+Use the "How to generate" section below if you don't have them yet.
 
-### Washi paper (light)
-> *Seamless 2048×2048 tileable texture. Warm cream washi paper, `#F4ECE0` base, visible plant-fibre specks in `#C9B48A`, subtle cotton grain, very soft and muted. Flat top-down scan, no lighting, no shadows, no creases, no text, no watermark. Uniform fibre distribution — no clustering.*
+### How to generate the PNGs
 
-### Washi paper (dark)
-> *Seamless 2048×2048 tileable texture of the same washi paper but dyed in sumi ink. Warm black `#1A1410` base, fibre specks in `#3D3022`, preserves the fibre grain from a light scan. Feels like paper lit by a paper lantern, never cool or blue. Flat scan, no lighting, no watermark.*
+Run this once, commit the PNGs, do not regenerate at runtime.
 
-### Ambient bloom (template)
-> *Transparent 2048×2048 PNG. A soft radial bloom of [COLOR] centered at [POSITION], fading to fully transparent by 80% radius. Extremely gentle, like candlelight through paper. No hard edges, no noise, no text. Transparent background.*
+**`washi_paper_light.png`** — open Photoshop / Affinity / GIMP:
+1. Fill 2048×2048 with `#F4ECE0`.
+2. Add Noise filter: Gaussian, monochromatic, amount 2.4%.
+3. Add Clouds filter (Filter → Render → Clouds) on a new layer at 18% opacity, blend mode Multiply, colors `#E8DCC5` → `#F4ECE0`.
+4. Add paper-fibre texture layer: scan any Japanese washi paper OR use a free washi texture, desaturate, set blend mode Overlay at 22%.
+5. Seam the edges tileable (Filter → Other → Offset with wraparound, clone-stamp seams).
+6. Export 8-bit PNG.
 
-Where `[COLOR]` is the accent hex + 25% alpha, and `[POSITION]` is `center` / `top-left` / `bottom-right` etc.
+**`washi_paper_dark.png`** — same process with base color `#1A1410`, clouds `#211812` → `#1A1410`, fibre overlay at 18%.
 
-### Foxing overlay
-> *Transparent 1080×2400 portrait PNG overlay. Scattered small brown age specks (paper foxing), 25–40 dots total, 2–6 pixels each, color `rgba(139,107,74,0.25)`, concentrated near the edges and corners, virtually none in the center 60% of the frame. Feels like a 50-year-old paperback. Pure transparent elsewhere.*
+**`washi_ink_dark.png`** — same as dark paper but base `#0F0A07` (deeper), cloud range `#1A1208` → `#0F0A07`, fibre overlay at 15%, add one soft vignette circle at 18% opacity black from the center outward.
 
-### Petal shape
-> *Silhouette of a single cherry blossom petal on pure transparent background, 256×256 PNG. Soft rounded teardrop shape, slight curl at the tip, pale pink `#F0D4D0` with gentle inner shadow for dimensionality. No stem. Rotated 15 degrees. Soft edges, photorealistic but minimal.*
+**`ink_bleed_*.png`** — 512×512 transparent PNG. Paint 3 concentric soft-edge ink blobs per file, each with seed-varied edge noise. These are decorative ink accents dropped on Win / Paywall / Splash. See INK_BLEED.md section for exact blob anatomy.
 
----
-
-## Performance notes
-
-- **All PNG backgrounds decode on first compose** — preload during splash so the paint is ready at first frame of home.
-- **Never animate the washi noise during an active solve.** Ambient breath only runs on home / pause / splash. In-game, the board stays absolutely still.
-- **Vignette as 9-patch, not fullscreen PNG** — saves memory on large devices.
-- **Bloom PNGs can be 512×512** and stretched; they're soft radial gradients and don't lose fidelity.
+If you prefer, generate them in Figma once and export. Do not procedural-noise these every frame at render time — it burns battery and the result is inconsistent across platforms.
 
 ---
 
-## Quick reference
+## BG-1 · Paper (light)
 
-| Surface | Layers used |
+**When:** any light-mode non-game screen.
+
+**Recipe (Compose):**
+
+```kotlin
+@Composable
+fun WashiBG(
+    modifier: Modifier = Modifier,
+    dark: Boolean = false,
+    variant: WashiVariant = WashiVariant.Full,
+    content: @Composable BoxScope.() -> Unit = {},
+) {
+    val resource = when {
+        dark -> Res.drawable.washi_paper_dark
+        else -> Res.drawable.washi_paper_light
+    }
+    Box(modifier = modifier.fillMaxSize()) {
+        // Layer 1 — base color (MUST be drawn even under the PNG, in case it fails to load)
+        Spacer(
+            Modifier.fillMaxSize().background(
+                if (dark) Sumi.Color.Night.paper else Sumi.Color.paper
+            )
+        )
+        // Layer 2 — the paper PNG, repeating or contained
+        Image(
+            painter = painterResource(resource),
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop,
+            alpha = when (variant) {
+                WashiVariant.Full   -> 1f
+                WashiVariant.Quiet  -> 0.7f   // less texture during gameplay
+                WashiVariant.Faint  -> 0.35f
+            },
+        )
+        // Layer 3 — inner vignette ring (warm shadow around the edges)
+        Box(
+            Modifier.fillMaxSize().drawBehind {
+                val color = if (dark) Color(0x660A0704) else Color(0x33645820)
+                drawRect(
+                    brush = Brush.radialGradient(
+                        colors = listOf(Color.Transparent, Color.Transparent, color),
+                        center = center,
+                        radius = size.maxDimension * 0.8f,
+                    ),
+                )
+            }
+        )
+        content()
+    }
+}
+```
+
+**Exact color tokens used:**
+- Base: `Sumi.Color.paper = #F4ECE0`
+- Vignette (light): `#645820` at 20% alpha
+- Vignette (night): `#0A0704` at 40% alpha
+
+## BG-2 · Paper (night)
+
+Identical composition to BG-1 but uses `washi_paper_dark.png` and warm-dark vignette. The base palette swap is handled by `dark = true` in `WashiBG`.
+
+Warm-dark means: not pure black, not bluish. `#1A1410` base with warm-brown highlights. If dark mode looks cold or blue-tinted, the wrong PNG is loaded.
+
+## BG-3 · Paper quiet (Game)
+
+Same as BG-1 but `WashiVariant.Quiet` — the fibre layer drops to 70%, the vignette radius tightens, and **no ambient PaperBreath animation runs** (see ANIMATIONS.md — breath pauses during solve).
+
+The board is the focus. The background retreats.
+
+## BG-4 · Ink night
+
+**When:** Paywall, Pro-only sections when rendered on dark, Stats locked state.
+
+Same layered model as BG-1 but:
+- Base `Sumi.Color.Night.paper = #1A1410`
+- PNG `washi_ink_dark.png`
+- Vignette stronger: `#000000` at 60% alpha, radius 0.7 of maxDimension
+
+The feeling is "held in shadow", not "blackout". You should still see paper fibre faintly under the gold wordmark.
+
+## BG-5 · Pause scrim (the one that was wrong)
+
+**When:** the Pause overlay modal.
+
+This is NOT a regular background — it is a 3-layer composite drawn on top of the live game beneath.
+
+```
+Layer A (bottom):   the live Game screen (frozen), z = 0
+Layer B (middle):   a 24.dp gaussian blur of Layer A, z = 1
+Layer C (top):      a paper-tinted scrim over Layer B, z = 2
+                    then: the kanji 休, "Rest" label, timer, buttons
+```
+
+### Exact values
+
+| Layer | Treatment |
 |---|---|
-| Splash | 1, 2, 3 (red), 4, 5 (bleed + seal + petals) |
-| Home | 1, 2, 4, 5 (small bleed) + breath |
-| Game (chrome) | 1, 2, 4 |
-| Game (board area) | paperGlow, noise 0.4, no vignette |
-| Win | 1, 2, 3 (red), 4, 5 (bleed + seal + foxing) |
-| Pause | blur-snapshot, paper-overlay, 2, 3 (teal), 4 |
-| Daily | 1, 2, 4 |
-| Stats (Pro) | 1, 2, 3 (gold), 4 |
-| Paywall | 1 (Night), 2 (dark), 3 (gold), 4, 5 (bleed + foxing) |
-| Onboarding | 1, 2, 3 (seasonal on slide 4), 4 |
+| A | Live game snapshot, unchanged |
+| B | Apply `Modifier.blur(24.dp, BlurredEdgeTreatment.Unbounded)` — OR draw a captured bitmap through RenderScript / Core Image blur at radius 24 |
+| C | A `Box` with `background = Sumi.Color.paper.copy(alpha = 0.82f)` (light mode) OR `Sumi.Color.Night.paper.copy(alpha = 0.88f)` (dark mode) |
 
-If a screen isn't in this table, it inherits Home's recipe.
+**The alpha is 0.82 / 0.88, NOT 0.40.** This is the key fix.
+
+If you can read the board cells behind the pause screen, the scrim is too transparent. The game behind must be a soft, undistinguishable wash of color — like frosted glass holding a memory of the puzzle, not a window onto it.
+
+### Why so opaque?
+
+- Pause is a genuine "step away" moment. The player should feel the game recede.
+- The kanji 休 must sit clearly on its own ground.
+- At 0.40 alpha the board cells read through and fight the kanji; contrast fails WCAG.
+- At 0.82 / 0.88 the blur + scrim reads as tinted frosted glass and contrast passes.
+
+### Compose sketch
+
+```kotlin
+@Composable
+fun PauseOverlay(
+    gameSnapshot: Bitmap,   // or ImageBitmap — captured when pause triggered
+    onResume: () -> Unit,
+    onExit: () -> Unit,
+    dark: Boolean = false,
+    elapsedMs: Long,
+) {
+    Box(Modifier.fillMaxSize()) {
+        // Layer A + B — snapshot blurred
+        Image(
+            bitmap = gameSnapshot.asImageBitmap(),
+            contentDescription = null,
+            modifier = Modifier
+                .fillMaxSize()
+                .blur(24.dp, BlurredEdgeTreatment.Unbounded),
+            contentScale = ContentScale.Crop,
+        )
+        // Layer C — paper scrim
+        Box(
+            Modifier
+                .fillMaxSize()
+                .background(
+                    if (dark) Sumi.Color.Night.paper.copy(alpha = 0.88f)
+                    else Sumi.Color.paper.copy(alpha = 0.82f)
+                )
+        )
+        // Content — kanji, label, timer, buttons
+        Column(
+            Modifier.fillMaxSize().padding(32.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text("休", style = SumiTypography.kanjiHero, color = Sumi.Color.red)
+            Spacer(Modifier.height(12.dp))
+            Text("A moment of rest", style = SumiTypography.displayM, color = Sumi.Color.ink)
+            Spacer(Modifier.height(8.dp))
+            Text("Your time is paused. Return when you are ready.",
+                 style = SumiTypography.bodyM, color = Sumi.Color.inkSoft,
+                 textAlign = TextAlign.Center)
+            Spacer(Modifier.height(32.dp))
+            Text(formatElapsed(elapsedMs), style = SumiTypography.displayL.italic(),
+                 color = Sumi.Color.ink)
+            Spacer(Modifier.height(40.dp))
+            SumiButton(onClick = onResume, variant = Primary, modifier = Modifier.fillMaxWidth()) {
+                Text("Resume")
+            }
+            Spacer(Modifier.height(12.dp))
+            SumiButton(onClick = onExit, variant = Ghost, modifier = Modifier.fillMaxWidth()) {
+                Text("End session")
+            }
+        }
+    }
+}
+```
+
+**If the Pause overlay you built does not match this screenshot description, rebuild it with these exact values.**
+
+Visual acceptance:
+- ✓ Game grid is *perceivable as distant shape*, not readable
+- ✓ Body text, buttons, kanji read with clear AA contrast
+- ✓ The whole screen reads "warm paper held over game" in light mode, "deep ink held over game" in dark mode
+
+## Ink bleeds
+
+Decorative accents layered on top of the paper background on certain screens. Always as `Image` with alpha, not drawn procedurally.
+
+| Screen | Recipe |
+|---|---|
+| Splash | 1 bleed (`ink_bleed_01.png`), 360.dp, alpha 0.12, position center-behind-enso |
+| Win | 2 bleeds: `ink_bleed_02.png` at top-left corner, 280.dp, alpha 0.08; `ink_bleed_03.png` at bottom-right, 220.dp, alpha 0.10 |
+| Paywall | 1 bleed (`ink_bleed_01.png` tinted gold), 400.dp, alpha 0.14, positioned behind the Pro mark |
+| Home | None — keep quiet |
+| Game | None — absolutely none during active play |
+| Pause | None — the blur + scrim is the treatment |
+| Daily | 1 very small bleed at top-right, 120.dp, alpha 0.06 |
+| Stats (unlocked) | 1 bleed behind the hero number, 200.dp, alpha 0.08 |
+| Onboarding | 1 bleed per slide, rotated and sized per slide, alpha 0.08–0.12 |
+
+Implementation: `Image(painter = painterResource(Res.drawable.ink_bleed_02), contentDescription = null, alpha = 0.08f, ...)`. Never `Canvas { drawCircle(...) }` with random seeds — that caused the inconsistency.
+
+## Common mistakes to reject
+
+- ❌ Building the paper texture with live `drawRect` + noise at render time. Use the PNG.
+- ❌ Using `Modifier.alpha(0.4f)` on the pause scrim. It must be 0.82 / 0.88.
+- ❌ Gradients as "paper". The paper is a texture PNG, not a gradient.
+- ❌ Dark mode rendered as a blue-black instead of warm-black. Check the hex — `#1A1410`, not `#111827`.
+- ❌ `ContentScale.Fit` on the paper PNG — leaves edges blank. Use `ContentScale.Crop`.
+- ❌ Tinting the paper PNG with a `colorFilter` at runtime. Ship two PNGs (light + dark) instead; do not re-tint.
