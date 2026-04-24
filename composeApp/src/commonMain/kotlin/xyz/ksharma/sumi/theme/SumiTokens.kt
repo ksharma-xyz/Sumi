@@ -35,6 +35,14 @@ object SumiTokens {
         val error = androidx.compose.ui.graphics.Color(0xFFA8342A)
         val hint = androidx.compose.ui.graphics.Color(0xFF8A6B2A)
 
+        // Sakura petal palette — used in ambient and burst petal animations
+        object Sakura {
+            val blush = androidx.compose.ui.graphics.Color(0xFFF5CED6)
+            val mid = androidx.compose.ui.graphics.Color(0xFFE8A3B3)
+            val deep = androidx.compose.ui.graphics.Color(0xFFC97A8E)
+            val glow = androidx.compose.ui.graphics.Color(0xFFFBF6ED)
+        }
+
         object Night {
             val paper = androidx.compose.ui.graphics.Color(0xFF1A1410)
             val paperWarm = androidx.compose.ui.graphics.Color(0xFF241C14)

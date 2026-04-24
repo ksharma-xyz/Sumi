@@ -22,6 +22,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.withTransform
+import xyz.ksharma.sumi.theme.SumiTokens
 import kotlin.math.PI
 import kotlin.math.sin
 
@@ -47,15 +48,26 @@ private data class PetalData(
     val windPushX: Float = 0f,
 )
 
+// Sakura petal palette sourced from SumiTokens.Color.Sakura design tokens.
 private val PETAL_COLORS = listOf(
-    Color(0xFFF5CED6),
-    Color(0xFFE8A3B3),
-    Color(0xFFC97A8E),
-    Color(0xFFFBF6ED),
+    SumiTokens.Color.Sakura.blush,
+    SumiTokens.Color.Sakura.mid,
+    SumiTokens.Color.Sakura.deep,
+    SumiTokens.Color.Sakura.glow,
 )
 
 // ── Ambient generation (splash — infinite loop) ───────────────────────────────
 
+/**
+ * Produces a deterministic (non-random, index-based) list of petals for the ambient shower.
+ * Determinism avoids recomposition-triggered changes. Uses linear congruential mixing via
+ * prime multipliers (37, 53, 71, 83, 97) to spread values across the [0, N) range without
+ * actual randomness.
+ *
+ * Two petal types:
+ * - Wind-carried (≈ ¼ of count): travel horizontally at a fixed Y, alternating left↔right.
+ * - Gravity-fall (remaining): fall from the top at a random X with wide lateral sway.
+ */
 private fun generateAmbientPetals(count: Int): List<PetalData> {
     val windCount = maxOf(1, count / 4)
     return List(count) { i ->
@@ -110,6 +122,15 @@ private fun generateAmbientPetals(count: Int): List<PetalData> {
 
 // ── Burst generation (game events — one-shot) ─────────────────────────────────
 
+/**
+ * Produces a seeded-random list of petals for a one-shot burst.
+ * All burst petals are gravity-fall type (no wind-carried) so they spread
+ * across the full screen width rather than converging on a single horizontal path.
+ *
+ * [seed] makes each burst visually unique while being reproducible per trigger value.
+ * Delayed petals do NOT have their progress normalised — they simply don't travel
+ * the full screen height, which gives a natural staggered arrival.
+ */
 private fun generateBurstPetals(
     count: Int,
     seed: Int,
@@ -119,18 +140,15 @@ private fun generateBurstPetals(
 ): List<PetalData> {
     val rng = kotlin.random.Random(seed)
     return List(count) { i ->
-        // All burst petals: gravity-fall with rightward wind push.
-        // No wind-carried type — that would make them all travel the same left→right path.
         val sizePx = (26f + rng.nextFloat() * 22f) * sizeMultiplier
         PetalData(
-            // Fully random X across entire screen — no clustering
             startXFraction = rng.nextFloat(),
             startYFraction = 0f,
-            // Stagger entry up to 40% of burst; no normalisation so late petals
-            // simply don't complete their full fall (looks natural).
+            // Stagger entry up to 40% of burst; unnormalised so late petals
+            // don't complete their full fall — this avoids the "straight line at the bottom" look.
             delayFraction = rng.nextFloat() * 0.40f,
             durationMs = 1f,
-            // Wide sway so each petal visibly oscillates left/right
+            // Wide sway (60–140 px at swayScale=1) so each petal visibly oscillates left/right.
             swayAmp1 = (60f + rng.nextFloat() * 80f) * swayScale,
             swayFreq1 = 1.0f + rng.nextFloat() * 1.2f,
             swayAmp2 = (20f + rng.nextFloat() * 30f) * swayScale,
@@ -150,6 +168,12 @@ private fun generateBurstPetals(
 
 // ── Shared path ───────────────────────────────────────────────────────────────
 
+/**
+ * Returns a single sakura-petal outline path scaled to [scale].
+ * The base shape fits inside a 24×24 unit square (origin at top-left).
+ * A new Path is created each call — callers that draw many petals per frame
+ * should cache paths via [remember] keyed on [scale].
+ */
 private fun sakuraPath(scale: Float): Path = Path().apply {
     moveTo(12f * scale, 4f * scale)
     cubicTo(14f * scale, 8f * scale, 18f * scale, 8f * scale, 18f * scale, 12f * scale)
@@ -161,6 +185,18 @@ private fun sakuraPath(scale: Float): Path = Path().apply {
 
 // ── Shared draw engine (ambient) ──────────────────────────────────────────────
 
+/**
+ * Draws a single [petal] at the position implied by [cycleProgress] ∈ [0, 1).
+ *
+ * [cycleProgress] wraps each petal's individual clock: 0 = just entered screen,
+ * 1 = completed one full traversal (gravity-fall or wind-carry). Alpha is ramped
+ * in over [fadeInWindow] and out over [fadeOutWindow] at the tail of the cycle.
+ *
+ * X/Y movement:
+ * - Wind-carried: travels horizontally at a fixed Y band, swaying vertically.
+ * - Gravity-fall: falls top → bottom with dual-frequency lateral sway
+ *   plus a small rightward drift ([PetalData.windPushX]).
+ */
 private fun DrawScope.renderPetalAtProgress(
     petal: PetalData,
     cycleProgress: Float,
