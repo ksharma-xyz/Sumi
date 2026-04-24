@@ -70,13 +70,10 @@ Typical stack after a game session:
 
 ---
 
-## Open questions for review
+## Decisions (resolved)
 
-1. **System back from Game during play** — should it save the game state (Phase 5) or discard?
-   Current behaviour: game is discarded, fresh puzzle on next visit.
+1. **System back from Game during play** → **save the game state** (Phase 5). Back = save-and-exit, not discard. Fresh game is only started when no save exists for that difficulty's daily puzzle.
 
-2. **Bottom nav bar** — tabs (Daily, Stats, Zen) are defined but the bar is hidden while
-   `topLevelRoute == SplashRoute`. When should it appear? After first onboarding completion?
+2. **Bottom nav bar** → visible on all screens **except Splash and Onboarding**. It should appear as soon as the user lands on Home for the first time.
 
-3. **Multiple difficulty slots** — if a Medium game is in progress and the user starts Easy,
-   should the Medium game auto-save? See TODO.md Phase 5 for the full spec.
+3. **Multiple difficulty slots** → **yes, auto-save**. Navigating away from an in-progress Medium game (back, or switching to a different difficulty) saves it to the Medium slot. The new game uses its own slot independently.

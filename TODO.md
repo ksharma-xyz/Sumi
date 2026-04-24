@@ -1,6 +1,6 @@
 # Sumi — Build Status
 
-Last updated: 2026-04-24
+Last updated: 2026-04-25
 
 ## Done
 
@@ -81,17 +81,19 @@ Last updated: 2026-04-24
   `celebrationCount` so each burst is uniquely random; triggered in `GameViewModel` via
   `completionKey()` diff on every board state change (rows, cols, boxes, grid)
 
-- [ ] **Paywall entry point** — decide when/where to show Paywall (e.g., after N free puzzles,
-  or when tapping "Zen" tab). Currently reachable only via bottom nav tab.
+- [ ] **Paywall entry point** — UI and paywalling logic to implement; billing SDK integration deferred to last.
+  - Gate Edo difficulty and unlimited hints behind "Sumi Pro"
+  - Show paywall when user taps a gated feature, not on cold launch
 
-### Phase 3 — Monetisation
+### Phase 3 — Monetisation (UI first, SDK integration deferred)
 
-- [ ] **In-app purchases (IAP)** — platform-specific billing
-  - Android: Google Play Billing Library
-  - iOS: StoreKit 2
-  - Gate: Edo difficulty and/or unlimited hints behind "Sumi Pro"
+- [ ] **In-app purchases (IAP)** — build the full purchase flow UI; wire to real billing last
+  - Android: Google Play Billing Library *(deferred — integrate last)*
+  - iOS: StoreKit 2 *(deferred — integrate last)*
 
-- [ ] **Restore purchases** — required for App Store submission
+- [ ] **Restore purchases** — required for App Store submission *(deferred with billing SDK)*
+
+- [ ] **Ads** — integration deferred to last (post-IAP). Reserve ad placement slots in UI now.
 
 ### Phase 4 — Future Features
 
@@ -105,38 +107,14 @@ Last updated: 2026-04-24
 
 ### Phase 5 — Game Save / Resume
 
-**Business logic (spec — implement in a future phase):**
-
-**Save slots:** one per difficulty level (5 total: Easy / Medium / Hard / Master / Edo).
-Multiple difficulties can have live saves simultaneously; they are fully independent.
-
-**Save trigger:** the moment the user correctly places their first digit. A blank grid is not
-worth saving. Incorrect digits don't count (they're never saved state anyway).
-
-**On Home → tap difficulty tile:**
-- Check: does this difficulty have a live save for today's puzzle? (epoch day stored with save)
-  - **Yes** → resume immediately, no prompt
-  - **No** → start a fresh game
-- If the daily puzzle has rolled over since the save was written, the save is stale → discard
-  it silently and start fresh
-
-**New game / discard from within an active game:**
-- The Pause overlay should expose a **"New Game"** button (in addition to Resume / Home)
-- Tapping "New Game" clears the save slot for that difficulty and restarts fresh
-- Win screen navigated to → auto-clears that difficulty's save slot
-- Game-over (3 marks) → auto-clears that difficulty's save slot
-
-**What to persist per slot (DataStore, one key per difficulty):**
-- `epochDay: Int` — the day the game was started (for staleness check)
-- `cells: String` — serialised 81-cell user-entered values (0 = empty; givens are re-derived)
-- `elapsedMs: Long`
-- `mistakeCount: Int`
-- `hintsRemaining: Int`
-- Notes mode resets to `false` on resume
-
-**Navigation invariant:** you cannot have two `GameRoute` entries on the stack simultaneously
-(Home → Game is always a push; going back pops back to Home). If a user is on GameScreen and
-taps a difficulty from Home, that path is not reachable — they must navigate back first.
+- [x] **Save slots** — one per difficulty (5 total: Easy / Medium / Hard / Master / Edo); independent
+- [x] **Auto-save on every user move** — `GameViewModel.startSync()` writes to DataStore after each board state change; no data loss on process death
+- [x] **Resume on re-launch** — `GameViewModel.init()` checks for a live save (same day) and restores board, timer, mistake count, hints; notes mode resets to false
+- [x] **Staleness check** — saves stamped with `epochDay`; save from a previous day is silently discarded, fresh puzzle starts
+- [x] **Clear on win/game-over** — save slot cleared automatically when the game ends
+- [x] **"New Game" from pause overlay** — calls `clearSave()` before `init()`, discarding the current slot and starting fresh
+- [x] **`GameSave` / `GameSaveRepository` / `DataStoreGameSaveRepository`** — DataStore-backed, 5 keys per difficulty slot
+- [x] Registered in Koin (`AppModule`); `GameViewModel` factory updated
 
 ---
 

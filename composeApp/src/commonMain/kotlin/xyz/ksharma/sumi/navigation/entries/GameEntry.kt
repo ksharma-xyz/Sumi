@@ -91,6 +91,7 @@ private fun GameEntryContent(
             onResume = { paused = false },
             onNewPuzzle = {
                 paused = false
+                vm.clearSave()
                 vm.init(diff)
             },
         ),
