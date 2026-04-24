@@ -13,13 +13,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.PathMeasure
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -29,26 +27,10 @@ import xyz.ksharma.sumi.resources.Res
 import xyz.ksharma.sumi.resources.enso_ink
 import xyz.ksharma.sumi.theme.SumiTheme
 
-// Enso path mirrors enso_ink.xml (1024×1024 viewBox scaled to 120×120):
-// M694,356 A218.4,218.4 121.4,1 0,626.4 678.4 Q574.4,688.8 512,678.4
-// Arc: center≈(60.92,57.14) r=25.59, startAngle=-37.1°, sweep=-262° (CCW large arc)
-// Tail: quadratic bezier to (60,79.5) with control (67.26,80.72)
-private fun ensoFullPath(s: Float): Path = Path().apply {
-    moveTo(81.30f * s, 41.72f * s)
-    arcTo(
-        rect = Rect(
-            left = 35.33f * s,
-            top = 31.55f * s,
-            right = 86.51f * s,
-            bottom = 82.73f * s,
-        ),
-        startAngleDegrees = -37.1f,
-        sweepAngleDegrees = -262f,
-        forceMoveTo = false,
-    )
-    quadraticTo(67.26f * s, 80.72f * s, 60f * s, 79.5f * s)
-}
-
+/**
+ * Splash Ensō logo — always renders the shipped asset (never a plain geometric arc).
+ * [progress] drives a fade + subtle scale reveal (Option B from BACKGROUNDS.md).
+ */
 @Composable
 fun LogoEnso(
     modifier: Modifier = Modifier,
@@ -57,25 +39,20 @@ fun LogoEnso(
     progress: Float = 1f,
 ) {
     val resolvedColor = if (color == Color.Unspecified) SumiTheme.colors.ink else color
-    if (progress >= 1f) {
-        Image(
-            painter = painterResource(Res.drawable.enso_ink),
-            contentDescription = null,
-            modifier = modifier.size(size),
-            contentScale = ContentScale.Fit,
-            colorFilter = ColorFilter.tint(resolvedColor),
-        )
-    } else {
-        Canvas(modifier = modifier.size(size)) {
-            val s = this.size.width / 120f
-            val strokeW = this.size.width * 0.092f
-            val fullPath = ensoFullPath(s)
-            val pm = PathMeasure().also { it.setPath(fullPath, false) }
-            val drawPath = Path().also { seg -> pm.getSegment(0f, progress * pm.length, seg, true) }
-
-            drawPath(path = drawPath, color = resolvedColor, style = Stroke(strokeW, cap = StrokeCap.Round))
-        }
-    }
+    Image(
+        painter = painterResource(Res.drawable.enso_ink),
+        contentDescription = null,
+        modifier = modifier
+            .size(size)
+            .graphicsLayer {
+                alpha = progress
+                val scale = 0.96f + 0.04f * progress
+                scaleX = scale
+                scaleY = scale
+            },
+        contentScale = ContentScale.Fit,
+        colorFilter = ColorFilter.tint(resolvedColor),
+    )
 }
 
 @Composable
