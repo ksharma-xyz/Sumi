@@ -44,6 +44,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import xyz.ksharma.sumi.design.components.LogoEnso
+import xyz.ksharma.sumi.design.components.SumiPetals
 import xyz.ksharma.sumi.design.components.WashiBG
 import xyz.ksharma.sumi.resources.Res
 import xyz.ksharma.sumi.resources.ink_bleed_01
@@ -66,6 +67,7 @@ fun SplashScreen(
     LaunchedEffect(uiState.navigationTarget) { uiState.navigationTarget?.let { currentOnNavigate(it) } }
 
     WashiBG(modifier = modifier.fillMaxSize()) {
+        SumiPetals(modifier = Modifier.fillMaxSize(), count = 8)
         SplashInkBleed()
         SplashEnsoKanji(ensoProgress.value, kanjiAlpha.value)
         SplashWordmark(wordmarkAlpha.value)
