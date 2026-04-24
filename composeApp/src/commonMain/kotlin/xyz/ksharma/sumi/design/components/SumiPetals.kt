@@ -24,144 +24,141 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.withTransform
 import xyz.ksharma.sumi.theme.SumiTokens
 import kotlin.math.PI
+import kotlin.math.cos
 import kotlin.math.sin
 
 // ── Internal model ────────────────────────────────────────────────────────────
 
 private data class PetalData(
+    // Entry position as fraction of canvas size; may be negative (off-screen entry).
     val startXFraction: Float,
     val startYFraction: Float,
-    val delayFraction: Float,
-    val durationMs: Float,
+    // Normalised wind direction (cos/sin of angle); drives the main travel vector.
+    val windDx: Float,
+    val windDy: Float,
+    // How many screen-widths the petal travels along the wind vector in one cycle.
+    val travelScale: Float,
+    // Turbulence: dual-frequency sway perpendicular to the wind direction.
     val swayAmp1: Float,
     val swayFreq1: Float,
     val swayAmp2: Float,
     val swayFreq2: Float,
     val swayPhase2: Float,
+    val delayFraction: Float,
+    val durationMs: Float,
     val sizePx: Float,
     val initialRotation: Float,
     val totalSpin: Float,
     val color: Color,
     val alpha: Float,
-    val windCarried: Boolean,
-    val driftRight: Boolean,
-    val windPushX: Float = 0f,
 )
 
-// Sakura petal palette sourced from SumiTokens.Color.Sakura design tokens.
-private val PETAL_COLORS = listOf(
+// Default sakura palette sourced from SumiTokens.Color.Sakura design tokens.
+private val SAKURA_COLORS = listOf(
     SumiTokens.Color.Sakura.blush,
     SumiTokens.Color.Sakura.mid,
     SumiTokens.Color.Sakura.deep,
     SumiTokens.Color.Sakura.glow,
 )
 
-// ── Ambient generation (splash — infinite loop) ───────────────────────────────
+// ── Generation helpers ────────────────────────────────────────────────────────
 
 /**
- * Produces a deterministic (non-random, index-based) list of petals for the ambient shower.
- * Determinism avoids recomposition-triggered changes. Uses linear congruential mixing via
- * prime multipliers (37, 53, 71, 83, 97) to spread values across the [0, N) range without
- * actual randomness.
+ * Generates ambient petals for the infinite splash shower.
  *
- * Two petal types:
- * - Wind-carried (≈ ¼ of count): travel horizontally at a fixed Y, alternating left↔right.
- * - Gravity-fall (remaining): fall from the top at a random X with wide lateral sway.
+ * All petals are wind-blown with a diagonal trajectory (angle 25–65° from horizontal).
+ * 40% enter from the left edge; the rest enter from the top. This creates a natural
+ * "blizzard" where the wind carries petals across the full screen in varied paths.
  */
-private fun generateAmbientPetals(count: Int): List<PetalData> {
-    val windCount = maxOf(1, count / 4)
+private fun generateAmbientPetals(count: Int, colors: List<Color>): List<PetalData> {
+    val twoPi = (2f * PI).toFloat()
     return List(count) { i ->
-        val windCarried = i < windCount
         val a = i * 37 + 17
         val b = i * 53 + 29
         val c = i * 71 + 13
         val d = i * 83 + 41
         val e = i * 97 + 7
 
-        if (windCarried) {
-            PetalData(
-                startXFraction = 0f,
-                startYFraction = 0.08f + (a % 55) / 100f,
-                delayFraction = (b % 100) / 100f,
-                durationMs = 22000f + (c % 14000).toFloat(),
-                swayAmp1 = 28f + (d % 28).toFloat(),
-                swayFreq1 = 2f + (b % 18) / 10f,
-                swayAmp2 = 10f + (c % 12).toFloat(),
-                swayFreq2 = 4.5f + (a % 20) / 10f,
-                swayPhase2 = (e % 628) / 100f,
-                sizePx = 18f + (a % 14).toFloat(),
-                initialRotation = (b % 360).toFloat(),
-                totalSpin = (if (i % 2 == 0) 1f else -1f) * (18f + (c % 28).toFloat()),
-                color = PETAL_COLORS[i % PETAL_COLORS.size],
-                alpha = 0.30f + (d % 22) / 100f,
-                windCarried = true,
-                driftRight = i % 2 == 0,
-            )
-        } else {
-            PetalData(
-                startXFraction = (a % 100) / 100f,
-                startYFraction = 0f,
-                delayFraction = (b % 100) / 100f,
-                durationMs = 18000f + (c % 12000).toFloat(),
-                swayAmp1 = 22f + (d % 38).toFloat(),
-                swayFreq1 = 1.2f + (b % 16) / 10f,
-                swayAmp2 = 7f + (c % 11).toFloat(),
-                swayFreq2 = 3.8f + (a % 22) / 10f,
-                swayPhase2 = (e % 628) / 100f,
-                sizePx = 26f + (a % 22).toFloat(),
-                initialRotation = (b % 360).toFloat(),
-                totalSpin = (if (i % 2 == 0) 1f else -1f) * (80f + (c % 100).toFloat()),
-                color = PETAL_COLORS[i % PETAL_COLORS.size],
-                alpha = 0.45f + (d % 35) / 100f,
-                windCarried = false,
-                driftRight = false,
-            )
-        }
+        // 40% side-entry (from left), 60% top-entry
+        val fromLeft = (i % 10) < 4
+
+        // Wind angle: 25° (nearly horizontal gust) to 65° (steeper fall).
+        // Expressed as radians from horizontal-right.
+        val angleDeg = 25f + (a % 40).toFloat()
+        val angleRad = angleDeg * PI.toFloat() / 180f
+        val windDx = cos(angleRad)
+        val windDy = sin(angleRad)
+
+        val startXFraction = if (fromLeft) -0.12f else (a % 100) / 100f
+        val startYFraction = if (fromLeft) (b % 90) / 100f else -(c % 15) / 100f
+
+        PetalData(
+            startXFraction = startXFraction,
+            startYFraction = startYFraction,
+            windDx = windDx,
+            windDy = windDy,
+            travelScale = 1.5f + (b % 60) / 100f, // 1.5–2.1× screen width
+            swayAmp1 = 45f + (d % 65).toFloat(), // 45–110 px turbulence
+            swayFreq1 = 1.5f + (b % 28) / 10f, // 1.5–4.3
+            swayAmp2 = 16f + (c % 28).toFloat(), // 16–44 px
+            swayFreq2 = 3.5f + (a % 22) / 10f, // 3.5–5.7
+            swayPhase2 = (e % 628) / 100f,
+            delayFraction = (b % 100) / 100f,
+            durationMs = 14000f + (c % 13000).toFloat(), // 14–27 s
+            sizePx = 15f + (a % 23).toFloat(), // 15–38 px; varied density
+            initialRotation = (b % 360).toFloat(),
+            totalSpin = (if (i % 2 == 0) 1f else -1f) * (50f + (c % 150).toFloat()),
+            color = colors[i % colors.size],
+            alpha = 0.38f + (d % 37) / 100f, // 0.38–0.75
+        )
     }
 }
 
-// ── Burst generation (game events — one-shot) ─────────────────────────────────
-
 /**
- * Produces a seeded-random list of petals for a one-shot burst.
- * All burst petals are gravity-fall type (no wind-carried) so they spread
- * across the full screen width rather than converging on a single horizontal path.
+ * Generates petals for a one-shot burst (game completion events).
  *
- * [seed] makes each burst visually unique while being reproducible per trigger value.
- * Delayed petals do NOT have their progress normalised — they simply don't travel
- * the full screen height, which gives a natural staggered arrival.
+ * Same wind-blizzard physics as ambient petals; each burst is seeded for uniqueness.
+ * All petals have a rightward wind push; some enter from the left or mid-screen.
  */
 private fun generateBurstPetals(
     count: Int,
     seed: Int,
     sizeMultiplier: Float,
     swayScale: Float,
-    windPushScale: Float,
+    colors: List<Color>,
 ): List<PetalData> {
+    val twoPi = (2f * PI).toFloat()
     val rng = kotlin.random.Random(seed)
     return List(count) { i ->
-        val sizePx = (26f + rng.nextFloat() * 22f) * sizeMultiplier
+        // Wind angle 30–70° for bursts — slightly steeper to fill the screen faster.
+        val angleDeg = 30f + rng.nextFloat() * 40f
+        val angleRad = angleDeg * PI.toFloat() / 180f
+        val windDx = cos(angleRad)
+        val windDy = sin(angleRad)
+
+        // 35% enter from left, rest from top; spread start positions generously.
+        val fromLeft = rng.nextFloat() < 0.35f
+        val startX = if (fromLeft) -0.15f else rng.nextFloat() * 1.1f - 0.05f
+        val startY = if (fromLeft) rng.nextFloat() * 0.9f else -(rng.nextFloat() * 0.15f)
+
         PetalData(
-            startXFraction = rng.nextFloat(),
-            startYFraction = 0f,
-            // Stagger entry up to 40% of burst; unnormalised so late petals
-            // don't complete their full fall — this avoids the "straight line at the bottom" look.
+            startXFraction = startX,
+            startYFraction = startY,
+            windDx = windDx,
+            windDy = windDy,
+            travelScale = 1.4f + rng.nextFloat() * 0.8f,
+            swayAmp1 = (55f + rng.nextFloat() * 85f) * swayScale,
+            swayFreq1 = 1.0f + rng.nextFloat() * 1.5f,
+            swayAmp2 = (18f + rng.nextFloat() * 32f) * swayScale,
+            swayFreq2 = 3.0f + rng.nextFloat() * 2.5f,
+            swayPhase2 = rng.nextFloat() * twoPi,
             delayFraction = rng.nextFloat() * 0.40f,
             durationMs = 1f,
-            // Wide sway (60–140 px at swayScale=1) so each petal visibly oscillates left/right.
-            swayAmp1 = (60f + rng.nextFloat() * 80f) * swayScale,
-            swayFreq1 = 1.0f + rng.nextFloat() * 1.2f,
-            swayAmp2 = (20f + rng.nextFloat() * 30f) * swayScale,
-            swayFreq2 = 3.0f + rng.nextFloat() * 2.0f,
-            swayPhase2 = rng.nextFloat() * 6.28f,
-            sizePx = sizePx,
+            sizePx = (24f + rng.nextFloat() * 24f) * sizeMultiplier,
             initialRotation = rng.nextFloat() * 360f,
-            totalSpin = (if (rng.nextBoolean()) 1f else -1f) * (60f + rng.nextFloat() * 100f),
-            color = PETAL_COLORS[i % PETAL_COLORS.size],
+            totalSpin = (if (rng.nextBoolean()) 1f else -1f) * (70f + rng.nextFloat() * 130f),
+            color = colors[i % colors.size],
             alpha = 0.55f + rng.nextFloat() * 0.35f,
-            windCarried = false,
-            driftRight = false,
-            windPushX = (0.10f + rng.nextFloat() * 0.25f) * windPushScale,
         )
     }
 }
@@ -169,10 +166,8 @@ private fun generateBurstPetals(
 // ── Shared path ───────────────────────────────────────────────────────────────
 
 /**
- * Returns a single sakura-petal outline path scaled to [scale].
- * The base shape fits inside a 24×24 unit square (origin at top-left).
- * A new Path is created each call — callers that draw many petals per frame
- * should cache paths via [remember] keyed on [scale].
+ * Returns a single sakura-petal outline scaled to [scale].
+ * Base shape fits inside a 24×24 unit square.
  */
 private fun sakuraPath(scale: Float): Path = Path().apply {
     moveTo(12f * scale, 4f * scale)
@@ -183,19 +178,16 @@ private fun sakuraPath(scale: Float): Path = Path().apply {
     close()
 }
 
-// ── Shared draw engine (ambient) ──────────────────────────────────────────────
+// ── Shared draw engine ────────────────────────────────────────────────────────
 
 /**
- * Draws a single [petal] at the position implied by [cycleProgress] ∈ [0, 1).
+ * Draws one petal at [cycleProgress] ∈ [0, 1).
  *
- * [cycleProgress] wraps each petal's individual clock: 0 = just entered screen,
- * 1 = completed one full traversal (gravity-fall or wind-carry). Alpha is ramped
- * in over [fadeInWindow] and out over [fadeOutWindow] at the tail of the cycle.
+ * Position uses a wind-vector model:
+ *   main travel = (windDx, windDy) × travelScale × screenWidth × progress
+ *   lateral sway (perpendicular to wind): dual sine oscillators
  *
- * X/Y movement:
- * - Wind-carried: travels horizontally at a fixed Y band, swaying vertically.
- * - Gravity-fall: falls top → bottom with dual-frequency lateral sway
- *   plus a small rightward drift ([PetalData.windPushX]).
+ * Alpha fades in over [fadeInWindow] and out over [fadeOutWindow] at the tail.
  */
 private fun DrawScope.renderPetalAtProgress(
     petal: PetalData,
@@ -212,24 +204,17 @@ private fun DrawScope.renderPetalAtProgress(
     if (alpha <= 0f) return
 
     val w = size.width
-    val h = size.height
-    val sway1 = petal.swayAmp1 * sin(cycleProgress * petal.swayFreq1 * twoPi)
-    val sway2 = petal.swayAmp2 * sin(cycleProgress * petal.swayFreq2 * twoPi + petal.swayPhase2)
+    val dist = cycleProgress * petal.travelScale * w
 
-    val x: Float
-    val y: Float
+    // Main trajectory along wind direction.
+    val baseX = petal.startXFraction * w + petal.windDx * dist
+    val baseY = petal.startYFraction * size.height + petal.windDy * dist
 
-    if (petal.windCarried) {
-        x = if (petal.driftRight) {
-            -petal.sizePx + cycleProgress * (w + petal.sizePx * 2f)
-        } else {
-            w + petal.sizePx - cycleProgress * (w + petal.sizePx * 2f)
-        }
-        y = petal.startYFraction * h + sway1 + sway2
-    } else {
-        x = petal.startXFraction * w + sway1 + sway2 + petal.windPushX * cycleProgress * w
-        y = -petal.sizePx + cycleProgress * (h + petal.sizePx * 2f)
-    }
+    // Turbulence perpendicular to the wind vector (cross-product in 2D = (-windDy, windDx)).
+    val sway = petal.swayAmp1 * sin(cycleProgress * petal.swayFreq1 * twoPi) +
+        petal.swayAmp2 * sin(cycleProgress * petal.swayFreq2 * twoPi + petal.swayPhase2)
+    val x = baseX + (-petal.windDy) * sway
+    val y = baseY + petal.windDx * sway
 
     val rotation = petal.initialRotation + cycleProgress * petal.totalSpin
     val scale = petal.sizePx / 24f
@@ -246,13 +231,15 @@ private fun DrawScope.renderPetalAtProgress(
 
 /**
  * Ambient infinite petal shower — used on the splash screen background.
+ * Default count is 20 (doubled from original 8) for the blizzard feel.
  */
 @Composable
 fun SumiPetals(
     modifier: Modifier = Modifier,
-    count: Int = 8,
+    count: Int = 20,
+    colors: List<Color> = SAKURA_COLORS,
 ) {
-    val petals = remember(count) { generateAmbientPetals(count) }
+    val petals = remember(count, colors) { generateAmbientPetals(count, colors) }
     val transition = rememberInfiniteTransition(label = "petals")
     val timeMs by transition.animateFloat(
         initialValue = 0f,
@@ -267,7 +254,7 @@ fun SumiPetals(
     Canvas(modifier = modifier) {
         petals.forEach { petal ->
             val cycleProgress = ((timeMs / petal.durationMs) + petal.delayFraction) % 1f
-            renderPetalAtProgress(petal, cycleProgress, fadeInWindow = 0.08f, fadeOutWindow = 0.08f)
+            renderPetalAtProgress(petal, cycleProgress, fadeInWindow = 0.07f, fadeOutWindow = 0.07f)
         }
     }
 }
@@ -275,17 +262,16 @@ fun SumiPetals(
 /**
  * One-shot petal burst triggered by a game completion event.
  *
- * Each new [trigger] value > 0 starts a fresh 3-second shower with a unique
- * random layout. Wind always blows left → right. Use [config] to control
- * petal count, size, duration, sway strength, and wind intensity.
+ * Each new [trigger] > 0 starts a fresh shower with a unique random layout.
+ * Use [config] to control count, size, duration, sway, and colour palette.
  */
-@Suppress("LongMethod")
 @Composable
 fun SumiPetalBurst(
     trigger: Int,
     modifier: Modifier = Modifier,
     config: PetalBurstConfig = PetalBurstConfig(),
 ) {
+    val colors = config.colors ?: SAKURA_COLORS
     var petals by remember { mutableStateOf(emptyList<PetalData>()) }
     val progress = remember { Animatable(0f) }
 
@@ -296,7 +282,7 @@ fun SumiPetalBurst(
             seed = trigger,
             sizeMultiplier = config.sizeMultiplier,
             swayScale = config.swayScale,
-            windPushScale = config.windPushScale,
+            colors = colors,
         )
         progress.snapTo(0f)
         progress.animateTo(1f, tween(durationMillis = config.durationMs, easing = LinearEasing))
@@ -310,13 +296,9 @@ fun SumiPetalBurst(
         Canvas(modifier = modifier) {
             val twoPi = (2f * PI).toFloat()
             currentPetals.forEach { petal ->
-                // No normalisation: delayed petals simply don't complete their full fall,
-                // which looks natural. Previously they were sped up so they all converged
-                // at the bottom simultaneously — that's what caused the "straight line" look.
                 val effectiveProgress = (currentProgress - petal.delayFraction).coerceAtLeast(0f)
                 if (effectiveProgress <= 0f) return@forEach
 
-                // Fade in quickly per-petal; all petals fade out together in the last 20%.
                 val fadeIn = (effectiveProgress / 0.08f).coerceAtMost(1f)
                 val fadeOut = if (currentProgress > 0.80f) {
                     ((1f - currentProgress) / 0.20f).coerceIn(0f, 1f)
@@ -326,11 +308,16 @@ fun SumiPetalBurst(
                 val alpha = petal.alpha * fadeIn * fadeOut
                 if (alpha <= 0f) return@forEach
 
-                val sway1 = petal.swayAmp1 * sin(effectiveProgress * petal.swayFreq1 * twoPi)
-                val sway2 = petal.swayAmp2 * sin(effectiveProgress * petal.swayFreq2 * twoPi + petal.swayPhase2)
-                val x = petal.startXFraction * size.width + sway1 + sway2 +
-                    petal.windPushX * effectiveProgress * size.width
-                val y = -petal.sizePx + effectiveProgress * (size.height + petal.sizePx * 2f)
+                val w = size.width
+                val dist = effectiveProgress * petal.travelScale * w
+                val baseX = petal.startXFraction * w + petal.windDx * dist
+                val baseY = petal.startYFraction * size.height + petal.windDy * dist
+
+                val sway = petal.swayAmp1 * sin(effectiveProgress * petal.swayFreq1 * twoPi) +
+                    petal.swayAmp2 * sin(effectiveProgress * petal.swayFreq2 * twoPi + petal.swayPhase2)
+                val x = baseX + (-petal.windDy) * sway
+                val y = baseY + petal.windDx * sway
+
                 val rotation = petal.initialRotation + effectiveProgress * petal.totalSpin
                 val scale = petal.sizePx / 24f
 

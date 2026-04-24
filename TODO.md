@@ -85,6 +85,29 @@ Last updated: 2026-04-25
   - Gate Edo difficulty and unlimited hints behind "Sumi Pro"
   - Show paywall when user taps a gated feature, not on cold launch
 
+- [ ] **Petal wind physics overhaul** — Natural wind-blown blizzard effect
+  - All petals drift diagonally (wind angle 30–70°), not purely vertical
+  - 2× density: 20 ambient petals on splash, 32 per burst in game
+  - 40% of petals enter from left edge (side wind), rest from top
+  - Stronger turbulence (swayAmp 45–110px), aggressive tumbling rotation
+  - Season-coloured petals on season selection in onboarding
+
+- [ ] **Season tile liquid / bubble animation** — Onboarding season picker
+  - On tap: tile inflates to 1.20× (120ms ease-in) then spring settles to 1× (MediumBouncy)
+  - Border animates from thin+grey to 2dp+accent colour
+  - Petal burst triggers with season-accent colours on selection; old petals fade when switching
+
+- [ ] **Paywall floating entrance animation**
+  - Feature rows stagger in one by one (each 60ms offset), fade + translate from below
+  - Sumi enso logo animates in last, reusing the LogoEnso appear transition from Splash
+  - Consistent logo-appear animation shared across Splash → Paywall → any future brand screen
+
+- [ ] **Game unit tests — full coverage**
+  - `RealBoardManager`: state emission, select/enter/erase/undo/hint all mutate `state` flow
+  - `SudokuGenerator`: valid grid for all 5 difficulties, uniqueness by seed, given-count ranges
+  - `BoardState`: notes-clear on digit entry, remaining-counts accuracy, multiple difficulties
+  - `PuzzleRepository`: daily() returns deterministic board for same difficulty + date
+
 ### Phase 3 — Monetisation (UI first, SDK integration deferred)
 
 - [ ] **In-app purchases (IAP)** — build the full purchase flow UI; wire to real billing last
@@ -97,11 +120,10 @@ Last updated: 2026-04-25
 
 ### Phase 4 — Future Features
 
-- [ ] **Seasonal themes** — alternate colour palettes (Spring cherry, Autumn maple, Winter indigo)
-  - Design tokens already support `isDark` toggle; seasons would need a third axis
+- [x] **Seasonal themes** — Spring / Autumn / Winter palettes implemented; season picker in onboarding + settings
 - [ ] **Daily challenge leaderboard** — same seed for all users on a given day; share solve time
 - [ ] **Puzzle replay** — `fromSeed()` exists in PuzzleRepository; needs UI entry point
-- [ ] **Settings expansion** — theme picker, sound/haptic toggles, difficulty preference
+- [ ] **Settings expansion** — haptics toggle done; season picker done; further expansion TBD
 
 ---
 

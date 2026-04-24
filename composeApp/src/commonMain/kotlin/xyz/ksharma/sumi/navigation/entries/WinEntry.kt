@@ -21,6 +21,7 @@ import xyz.ksharma.sumi.navigation.GameRoute
 import xyz.ksharma.sumi.navigation.HomeRoute
 import xyz.ksharma.sumi.navigation.SumiNavigator
 import xyz.ksharma.sumi.navigation.WinRoute
+import xyz.ksharma.sumi.preferences.ThemePreferences
 import xyz.ksharma.sumi.screens.win.WinScreen
 import xyz.ksharma.sumi.screens.win.WinViewModel
 import xyz.ksharma.sumi.share.ShareManager
@@ -35,12 +36,13 @@ fun EntryProviderScope<NavKey>.WinEntry(navigator: SumiNavigator) {
         val vm: WinViewModel = koinViewModel()
         val haptic = rememberHapticEngine()
         val shareManager: ShareManager = koinInject()
+        val themePrefs = koinInject<ThemePreferences>()
         val coroutineScope = rememberCoroutineScope()
         val density = LocalDensity.current.density
-        val streak by vm.streak.collectAsState()
+        val hapticsEnabled by themePrefs.observeHapticsEnabled().collectAsState(initial = true)
 
         LaunchedEffect(Unit) {
-            haptic.win()
+            if (hapticsEnabled) haptic.win()
             vm.onPuzzleCompleted()
         }
 
@@ -55,7 +57,6 @@ fun EntryProviderScope<NavKey>.WinEntry(navigator: SumiNavigator) {
             elapsedMs = key.elapsedMs,
             mistakeCount = key.mistakeCount,
             difficulty = key.difficulty,
-            streakDays = streak,
             quote = quote,
             onHome = { navigator.resetRoot(HomeRoute) },
             onNextPuzzle = {

@@ -6,10 +6,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -46,6 +49,7 @@ fun PaywallScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .windowInsetsPadding(WindowInsets.statusBars)
                 .padding(horizontal = Sumi.Space.s6)
                 .padding(top = Sumi.Space.s7, bottom = Sumi.Space.s6),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -102,17 +106,42 @@ private fun PaywallPricing(onRestorePurchase: () -> Unit) {
             modifier = Modifier.fillMaxWidth(),
         )
         Spacer(Modifier.height(Sumi.Space.s4))
-        val restoreSource = remember { MutableInteractionSource() }
-        Text(
-            text = "Restore purchase  ·  Terms  ·  Privacy",
-            style = SumiTheme.typography.uiMeta,
-            color = SumiTheme.colors.inkFaint,
-            modifier = Modifier.clickable(
-                interactionSource = restoreSource,
-                indication = null,
-                onClick = onRestorePurchase,
-            ),
-        )
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(Sumi.Space.s2),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            val restoreSource = remember { MutableInteractionSource() }
+            Text(
+                text = "Restore purchase",
+                style = SumiTheme.typography.uiMeta,
+                color = SumiTheme.colors.inkFaint,
+                modifier = Modifier.clickable(
+                    interactionSource = restoreSource,
+                    indication = null,
+                    onClick = onRestorePurchase,
+                ),
+            )
+            Text(
+                text = "·",
+                style = SumiTheme.typography.uiMeta,
+                color = SumiTheme.colors.inkFaint,
+            )
+            Text(
+                text = "Terms",
+                style = SumiTheme.typography.uiMeta,
+                color = SumiTheme.colors.inkFaint,
+            )
+            Text(
+                text = "·",
+                style = SumiTheme.typography.uiMeta,
+                color = SumiTheme.colors.inkFaint,
+            )
+            Text(
+                text = "Privacy",
+                style = SumiTheme.typography.uiMeta,
+                color = SumiTheme.colors.inkFaint,
+            )
+        }
     }
 }
 

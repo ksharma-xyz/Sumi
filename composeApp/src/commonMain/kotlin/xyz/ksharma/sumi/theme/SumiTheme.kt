@@ -37,27 +37,30 @@ data class SumiColors(
     val hint: Color,
 )
 
-private val SumiLightColors = SumiColors(
-    paper = SumiTokens.Color.paper,
-    paperWarm = SumiTokens.Color.paperWarm,
-    paperDeep = SumiTokens.Color.paperDeep,
-    paperEdge = SumiTokens.Color.paperEdge,
-    paperGlow = SumiTokens.Color.paperGlow,
-    ink = SumiTokens.Color.ink,
-    inkSoft = SumiTokens.Color.inkSoft,
-    inkFaint = SumiTokens.Color.inkFaint,
-    inkGhost = SumiTokens.Color.inkGhost,
-    red = SumiTokens.Color.red,
-    redDeep = SumiTokens.Color.redDeep,
-    teal = SumiTokens.Color.teal,
-    tealSoft = SumiTokens.Color.tealSoft,
-    gold = SumiTokens.Color.gold,
-    goldLight = SumiTokens.Color.goldLight,
-    success = SumiTokens.Color.success,
-    warning = SumiTokens.Color.warning,
-    error = SumiTokens.Color.error,
-    hint = SumiTokens.Color.hint,
-)
+private fun sumiLightColors(season: SumiSeason): SumiColors {
+    val s = SumiTokens.Color.Season.forSeason(season)
+    return SumiColors(
+        paper = s.paper,
+        paperWarm = s.paperWarm,
+        paperDeep = s.paperDeep,
+        paperEdge = s.paperEdge,
+        paperGlow = s.paperGlow,
+        ink = SumiTokens.Color.ink,
+        inkSoft = SumiTokens.Color.inkSoft,
+        inkFaint = SumiTokens.Color.inkFaint,
+        inkGhost = SumiTokens.Color.inkGhost,
+        red = s.accent,
+        redDeep = s.accentDeep,
+        teal = SumiTokens.Color.teal,
+        tealSoft = SumiTokens.Color.tealSoft,
+        gold = SumiTokens.Color.gold,
+        goldLight = SumiTokens.Color.goldLight,
+        success = SumiTokens.Color.success,
+        warning = SumiTokens.Color.warning,
+        error = SumiTokens.Color.error,
+        hint = SumiTokens.Color.hint,
+    )
+}
 
 private val SumiDarkColors = SumiColors(
     paper = SumiTokens.Color.Night.paper,
@@ -86,6 +89,8 @@ val LocalSumiColors = staticCompositionLocalOf<SumiColors> {
 }
 
 val LocalSumiIsDark = staticCompositionLocalOf { false }
+
+val LocalSumiSeason = staticCompositionLocalOf { SumiSeason.Spring }
 
 data class SumiTypeRoles(
     val h1: TextStyle,
@@ -169,10 +174,11 @@ private fun uiStyle(family: FontFamily, size: androidx.compose.ui.unit.TextUnit,
 @Composable
 fun SumiTheme(
     typography: SumiTypeRoles,
+    season: SumiSeason = SumiSeason.Spring,
     dark: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit,
 ) {
-    val sumiColors = if (dark) SumiDarkColors else SumiLightColors
+    val sumiColors = if (dark) SumiDarkColors else sumiLightColors(season)
     val colorScheme = if (dark) {
         darkColorScheme(
             background = sumiColors.paper,
@@ -201,6 +207,7 @@ fun SumiTheme(
     CompositionLocalProvider(
         LocalSumiColors provides sumiColors,
         LocalSumiIsDark provides dark,
+        LocalSumiSeason provides season,
         LocalSumiTypography provides typography,
         LocalSumiDimensions provides sumiDimensions,
     ) {
@@ -216,6 +223,8 @@ object SumiTheme {
         @Composable get() = LocalSumiColors.current
     val isDark: Boolean
         @Composable get() = LocalSumiIsDark.current
+    val season: SumiSeason
+        @Composable get() = LocalSumiSeason.current
     val typography: SumiTypeRoles
         @Composable get() = LocalSumiTypography.current
     val dimensions: SumiDimensions

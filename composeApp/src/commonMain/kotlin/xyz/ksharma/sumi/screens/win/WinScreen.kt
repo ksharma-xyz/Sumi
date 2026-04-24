@@ -2,7 +2,7 @@
 
 package xyz.ksharma.sumi.screens.win
 
-import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Text
@@ -26,20 +25,23 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.graphics.rememberGraphicsLayer
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.painterResource
 import xyz.ksharma.sumi.Quote
 import xyz.ksharma.sumi.design.components.SealComplete
 import xyz.ksharma.sumi.design.components.SumiButton
 import xyz.ksharma.sumi.design.components.SumiButtonSize
 import xyz.ksharma.sumi.design.components.SumiButtonVariant
-import xyz.ksharma.sumi.design.components.SumiEyebrow
 import xyz.ksharma.sumi.design.components.WashiBG
+import xyz.ksharma.sumi.resources.Res
+import xyz.ksharma.sumi.resources.ink_bleed_02
+import xyz.ksharma.sumi.resources.ink_bleed_03
 import xyz.ksharma.sumi.theme.SumiTheme
 import xyz.ksharma.sumi.theme.SumiTokens as Sumi
 
@@ -48,7 +50,6 @@ fun WinScreen(
     elapsedMs: Long,
     mistakeCount: Int,
     difficulty: String,
-    streakDays: Int,
     quote: Quote,
     onHome: () -> Unit,
     modifier: Modifier = Modifier,
@@ -61,78 +62,134 @@ fun WinScreen(
 
     Box(modifier = modifier.fillMaxSize()) {
         WashiBG(modifier = Modifier.fillMaxSize())
-        InkBleedAccent(
-            color = SumiTheme.colors.red,
-            size = 180.dp,
-            seed = 1,
-            modifier = Modifier.padding(start = 30.dp, top = 80.dp),
-        )
-        InkBleedAccent(
-            color = SumiTheme.colors.teal,
-            size = 160.dp,
-            seed = 2,
-            modifier = Modifier.align(Alignment.TopEnd).offset(x = 20.dp).padding(top = 320.dp),
-        )
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.TopStart) {
+            Image(
+                painter = painterResource(Res.drawable.ink_bleed_02),
+                contentDescription = null,
+                modifier = Modifier.size(280.dp),
+                contentScale = ContentScale.Fit,
+                alpha = 0.08f,
+            )
+        }
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomEnd) {
+            Image(
+                painter = painterResource(Res.drawable.ink_bleed_03),
+                contentDescription = null,
+                modifier = Modifier.size(220.dp),
+                contentScale = ContentScale.Fit,
+                alpha = 0.10f,
+            )
+        }
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = Sumi.Space.s6)
-                .padding(top = Sumi.Space.s11, bottom = Sumi.Space.s7),
+                .padding(top = Sumi.Space.s9, bottom = Sumi.Space.s7),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            WinHeroSection(difficulty = difficulty)
-            Spacer(Modifier.height(Sumi.Space.s7))
-            WinStatsRow(
-                timeDisplay = formatTime(elapsedMs),
+            WinShareCard(
+                elapsedMs = elapsedMs,
                 mistakeCount = mistakeCount,
-                streakDays = streakDays,
+                difficulty = difficulty,
+                quote = quote,
                 shareLayer = shareLayer,
                 cardBackground = cardBackground,
-            )
-            Spacer(Modifier.height(Sumi.Space.s5))
-            Text(
-                text = "“${quote.text}”",
-                style = SumiTheme.typography.quote.copy(fontSize = 14.sp),
-                color = SumiTheme.colors.inkSoft,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(horizontal = Sumi.Space.s4),
             )
             Spacer(Modifier.weight(1f))
             WinActions(
                 onNextPuzzle = onNextPuzzle,
                 onHome = onHome,
                 onShare = if (onShare != null) {
-                    {
-                        coroutineScope.launch {
-                            onShare(shareLayer.toImageBitmap())
-                        }
-                    }
-                } else {
-                    null
-                },
+                    { coroutineScope.launch { onShare(shareLayer.toImageBitmap()) } }
+                } else null,
             )
         }
     }
 }
 
 @Composable
-private fun WinHeroSection(difficulty: String) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        SumiEyebrow(text = "完 · Complete · $difficulty", color = SumiTheme.colors.red)
-        Spacer(Modifier.height(Sumi.Space.s2))
-        Text(
-            text = "Sumi",
-            style = SumiTheme.typography.h1.copy(fontSize = 68.sp, letterSpacing = (-0.03f).em),
-            color = SumiTheme.colors.ink,
-        )
-        Spacer(Modifier.height(Sumi.Space.s2))
+private fun WinShareCard(
+    elapsedMs: Long,
+    mistakeCount: Int,
+    difficulty: String,
+    quote: Quote,
+    shareLayer: GraphicsLayer,
+    cardBackground: Color,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .drawWithContent {
+                shareLayer.record {
+                    drawRect(color = cardBackground)
+                    this@drawWithContent.drawContent()
+                }
+                drawLayer(shareLayer)
+            }
+            .padding(vertical = Sumi.Space.s4),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        WinHeroSection()
+        Spacer(Modifier.height(Sumi.Space.s6))
         Text(
             text = "The grid is quiet again.",
-            style = SumiTheme.typography.body.copy(fontSize = 14.sp, fontStyle = FontStyle.Italic),
-            color = SumiTheme.colors.inkSoft,
+            style = SumiTheme.typography.quote.copy(fontSize = 24.sp, lineHeight = 32.sp),
+            color = SumiTheme.colors.ink,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth(),
         )
         Spacer(Modifier.height(Sumi.Space.s5))
-        SealComplete(size = 80.dp)
+        WinStatsRow(
+            timeDisplay = formatTime(elapsedMs),
+            mistakeCount = mistakeCount,
+            difficulty = difficulty,
+        )
+        Spacer(Modifier.height(Sumi.Space.s5))
+        Text(
+            text = "\u201C${quote.text}\u201D",
+            style = SumiTheme.typography.quote.copy(fontSize = 14.sp),
+            color = SumiTheme.colors.inkSoft,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(horizontal = Sumi.Space.s4),
+        )
+    }
+}
+
+@Composable
+private fun WinHeroSection() {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Row(
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = "完",
+                style = SumiTheme.typography.cjk.copy(fontSize = 28.sp),
+                color = SumiTheme.colors.red,
+            )
+            Text(
+                text = " · ",
+                style = SumiTheme.typography.body.copy(fontSize = 14.sp),
+                color = SumiTheme.colors.inkSoft,
+            )
+            Text(
+                text = "COMPLETE",
+                style = SumiTheme.typography.uiLabel,
+                color = SumiTheme.colors.inkSoft,
+            )
+        }
+        Spacer(Modifier.height(Sumi.Space.s1))
+        Text(
+            text = "Sumi",
+            style = SumiTheme.typography.quote.copy(
+                fontSize = 18.sp,
+                fontStyle = FontStyle.Italic,
+                letterSpacing = (-0.02f).em,
+            ),
+            color = SumiTheme.colors.ink,
+        )
+        Spacer(Modifier.height(Sumi.Space.s6))
+        SealComplete(size = 120.dp)
     }
 }
 
@@ -140,57 +197,60 @@ private fun WinHeroSection(difficulty: String) {
 private fun WinStatsRow(
     timeDisplay: String,
     mistakeCount: Int,
-    streakDays: Int,
-    shareLayer: GraphicsLayer,
-    cardBackground: Color,
+    difficulty: String,
 ) {
+    val levelKanji = difficultyKanji(difficulty)
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .border(width = 1.dp, color = SumiTheme.colors.paperEdge)
-            .drawWithContent {
-                shareLayer.record {
-                    drawRect(color = cardBackground)
-                    this@drawWithContent.drawContent()
-                }
-                drawLayer(shareLayer)
-            },
+            .border(width = 1.dp, color = SumiTheme.colors.paperEdge),
     ) {
-        listOf(
-            "Time" to timeDisplay,
-            "Marks" to mistakeCount.toString(),
-            "Streak" to "${streakDays}d",
-        ).forEachIndexed { i, (label, value) ->
+        listOf("TIME" to timeDisplay, "MARKS" to mistakeCount.toString()).forEachIndexed { i, (label, value) ->
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .then(
-                        if (i > 0) {
-                            Modifier.border(width = 1.dp, color = SumiTheme.colors.paperEdge)
-                        } else {
-                            Modifier
-                        },
-                    )
+                    .then(if (i > 0) Modifier.border(1.dp, SumiTheme.colors.paperEdge) else Modifier)
                     .padding(vertical = Sumi.Space.s4, horizontal = Sumi.Space.s2),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
-                    text = label.uppercase(),
-                    style = SumiTheme.typography.uiMeta.copy(letterSpacing = 2.sp),
+                    text = label,
+                    style = SumiTheme.typography.uiLabel,
                     color = SumiTheme.colors.inkFaint,
                 )
                 Spacer(Modifier.height(Sumi.Space.s1))
                 Text(
                     text = value,
-                    style = SumiTheme.typography.numeral.copy(
-                        fontSize = 24.sp,
-                        fontStyle = FontStyle.Italic,
-                    ),
+                    style = SumiTheme.typography.numeral.copy(fontSize = 28.sp, fontStyle = FontStyle.Italic),
                     color = SumiTheme.colors.ink,
                 )
             }
         }
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .border(1.dp, SumiTheme.colors.paperEdge)
+                .padding(vertical = Sumi.Space.s4, horizontal = Sumi.Space.s2),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(text = "LEVEL", style = SumiTheme.typography.uiLabel, color = SumiTheme.colors.inkFaint)
+            Spacer(Modifier.height(Sumi.Space.s1))
+            Text(
+                text = levelKanji,
+                style = SumiTheme.typography.cjk.copy(fontSize = 28.sp),
+                color = SumiTheme.colors.ink,
+            )
+        }
     }
+}
+
+private fun difficultyKanji(difficulty: String): String = when (difficulty.lowercase()) {
+    "easy" -> "一"
+    "medium" -> "二"
+    "hard" -> "三"
+    "master" -> "四"
+    "edo" -> "五"
+    else -> difficulty
 }
 
 @Composable
@@ -227,29 +287,6 @@ private fun WinActions(
         ) {
             Text(text = "Return Home", style = SumiTheme.typography.uiButton)
         }
-    }
-}
-
-@Composable
-private fun InkBleedAccent(color: Color, size: Dp, seed: Int, modifier: Modifier = Modifier) {
-    val s = seed.toFloat()
-    Canvas(modifier = modifier.size(size)) {
-        val cx = this.size.width / 2f
-        val cy = this.size.height / 2f
-        val baseR = this.size.width * 0.30f
-        drawCircle(
-            color = color,
-            radius = baseR * 1.5f,
-            center = androidx.compose.ui.geometry.Offset(cx + s * 3, cy - s * 2),
-            alpha = 0.08f,
-        )
-        drawCircle(color = color, radius = baseR, center = androidx.compose.ui.geometry.Offset(cx, cy), alpha = 0.12f)
-        drawCircle(
-            color = color,
-            radius = baseR * 0.5f,
-            center = androidx.compose.ui.geometry.Offset(cx - s * 2, cy + s),
-            alpha = 0.18f,
-        )
     }
 }
 

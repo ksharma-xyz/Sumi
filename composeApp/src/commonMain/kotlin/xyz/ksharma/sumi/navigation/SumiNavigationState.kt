@@ -68,8 +68,9 @@ class SumiNavigationState(
 
     fun resetRoot(route: NavKey) {
         val stack = backStacks[topLevelRoute] ?: return
-        stack.clear()
+        // Add the new root first so the stack is never empty (NavDisplay requires non-empty entries).
         stack.add(route)
+        while (stack.size > 1) stack.removeAt(0)
         logStack("resetRoot(${route::class.simpleName})")
     }
 

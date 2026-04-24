@@ -112,15 +112,15 @@ private fun DailyQuoteBlock(quote: Quote) {
         SumiEyebrow(text = "Today · Practice", color = SumiTheme.colors.red)
         Spacer(Modifier.height(Sumi.Space.s2))
         Text(
-            text = "“${quote.text}”",
-            style = SumiTheme.typography.quote.copy(lineHeight = 30.sp),
+            text = "\u201C${quote.text}\u201D",
+            style = SumiTheme.typography.quote.copy(lineHeight = 36.sp),
             color = SumiTheme.colors.ink,
         )
         Spacer(Modifier.height(Sumi.Space.s1))
         Text(
             text = "— ${quote.attribution}".uppercase(),
             style = SumiTheme.typography.uiMeta.copy(letterSpacing = 2.sp),
-            color = SumiTheme.colors.gold,
+            color = SumiTheme.colors.inkSoft,
         )
     }
 }

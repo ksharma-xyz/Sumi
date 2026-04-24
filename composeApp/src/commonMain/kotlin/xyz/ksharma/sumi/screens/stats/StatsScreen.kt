@@ -7,15 +7,21 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
@@ -34,6 +40,8 @@ fun StatsScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .windowInsetsPadding(WindowInsets.statusBars)
                 .padding(horizontal = Sumi.Space.s6)
                 .padding(top = Sumi.Space.s8, bottom = Sumi.Space.s7),
         ) {
@@ -50,20 +58,25 @@ fun StatsScreen(
 
 @Composable
 private fun StatHero(total: Int) {
-    Column {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
         Text(
             text = total.toString(),
             style = SumiTheme.typography.h1.copy(
-                fontSize = 72.sp,
+                fontSize = 88.sp,
                 letterSpacing = (-0.03f).em,
                 fontStyle = FontStyle.Italic,
             ),
             color = SumiTheme.colors.ink,
+            textAlign = TextAlign.Center,
         )
         Text(
-            text = "puzzles solved, all time.",
-            style = SumiTheme.typography.body.copy(fontSize = 15.sp),
+            text = "puzzles solved,\nall time",
+            style = SumiTheme.typography.quote.copy(fontSize = 18.sp),
             color = SumiTheme.colors.inkSoft,
+            textAlign = TextAlign.Center,
         )
     }
 }

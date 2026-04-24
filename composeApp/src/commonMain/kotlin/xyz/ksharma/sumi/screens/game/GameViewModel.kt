@@ -51,9 +51,20 @@ class GameViewModel(
         viewModelScope.launch {
             val freshPuzzle = puzzleRepository.daily(difficulty)
             val save = saveRepository.loadSave(difficulty)
-            val initialState = if (save != null) restoreState(freshPuzzle, save) else freshPuzzle
-            _elapsedMs.value = save?.elapsedMs ?: 0L
-            boardManager = RealBoardManager(initialState)
+            val restoredState = if (save != null) restoreState(freshPuzzle, save) else freshPuzzle
+            val restoredElapsed = save?.elapsedMs ?: 0L
+
+            boardManager = RealBoardManager(restoredState)
+            val resolved = boardManager.state.value
+            if (resolved.isComplete || resolved.isGameOver) {
+                // Stale save from a completed game (process was killed before clear ran) — start fresh.
+                saveRepository.clearSave(difficulty)
+                boardManager = RealBoardManager(freshPuzzle)
+                _elapsedMs.value = 0L
+            } else {
+                _elapsedMs.value = restoredElapsed
+            }
+
             _state.value = boardManager.state.value
             startSync()
             startTimer()

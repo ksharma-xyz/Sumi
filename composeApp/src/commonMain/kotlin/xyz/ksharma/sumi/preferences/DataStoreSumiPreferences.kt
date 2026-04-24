@@ -6,21 +6,29 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import xyz.ksharma.sumi.theme.SumiSeason
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
 private val KEY_SEEN_ONBOARDING = booleanPreferencesKey("seen_onboarding")
+private val KEY_SEASON = stringPreferencesKey("season")
+private val KEY_HAPTICS = booleanPreferencesKey("haptics_enabled")
 private val KEY_STREAK = intPreferencesKey("streak_count")
 private val KEY_BEST_STREAK = intPreferencesKey("best_streak")
 private val KEY_LAST_SOLVE_DAY = longPreferencesKey("last_solve_day")
 private val KEY_SOLVE_DAYS = stringSetPreferencesKey("solve_days")
 private val KEY_TOTAL_PUZZLES = intPreferencesKey("total_puzzles")
 
-class DataStoreSumiPreferences(private val store: DataStore<Preferences>) : SumiPreferences, DebugPreferences {
+class DataStoreSumiPreferences(
+    private val store: DataStore<Preferences>,
+) : SumiPreferences, DebugPreferences, ThemePreferences {
 
     override suspend fun hasSeenOnboarding(): Boolean =
         store.data.first()[KEY_SEEN_ONBOARDING] ?: false
@@ -78,6 +86,22 @@ class DataStoreSumiPreferences(private val store: DataStore<Preferences>) : Sumi
 
     override suspend fun clearAll() {
         store.edit { it.clear() }
+    }
+
+    override fun observeSeason(): Flow<SumiSeason> = store.data.map { prefs ->
+        prefs[KEY_SEASON]?.let { runCatching { SumiSeason.valueOf(it) }.getOrNull() }
+            ?: SumiSeason.Spring
+    }
+
+    override suspend fun setSeason(season: SumiSeason) {
+        store.edit { it[KEY_SEASON] = season.name }
+    }
+
+    override fun observeHapticsEnabled(): Flow<Boolean> =
+        store.data.map { it[KEY_HAPTICS] ?: true }
+
+    override suspend fun setHapticsEnabled(enabled: Boolean) {
+        store.edit { it[KEY_HAPTICS] = enabled }
     }
 }
 

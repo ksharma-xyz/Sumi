@@ -5,6 +5,16 @@ import androidx.compose.animation.core.Easing
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+data class SeasonPalette(
+    val paper: androidx.compose.ui.graphics.Color,
+    val paperWarm: androidx.compose.ui.graphics.Color,
+    val paperDeep: androidx.compose.ui.graphics.Color,
+    val paperEdge: androidx.compose.ui.graphics.Color,
+    val paperGlow: androidx.compose.ui.graphics.Color,
+    val accent: androidx.compose.ui.graphics.Color,
+    val accentDeep: androidx.compose.ui.graphics.Color,
+)
+
 object SumiTokens {
 
     object Color {
@@ -41,6 +51,43 @@ object SumiTokens {
             val mid = androidx.compose.ui.graphics.Color(0xFFE8A3B3)
             val deep = androidx.compose.ui.graphics.Color(0xFFC97A8E)
             val glow = androidx.compose.ui.graphics.Color(0xFFFBF6ED)
+        }
+
+        // Seasonal palettes — paper tints and accent colours per season
+        object Season {
+            val Spring = SeasonPalette(
+                paper = androidx.compose.ui.graphics.Color(0xFFF5ECEA),
+                paperWarm = androidx.compose.ui.graphics.Color(0xFFEDE1DC),
+                paperDeep = androidx.compose.ui.graphics.Color(0xFFE1D2CC),
+                paperEdge = androidx.compose.ui.graphics.Color(0xFFCCAA9E),
+                paperGlow = androidx.compose.ui.graphics.Color(0xFFFCF5F3),
+                accent = androidx.compose.ui.graphics.Color(0xFFB84568),
+                accentDeep = androidx.compose.ui.graphics.Color(0xFF8C2E4C),
+            )
+            val Autumn = SeasonPalette(
+                paper = androidx.compose.ui.graphics.Color(0xFFF4E9D8),
+                paperWarm = androidx.compose.ui.graphics.Color(0xFFEBDBC4),
+                paperDeep = androidx.compose.ui.graphics.Color(0xFFDFCCB0),
+                paperEdge = androidx.compose.ui.graphics.Color(0xFFC8A272),
+                paperGlow = androidx.compose.ui.graphics.Color(0xFFFBF3E8),
+                accent = androidx.compose.ui.graphics.Color(0xFFB85A28),
+                accentDeep = androidx.compose.ui.graphics.Color(0xFF8C3C14),
+            )
+            val Winter = SeasonPalette(
+                paper = androidx.compose.ui.graphics.Color(0xFFEEEEF8),
+                paperWarm = androidx.compose.ui.graphics.Color(0xFFE4E6F0),
+                paperDeep = androidx.compose.ui.graphics.Color(0xFFD8DAE8),
+                paperEdge = androidx.compose.ui.graphics.Color(0xFFA8B0CC),
+                paperGlow = androidx.compose.ui.graphics.Color(0xFFF6F6FC),
+                accent = androidx.compose.ui.graphics.Color(0xFF4A5CB0),
+                accentDeep = androidx.compose.ui.graphics.Color(0xFF333E88),
+            )
+
+            fun forSeason(season: SumiSeason): SeasonPalette = when (season) {
+                SumiSeason.Spring -> Spring
+                SumiSeason.Autumn -> Autumn
+                SumiSeason.Winter -> Winter
+            }
         }
 
         object Night {

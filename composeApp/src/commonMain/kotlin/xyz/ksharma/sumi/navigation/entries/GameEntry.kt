@@ -9,6 +9,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
+import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import xyz.ksharma.sumi.game.model.BoardState
 import xyz.ksharma.sumi.game.model.Difficulty
@@ -18,9 +19,17 @@ import xyz.ksharma.sumi.navigation.GameRoute
 import xyz.ksharma.sumi.navigation.HomeRoute
 import xyz.ksharma.sumi.navigation.SumiNavigator
 import xyz.ksharma.sumi.navigation.WinRoute
+import xyz.ksharma.sumi.preferences.ThemePreferences
 import xyz.ksharma.sumi.screens.game.GameCallbacks
 import xyz.ksharma.sumi.screens.game.GameScreen
 import xyz.ksharma.sumi.screens.game.GameViewModel
+
+private class HapticContext(private val engine: HapticEngine, private val enabled: Boolean) {
+    fun tick() { if (enabled) engine.tick() }
+    fun confirm() { if (enabled) engine.confirm() }
+    fun error() { if (enabled) engine.error() }
+    fun win() { if (enabled) engine.win() }
+}
 
 @Suppress("ComposableNaming")
 @Composable
@@ -28,19 +37,22 @@ fun EntryProviderScope<NavKey>.GameEntry(navigator: SumiNavigator) {
     entry<GameRoute> { key ->
         val vm: GameViewModel = koinViewModel()
         val haptic = rememberHapticEngine()
+        val themePrefs = koinInject<ThemePreferences>()
         val diff = Difficulty.entries.firstOrNull { it.name == key.difficulty } ?: Difficulty.Medium
 
         LaunchedEffect(key.difficulty) { vm.init(diff) }
 
         val state by vm.state.collectAsState()
         val elapsedMs by vm.elapsedMs.collectAsState()
+        val hapticsEnabled by themePrefs.observeHapticsEnabled().collectAsState(initial = true)
+        val hapticCtx = HapticContext(haptic, hapticsEnabled)
 
         GameEntryContent(
             vm = vm,
             state = state,
             elapsedMs = elapsedMs,
             diff = diff,
-            haptic = haptic,
+            haptic = hapticCtx,
             routeKey = key,
             navigator = navigator,
         )
@@ -53,7 +65,7 @@ private fun GameEntryContent(
     state: BoardState,
     elapsedMs: Long,
     diff: Difficulty,
-    haptic: HapticEngine,
+    haptic: HapticContext,
     routeKey: GameRoute,
     navigator: SumiNavigator,
 ) {
@@ -100,7 +112,7 @@ private fun GameEntryContent(
 
 private fun buildGameCallbacks(
     vm: GameViewModel,
-    haptic: HapticEngine,
+    haptic: HapticContext,
     state: BoardState,
     navigator: SumiNavigator,
     onPause: () -> Unit,
