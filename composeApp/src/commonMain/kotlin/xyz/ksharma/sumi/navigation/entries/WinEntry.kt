@@ -44,6 +44,9 @@ fun EntryProviderScope<NavKey>.WinEntry(navigator: SumiNavigator) {
             quote = quote,
             onHome = { navigator.resetRoot(HomeRoute) },
             onNextPuzzle = {
+                // Reset to Home first (clears Win from stack), then push the new game.
+                // Without this, pressing back from the new game would return to WinRoute.
+                navigator.resetRoot(HomeRoute)
                 navigator.goTo(GameRoute(difficulty = key.difficulty))
             },
         )

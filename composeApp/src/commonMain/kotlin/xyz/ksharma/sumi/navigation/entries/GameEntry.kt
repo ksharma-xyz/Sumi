@@ -15,6 +15,7 @@ import xyz.ksharma.sumi.game.model.Difficulty
 import xyz.ksharma.sumi.haptic.HapticEngine
 import xyz.ksharma.sumi.haptic.rememberHapticEngine
 import xyz.ksharma.sumi.navigation.GameRoute
+import xyz.ksharma.sumi.navigation.HomeRoute
 import xyz.ksharma.sumi.navigation.SumiNavigator
 import xyz.ksharma.sumi.navigation.WinRoute
 import xyz.ksharma.sumi.screens.game.GameCallbacks
@@ -57,25 +58,29 @@ private fun GameEntryContent(
     navigator: SumiNavigator,
 ) {
     var paused by rememberSaveable { mutableStateOf(false) }
-    var gameOver by rememberSaveable { mutableStateOf(false) }
     val celebrationCount by vm.celebrationCount.collectAsState()
 
     LaunchedEffect(state.isComplete) {
         if (state.isComplete) {
             haptic.win()
+            // Clear back to home first so Win is never stacked on top of Game.
+            // System back from Win → Home; "Next Practice" from Win → new Game on fresh stack.
+            navigator.resetRoot(HomeRoute)
             navigator.goTo(
                 WinRoute(elapsedMs = elapsedMs, mistakeCount = state.mistakeCount, difficulty = routeKey.difficulty),
             )
         }
     }
-    LaunchedEffect(state.isGameOver) { if (state.isGameOver) gameOver = true }
 
     GameScreen(
         state = state,
         elapsedMs = elapsedMs,
         celebrationCount = celebrationCount,
         paused = paused,
-        gameOver = gameOver,
+        // Derive directly from state so the overlay only shows when the game is actually over.
+        // Using rememberSaveable caused the stale "game over" state from a previous play session
+        // to re-appear when the VM hadn't yet been reset via init().
+        gameOver = state.isGameOver,
         difficulty = diff,
         callbacks = buildGameCallbacks(
             vm = vm,
@@ -86,7 +91,6 @@ private fun GameEntryContent(
             onResume = { paused = false },
             onNewPuzzle = {
                 paused = false
-                gameOver = false
                 vm.init(diff)
             },
         ),

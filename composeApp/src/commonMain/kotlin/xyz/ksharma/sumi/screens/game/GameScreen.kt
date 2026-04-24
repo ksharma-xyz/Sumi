@@ -11,13 +11,16 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -83,10 +86,11 @@ private fun GameBody(state: BoardState, elapsedMs: Long, diff: Difficulty, callb
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .windowInsetsPadding(WindowInsets.statusBars)
             .padding(horizontal = Sumi.Space.s6),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Spacer(Modifier.height(Sumi.Space.s8))
+        Spacer(Modifier.height(Sumi.Space.s3))
         GameTopBar(difficulty = diff, elapsedMs = elapsedMs, onBack = callbacks.onBack, onPause = callbacks.onPause)
         Spacer(Modifier.height(Sumi.Space.s3))
         MarksHintsRow(mistakeCount = state.mistakeCount, hintsRemaining = state.hintsRemaining)
