@@ -17,15 +17,22 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.layer.GraphicsLayer
+import androidx.compose.ui.graphics.layer.drawLayer
+import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.launch
 import xyz.ksharma.sumi.Quote
 import xyz.ksharma.sumi.design.components.SealComplete
 import xyz.ksharma.sumi.design.components.SumiButton
@@ -46,7 +53,12 @@ fun WinScreen(
     onHome: () -> Unit,
     modifier: Modifier = Modifier,
     onNextPuzzle: (() -> Unit)? = null,
+    onShare: ((ImageBitmap) -> Unit)? = null,
 ) {
+    val shareLayer = rememberGraphicsLayer()
+    val cardBackground = SumiTheme.colors.paper
+    val coroutineScope = rememberCoroutineScope()
+
     Box(modifier = modifier.fillMaxSize()) {
         WashiBG(modifier = Modifier.fillMaxSize())
         InkBleedAccent(
@@ -74,6 +86,8 @@ fun WinScreen(
                 timeDisplay = formatTime(elapsedMs),
                 mistakeCount = mistakeCount,
                 streakDays = streakDays,
+                shareLayer = shareLayer,
+                cardBackground = cardBackground,
             )
             Spacer(Modifier.height(Sumi.Space.s5))
             Text(
@@ -84,7 +98,19 @@ fun WinScreen(
                 modifier = Modifier.padding(horizontal = Sumi.Space.s4),
             )
             Spacer(Modifier.weight(1f))
-            WinActions(onNextPuzzle = onNextPuzzle, onHome = onHome)
+            WinActions(
+                onNextPuzzle = onNextPuzzle,
+                onHome = onHome,
+                onShare = if (onShare != null) {
+                    {
+                        coroutineScope.launch {
+                            onShare(shareLayer.toImageBitmap())
+                        }
+                    }
+                } else {
+                    null
+                },
+            )
         }
     }
 }
@@ -111,11 +137,24 @@ private fun WinHeroSection(difficulty: String) {
 }
 
 @Composable
-private fun WinStatsRow(timeDisplay: String, mistakeCount: Int, streakDays: Int) {
+private fun WinStatsRow(
+    timeDisplay: String,
+    mistakeCount: Int,
+    streakDays: Int,
+    shareLayer: GraphicsLayer,
+    cardBackground: Color,
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .border(width = 1.dp, color = SumiTheme.colors.paperEdge),
+            .border(width = 1.dp, color = SumiTheme.colors.paperEdge)
+            .drawWithContent {
+                shareLayer.record {
+                    drawRect(color = cardBackground)
+                    this@drawWithContent.drawContent()
+                }
+                drawLayer(shareLayer)
+            },
     ) {
         listOf(
             "Time" to timeDisplay,
@@ -155,7 +194,11 @@ private fun WinStatsRow(timeDisplay: String, mistakeCount: Int, streakDays: Int)
 }
 
 @Composable
-private fun WinActions(onNextPuzzle: (() -> Unit)?, onHome: () -> Unit) {
+private fun WinActions(
+    onHome: () -> Unit,
+    onNextPuzzle: (() -> Unit)?,
+    onShare: (() -> Unit)?,
+) {
     Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Sumi.Space.s2)) {
         if (onNextPuzzle != null) {
             SumiButton(
@@ -164,6 +207,16 @@ private fun WinActions(onNextPuzzle: (() -> Unit)?, onHome: () -> Unit) {
                 size = SumiButtonSize.Lg,
             ) {
                 Text(text = "Next Practice →", style = SumiTheme.typography.uiButton)
+            }
+        }
+        if (onShare != null) {
+            SumiButton(
+                onClick = onShare,
+                modifier = Modifier.fillMaxWidth(),
+                variant = SumiButtonVariant.Ghost,
+                size = SumiButtonSize.Md,
+            ) {
+                Text(text = "Share Result", style = SumiTheme.typography.uiButton)
             }
         }
         SumiButton(

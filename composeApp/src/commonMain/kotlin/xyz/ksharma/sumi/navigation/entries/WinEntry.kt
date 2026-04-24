@@ -3,10 +3,17 @@ package xyz.ksharma.sumi.navigation.entries
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.platform.LocalDensity
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import xyz.ksharma.sumi.FREE_QUOTES
 import xyz.ksharma.sumi.haptic.rememberHapticEngine
@@ -16,6 +23,8 @@ import xyz.ksharma.sumi.navigation.SumiNavigator
 import xyz.ksharma.sumi.navigation.WinRoute
 import xyz.ksharma.sumi.screens.win.WinScreen
 import xyz.ksharma.sumi.screens.win.WinViewModel
+import xyz.ksharma.sumi.share.ShareManager
+import xyz.ksharma.sumi.share.withBrandingHeader
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
@@ -25,6 +34,9 @@ fun EntryProviderScope<NavKey>.WinEntry(navigator: SumiNavigator) {
     entry<WinRoute> { key ->
         val vm: WinViewModel = koinViewModel()
         val haptic = rememberHapticEngine()
+        val shareManager: ShareManager = koinInject()
+        val coroutineScope = rememberCoroutineScope()
+        val density = LocalDensity.current.density
         val streak by vm.streak.collectAsState()
 
         LaunchedEffect(Unit) {
@@ -35,6 +47,9 @@ fun EntryProviderScope<NavKey>.WinEntry(navigator: SumiNavigator) {
         @OptIn(ExperimentalTime::class)
         val dayOfYear = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).dayOfYear
         val quote = FREE_QUOTES[dayOfYear % FREE_QUOTES.size]
+
+        val paperColor = xyz.ksharma.sumi.theme.SumiTokens.Color.paper
+        val inkColor = xyz.ksharma.sumi.theme.SumiTokens.Color.ink
 
         WinScreen(
             elapsedMs = key.elapsedMs,
@@ -48,6 +63,19 @@ fun EntryProviderScope<NavKey>.WinEntry(navigator: SumiNavigator) {
                 // Without this, pressing back from the new game would return to WinRoute.
                 navigator.resetRoot(HomeRoute)
                 navigator.goTo(GameRoute(difficulty = key.difficulty))
+            },
+            onShare = { cardBitmap: ImageBitmap ->
+                coroutineScope.launch {
+                    // withBrandingHeader is CPU-heavy (Canvas/Skia) — run off Main.
+                    val branded = withContext(Dispatchers.Default) {
+                        cardBitmap.withBrandingHeader(
+                            backgroundColor = paperColor,
+                            textColor = inkColor,
+                            density = density,
+                        )
+                    }
+                    shareManager.shareImage(branded)
+                }
             },
         )
     }

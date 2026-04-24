@@ -70,6 +70,7 @@ kotlin {
             implementation(libs.datastore.preferences)
             implementation(libs.kotlinx.datetime)
             implementation(projects.game)
+            implementation(projects.share)
         }
 
         iosMain.dependencies {

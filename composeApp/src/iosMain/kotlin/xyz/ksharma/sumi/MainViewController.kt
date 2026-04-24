@@ -5,6 +5,7 @@ import org.koin.core.context.startKoin
 import xyz.ksharma.sumi.di.appModule
 import xyz.ksharma.sumi.di.iosModule
 import xyz.ksharma.sumi.game.di.gameModule
+import xyz.ksharma.sumi.share.di.shareModule
 
 fun MainViewController() = ComposeUIViewController {
     App()
@@ -12,6 +13,6 @@ fun MainViewController() = ComposeUIViewController {
 
 fun initKoinIos() {
     startKoin {
-        modules(appModule, gameModule, iosModule)
+        modules(appModule, gameModule, iosModule, shareModule)
     }
 }
