@@ -33,6 +33,8 @@ import xyz.ksharma.sumi.theme.SumiTokens as Sumi
 fun SettingsScreen(
     onBack: () -> Unit,
     onLicenses: () -> Unit,
+    isDebug: Boolean,
+    debugCallbacks: DebugCallbacks,
     modifier: Modifier = Modifier,
 ) {
     WashiBG(modifier = modifier.fillMaxSize()) {
@@ -64,8 +66,67 @@ fun SettingsScreen(
                         modifier = Modifier.fillMaxWidth(),
                     )
                 }
+
+                if (isDebug) {
+                    Spacer(Modifier.height(Sumi.Space.s6))
+                    DebugSection(callbacks = debugCallbacks)
+                }
             }
         }
+    }
+}
+
+@Composable
+private fun DebugSection(callbacks: DebugCallbacks) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        SettingsSectionLabel("Debug")
+        Spacer(Modifier.height(Sumi.Space.s3))
+        DebugItem(
+            label = "Reset Onboarding",
+            description = "Shows intro slides on next launch.",
+            buttonText = "Reset",
+            onClick = callbacks.onResetOnboarding,
+        )
+        Spacer(Modifier.height(Sumi.Space.s4))
+        DebugItem(
+            label = "Clear Streak & Stats",
+            description = "Wipes streak, best streak, total puzzles solved.",
+            buttonText = "Clear Stats",
+            onClick = callbacks.onClearStats,
+        )
+        Spacer(Modifier.height(Sumi.Space.s4))
+        DebugItem(
+            label = "Clear Game Saves",
+            description = "Discards in-progress puzzles for all difficulties.",
+            buttonText = "Clear Saves",
+            onClick = callbacks.onClearSaves,
+        )
+        Spacer(Modifier.height(Sumi.Space.s4))
+        DebugItem(
+            label = "Nuke All Data",
+            description = "Wipes everything — onboarding, stats, saves. Fresh install.",
+            buttonText = "Clear All",
+            onClick = callbacks.onClearAll,
+        )
+    }
+}
+
+@Composable
+private fun DebugItem(
+    label: String,
+    description: String,
+    buttonText: String,
+    onClick: () -> Unit,
+) {
+    SettingsPanel {
+        SettingsRow(label = label, description = description)
+        Spacer(Modifier.height(Sumi.Space.s3))
+        SumiTextButton(
+            text = buttonText,
+            onClick = onClick,
+            variant = SumiButtonVariant.Ghost,
+            modifier = Modifier.fillMaxWidth(),
+        )
     }
 }
 

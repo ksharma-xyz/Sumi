@@ -7,4 +7,5 @@ interface GameSaveRepository {
     suspend fun loadSave(difficulty: Difficulty): GameSave?
     suspend fun writeSave(difficulty: Difficulty, save: GameSave)
     suspend fun clearSave(difficulty: Difficulty)
+    suspend fun clearAllSaves()
 }

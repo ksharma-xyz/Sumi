@@ -50,6 +50,10 @@ class DataStoreGameSaveRepository(private val store: DataStore<Preferences>) : G
             prefs.remove(slot.hintsKey)
         }
     }
+
+    override suspend fun clearAllSaves() {
+        Difficulty.entries.forEach { clearSave(it) }
+    }
 }
 
 private val Difficulty.slot: SaveSlot

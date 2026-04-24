@@ -20,7 +20,7 @@ private val KEY_LAST_SOLVE_DAY = longPreferencesKey("last_solve_day")
 private val KEY_SOLVE_DAYS = stringSetPreferencesKey("solve_days")
 private val KEY_TOTAL_PUZZLES = intPreferencesKey("total_puzzles")
 
-class DataStoreSumiPreferences(private val store: DataStore<Preferences>) : SumiPreferences {
+class DataStoreSumiPreferences(private val store: DataStore<Preferences>) : SumiPreferences, DebugPreferences {
 
     override suspend fun hasSeenOnboarding(): Boolean =
         store.data.first()[KEY_SEEN_ONBOARDING] ?: false
@@ -61,6 +61,24 @@ class DataStoreSumiPreferences(private val store: DataStore<Preferences>) : Sumi
 
     override suspend fun getSolveDays(): Set<Long> =
         store.data.first()[KEY_SOLVE_DAYS]?.mapNotNull { it.toLongOrNull() }?.toSet() ?: emptySet()
+
+    override suspend fun resetOnboarding() {
+        store.edit { it[KEY_SEEN_ONBOARDING] = false }
+    }
+
+    override suspend fun clearStats() {
+        store.edit { prefs ->
+            prefs.remove(KEY_STREAK)
+            prefs.remove(KEY_BEST_STREAK)
+            prefs.remove(KEY_LAST_SOLVE_DAY)
+            prefs.remove(KEY_SOLVE_DAYS)
+            prefs.remove(KEY_TOTAL_PUZZLES)
+        }
+    }
+
+    override suspend fun clearAll() {
+        store.edit { it.clear() }
+    }
 }
 
 @OptIn(ExperimentalTime::class)
