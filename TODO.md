@@ -97,16 +97,16 @@ Last updated: 2026-04-25
   - Border animates from thin+grey to 2dp+accent colour
   - Petal burst triggers with season-accent colours on selection; old petals fade when switching
 
-- [ ] **Paywall floating entrance animation**
+- [x] **Paywall floating entrance animation**
   - Feature rows stagger in one by one (each 60ms offset), fade + translate from below
   - Sumi enso logo animates in last, reusing the LogoEnso appear transition from Splash
   - Consistent logo-appear animation shared across Splash → Paywall → any future brand screen
 
-- [ ] **Game unit tests — full coverage**
-  - `RealBoardManager`: state emission, select/enter/erase/undo/hint all mutate `state` flow
-  - `SudokuGenerator`: valid grid for all 5 difficulties, uniqueness by seed, given-count ranges
-  - `BoardState`: notes-clear on digit entry, remaining-counts accuracy, multiple difficulties
-  - `PuzzleRepository`: daily() returns deterministic board for same difficulty + date
+- [x] **Game unit tests — full coverage** (87 tests total)
+  - `RealBoardManager`: 22 tests — state emission, select/enter/erase/undo/hint/toggleNotes/tick
+  - `SudokuGenerator`: 5 tests — valid grid, all difficulties, seed determinism
+  - `BoardState`: 50 tests — notes cleared on digit entry, remainingCounts invariant, all difficulties
+  - `PuzzleRepository`: 10 tests — daily() determinism + validity, fromSeed(), getOptions()
 
 ### Phase 3 — Monetisation (UI first, SDK integration deferred)
 
