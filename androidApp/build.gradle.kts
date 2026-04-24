@@ -51,7 +51,8 @@ kotlin {
 }
 
 dependencies {
-    implementation(project(":composeApp"))
+    implementation(projects.composeApp)
+    implementation(projects.share)
     implementation(libs.activity.compose)
     implementation(libs.androidx.appcompat)
     implementation(libs.core.ktx)

@@ -118,6 +118,20 @@ Last updated: 2026-04-25
 
 ---
 
+## Your Action Items (needs you)
+
+- [ ] **SVG → Vector XML: `logo-enso.svg`** — Convert `docs/handoff/svg/logo-enso.svg` to an Android Vector Drawable. If the AVD import drops the `feDisplacementMap` ink-texture filter, export as a raster PNG at **560×560** (`logo_enso.png`) and drop it in `composeApp/src/commonMain/composeResources/drawable/`. The current `enso_ink.xml` works as a fallback but lacks the brush-texture.
+
+- [ ] **SVG → Vector XML: `wordmark.svg`** — Convert `docs/handoff/svg/wordmark.svg` to `wordmark.xml` if you want a vector asset instead of live Cormorant text. Optional — live text renders correctly today.
+
+- [ ] **SVG → Vector XML: `icons/`** — Audit `docs/handoff/svg/icons/` against `SumiIcons.kt`. Any icon present in the SVG folder but missing from `SumiIcons` should be converted and wired.
+
+- [ ] **README screenshots** — Once the app is running and polished, take screenshots of Splash, Home, Game, and Win screens. Drop them in `docs/screenshots/` and I'll wire them into the README hero section.
+
+- [ ] **App Store assets** — When submitting: App Store Connect needs 6.7″ and 6.1″ screenshots for iOS, and Play Console needs phone + 7″ tablet screenshots. The app icon SVGs are in `docs/handoff/svg/`.
+
+---
+
 ## Known Limitations
 
 - `recordSolve()` counts every win as +1 to total puzzles; if the app is killed mid-solve and
