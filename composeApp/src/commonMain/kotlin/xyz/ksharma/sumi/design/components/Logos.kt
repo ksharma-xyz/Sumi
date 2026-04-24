@@ -24,11 +24,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.jetbrains.compose.resources.painterResource
 import xyz.ksharma.sumi.resources.Res
-import xyz.ksharma.sumi.resources.enso_ink
+import xyz.ksharma.sumi.resources.logo_enso
 import xyz.ksharma.sumi.theme.SumiTheme
 
 /**
- * Splash Ensō logo — always renders the shipped asset (never a plain geometric arc).
+ * Splash Ensō logo — vector asset, ink color tinted for theme support.
  * [progress] drives a fade + subtle scale reveal (Option B from BACKGROUNDS.md).
  */
 @Composable
@@ -40,7 +40,7 @@ fun LogoEnso(
 ) {
     val resolvedColor = if (color == Color.Unspecified) SumiTheme.colors.ink else color
     Image(
-        painter = painterResource(Res.drawable.enso_ink),
+        painter = painterResource(Res.drawable.logo_enso),
         contentDescription = null,
         modifier = modifier
             .size(size)

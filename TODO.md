@@ -120,7 +120,7 @@ Last updated: 2026-04-25
 
 ## Your Action Items (needs you)
 
-- [ ] **SVG → Vector XML: `logo-enso.svg`** — Convert `docs/handoff/svg/logo-enso.svg` to an Android Vector Drawable. If the AVD import drops the `feDisplacementMap` ink-texture filter, export as a raster PNG at **560×560** (`logo_enso.png`) and drop it in `composeApp/src/commonMain/composeResources/drawable/`. The current `enso_ink.xml` works as a fallback but lacks the brush-texture.
+- [x] **SVG → Vector XML: `logo-enso.svg`** — Converted to `logo_enso.xml` (Android Vector Drawable) in `composeApp/src/commonMain/composeResources/drawable/`. Uses path + circles from the SVG; ink-texture filter omitted (not supported in AVD). `LogoEnso` composable updated to use `logo_enso.xml` with `ColorFilter.tint` for theme support.
 
 - [ ] **SVG → Vector XML: `wordmark.svg`** — Convert `docs/handoff/svg/wordmark.svg` to `wordmark.xml` if you want a vector asset instead of live Cormorant text. Optional — live text renders correctly today.
 
