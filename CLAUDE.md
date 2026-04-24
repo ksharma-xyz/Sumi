@@ -104,8 +104,14 @@ For complex stable data passed to composables, use `ImmutableList`/`ImmutableSet
 
 **Do not suppress detekt violations without checking first.** The default approach is to fix properly.
 
-- `MagicNumber`: okay to suppress in some cases (UI constants, pixel values), but fix first if practical
-- Everything else (`MatchingDeclarationName`, `LongMethod`, `ComposableParamOrder`, etc.): **fix properly, do not suppress**
+`autoCorrect: true` is set in `config/detekt.yml` — import ordering and trailing commas are fixed in-place automatically.
+
+Suppression guidance by rule:
+- `MaximumLineLength` / `MaxLineLength` — break the line, never suppress
+- `MagicNumber` — extract a named constant; suppress only if the value has no semantic meaning beyond layout maths
+- `MatchingDeclarationName`, `ComposableParamOrder` — **fix properly, do not suppress**
+- `LongMethod` — extract private helpers first; suppress only when refactoring is genuinely impossible (rare)
+- `CyclomaticComplexMethod` — same: simplify first, suppress only as last resort
 - If you think a suppression is the right call, **ask the user** before adding `@file:Suppress` or `@Suppress`
 
 ## Test commands
@@ -118,6 +124,42 @@ KMP modules with `androidLibrary { withHostTestBuilder {} }` expose `testAndroid
 | All modules | `./gradlew testAndroidHostTest --continue` |
 
 To enable host tests in a new module, add `withHostTestBuilder {}` inside `androidLibrary {}` in its `build.gradle.kts`.
+
+## Gradle dependencies
+
+Always use **type-safe project accessors** — never the string form.
+
+```kotlin
+// ✅ correct
+implementation(projects.share)
+implementation(projects.game)
+implementation(libs.di.koinComposeViewmodel)
+
+// ❌ wrong — do not use
+implementation(project(":share"))
+implementation(project(":game"))
+```
+
+`enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")` is active in `settings.gradle.kts`.
+Accessor name mirrors the directory path with dots (`game/` → `projects.game`).
+
+## LazyColumn / LazyRow item keys
+
+**Always provide an explicit `key` for every `item {}` call** — critical for correct recomposition, scroll-state preservation, and animation.
+
+```kotlin
+// ✅ correct — stable, unique key per item
+item(key = "header-streak") { ... }
+items(puzzles, key = { it.id }) { ... }
+
+// ❌ wrong — positional identity breaks on reorder/insert
+item { ... }
+```
+
+Key rules:
+- Static items: descriptive string literal (`"header-streak"`, `"spacer-bottom"`)
+- Dynamic items: stable domain identifier (e.g. `puzzle.id`, `stat.label`)
+- If the same data appears twice in one list, prefix keys to keep them unique
 
 ## Build structure
 

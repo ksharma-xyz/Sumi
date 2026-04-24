@@ -25,8 +25,6 @@ import xyz.ksharma.sumi.resources.washi_paper_light
 import xyz.ksharma.sumi.theme.SumiTheme
 import xyz.ksharma.sumi.theme.SumiTokens as Sumi
 
-enum class WashiVariant { Full, Quiet, Faint }
-
 /**
  * Three-layer paper background: base color → PNG texture → radial vignette.
  * Never use procedural noise — always ship the PNG/JPEG assets.
@@ -41,8 +39,8 @@ fun WashiBG(
     val dark = SumiTheme.isDark
     val resource = when {
         inkMode -> Res.drawable.washi_ink_dark
-        dark    -> Res.drawable.washi_paper_dark
-        else    -> Res.drawable.washi_paper_light
+        dark -> Res.drawable.washi_paper_dark
+        else -> Res.drawable.washi_paper_light
     }
     val baseColor = if (dark) Sumi.Color.Night.paper else Sumi.Color.paper
 
@@ -57,7 +55,7 @@ fun WashiBG(
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop,
             alpha = when (variant) {
-                Full  -> 1f
+                Full -> 1f
                 Quiet -> 0.7f
                 Faint -> 0.35f
             },

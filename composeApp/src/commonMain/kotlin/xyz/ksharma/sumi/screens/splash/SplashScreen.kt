@@ -62,109 +62,98 @@ fun SplashScreen(
     val wordmarkAlpha = remember { Animatable(0f) }
     var dotsVisible by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) {
-        coroutineScope {
-            // t=0 — Ensō starts revealing (700ms)
-            launch { ensoProgress.animateTo(1f, tween(700, easing = Sumi.Ease.brush)) }
-            // t=800 — kanji 墨 fades in (240ms)
-            launch {
-                delay(800)
-                kanjiAlpha.animateTo(1f, tween(240, easing = Sumi.Ease.paper))
-            }
-            // t=1100 — wordmark fades in (400ms) with subtle lift
-            launch {
-                delay(1100)
-                wordmarkAlpha.animateTo(1f, tween(400, easing = Sumi.Ease.paper))
-            }
-            // t=1500 — loading dots begin
-            launch {
-                delay(1500)
-                dotsVisible = true
-            }
-        }
-    }
-
-    LaunchedEffect(uiState.navigationTarget) {
-        uiState.navigationTarget?.let { currentOnNavigate(it) }
-    }
+    LaunchedEffect(Unit) { runSplashSequence(ensoProgress, kanjiAlpha, wordmarkAlpha) { dotsVisible = true } }
+    LaunchedEffect(uiState.navigationTarget) { uiState.navigationTarget?.let { currentOnNavigate(it) } }
 
     WashiBG(modifier = modifier.fillMaxSize()) {
-        // z=1: ink bleed behind the Ensō
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center,
-        ) {
-            Image(
-                painter = painterResource(Res.drawable.ink_bleed_01),
-                contentDescription = null,
-                modifier = Modifier
-                    .size(360.dp)
-                    .offset(y = (-40).dp),  // nudge to match 40% from top
-                contentScale = ContentScale.Fit,
-                alpha = 0.12f,
-            )
-        }
+        SplashInkBleed()
+        SplashEnsoKanji(ensoProgress.value, kanjiAlpha.value)
+        SplashWordmark(wordmarkAlpha.value)
+        if (dotsVisible) SplashDots()
+    }
+}
 
-        // z=2–3: Ensō + kanji stack, centered at ~40% from top
+private suspend fun runSplashSequence(
+    ensoProgress: Animatable<Float, *>,
+    kanjiAlpha: Animatable<Float, *>,
+    wordmarkAlpha: Animatable<Float, *>,
+    onDotsReady: () -> Unit,
+) = coroutineScope {
+    launch { ensoProgress.animateTo(1f, tween(700, easing = Sumi.Ease.brush)) }
+    launch {
+        delay(800)
+        kanjiAlpha.animateTo(1f, tween(240, easing = Sumi.Ease.paper))
+    }
+    launch {
+        delay(1100)
+        wordmarkAlpha.animateTo(1f, tween(400, easing = Sumi.Ease.paper))
+    }
+    launch {
+        delay(1500)
+        onDotsReady()
+    }
+}
+
+@Composable
+private fun SplashInkBleed() {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Image(
+            painter = painterResource(Res.drawable.ink_bleed_01),
+            contentDescription = null,
+            modifier = Modifier.size(360.dp).offset(y = (-40).dp),
+            contentScale = ContentScale.Fit,
+            alpha = 0.12f,
+        )
+    }
+}
+
+@Composable
+private fun SplashEnsoKanji(ensoProgress: Float, kanjiAlpha: Float) {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
         Box(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier.fillMaxWidth().padding(top = 240.dp),
             contentAlignment = Alignment.TopCenter,
         ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 240.dp),  // ~40% on 600dp tall screen
-                contentAlignment = Alignment.TopCenter,
-            ) {
-                // z=2: Ensō logo (140dp, asset-based)
-                LogoEnso(size = 140.dp, color = SumiTheme.colors.ink, progress = ensoProgress.value)
-
-                // z=3: kanji 墨 centered inside the Ensō
-                Text(
-                    text = "墨",
-                    style = SumiTheme.typography.cjk.copy(fontSize = 52.sp),
-                    color = SumiTheme.colors.ink,
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .padding(top = 38.dp)  // nudge to center within 140dp Ensō
-                        .alpha(kanjiAlpha.value),
-                )
-            }
-        }
-
-        // z=4: wordmark "Sumi" below the Ensō
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.TopCenter,
-        ) {
+            LogoEnso(size = 140.dp, color = SumiTheme.colors.ink, progress = ensoProgress)
             Text(
-                text = "Sumi",
-                style = SumiTheme.typography.h1.copy(
-                    fontSize = 46.sp,
-                    fontStyle = FontStyle.Italic,
-                    letterSpacing = (-0.03f).em,
-                ),
+                text = "墨",
+                style = SumiTheme.typography.cjk.copy(fontSize = 52.sp),
                 color = SumiTheme.colors.ink,
                 modifier = Modifier
-                    .padding(top = 420.dp)
-                    .alpha(wordmarkAlpha.value)
-                    .graphicsLayer {
-                        translationY = (1f - wordmarkAlpha.value) * 6.dp.toPx()
-                    },
+                    .align(Alignment.TopCenter)
+                    .padding(top = 38.dp)
+                    .alpha(kanjiAlpha),
             )
         }
+    }
+}
 
-        // z=5: loading dots near bottom
-        if (dotsVisible) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(bottom = 48.dp),
-                contentAlignment = Alignment.BottomCenter,
-            ) {
-                LoadingDots()
-            }
-        }
+@Composable
+private fun SplashWordmark(wordmarkAlpha: Float) {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+        Text(
+            text = "Sumi",
+            style = SumiTheme.typography.h1.copy(
+                fontSize = 46.sp,
+                fontStyle = FontStyle.Italic,
+                letterSpacing = (-0.03f).em,
+            ),
+            color = SumiTheme.colors.ink,
+            modifier = Modifier
+                .padding(top = 420.dp)
+                .alpha(wordmarkAlpha)
+                .graphicsLayer { translationY = (1f - wordmarkAlpha) * 6.dp.toPx() },
+        )
+    }
+}
+
+@Composable
+private fun SplashDots() {
+    Box(
+        modifier = Modifier.fillMaxSize().padding(bottom = 48.dp),
+        contentAlignment = Alignment.BottomCenter,
+    ) {
+        LoadingDots()
     }
 }
 
@@ -181,19 +170,14 @@ private fun LoadingDots() {
         label = "dotTick",
     )
     val activeIndex = tick.toInt() % 7
-
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
         repeat(7) { i ->
             if (i > 0) Spacer(Modifier.width(8.dp))
             Box(
                 modifier = Modifier
                     .size(3.dp)
                     .background(
-                        color = SumiTheme.colors.ink.copy(
-                            alpha = if (i == activeIndex) 0.60f else 0.20f,
-                        ),
+                        color = SumiTheme.colors.ink.copy(alpha = if (i == activeIndex) 0.60f else 0.20f),
                         shape = CircleShape,
                     ),
             )
