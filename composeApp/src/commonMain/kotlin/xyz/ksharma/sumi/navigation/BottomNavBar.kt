@@ -8,9 +8,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -26,8 +29,11 @@ import xyz.ksharma.sumi.theme.SumiTokens as Sumi
 
 private data class NavTab(val route: NavKey, val label: String, val icon: ImageVector)
 
+// "Play" maps to SplashRoute because that is the actual root of the play stack.
+// All Home/Game/Win entries are pushed onto backStacks[SplashRoute], so this tab
+// must switch to SplashRoute to restore the in-progress play session.
 private val TABS = listOf(
-    NavTab(HomeRoute, "Play", SumiIcons.Book),
+    NavTab(SplashRoute, "Play", SumiIcons.Book),
     NavTab(DailyRoute, "Daily", SumiIcons.Calendar),
     NavTab(StatsRoute, "Stats", SumiIcons.Chart),
     NavTab(PaywallRoute, "Zen", SumiIcons.Quote),
@@ -45,6 +51,7 @@ fun BottomNavBar(
             .fillMaxWidth()
             .border(width = 1.dp, color = colors.paperEdge)
             .background(colors.paper)
+            .windowInsetsPadding(WindowInsets.navigationBars)
             .padding(horizontal = Sumi.Space.s4, vertical = Sumi.Space.s3),
         horizontalArrangement = Arrangement.SpaceAround,
     ) {

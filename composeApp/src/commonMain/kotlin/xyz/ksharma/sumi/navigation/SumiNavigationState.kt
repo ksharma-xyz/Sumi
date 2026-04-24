@@ -38,8 +38,12 @@ class SumiNavigationState(
 ) {
     var topLevelRoute: NavKey by topLevelRouteState
 
+    // True only while Splash or Onboarding is the visible top screen.
+    // topLevelRoute never changes from SplashRoute (resetRoot mutates the stack, not the tab),
+    // so we check the actual top of the active stack instead.
     val isSetupFlow: Boolean
-        get() = topLevelRoute == startRoute
+        get() = backStacks[topLevelRoute]?.lastOrNull()
+            .let { it == SplashRoute || it == OnboardingRoute }
 
     private val stacksInUse: List<NavKey>
         get() = listOf(topLevelRoute)
