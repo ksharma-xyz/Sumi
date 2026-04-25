@@ -41,7 +41,7 @@ class GameViewModel(
     private var timerJob: Job? = null
     private var syncJob: Job? = null
 
-    fun init(difficulty: Difficulty) {
+    fun init(difficulty: Difficulty, fresh: Boolean = false) {
         timerJob?.cancel()
         syncJob?.cancel()
         currentDifficulty = difficulty
@@ -49,8 +49,10 @@ class GameViewModel(
         _celebrationCount.value = 0
 
         viewModelScope.launch {
+            if (fresh) saveRepository.clearSave(difficulty)
+
             val freshPuzzle = puzzleRepository.daily(difficulty)
-            val save = saveRepository.loadSave(difficulty)
+            val save = if (fresh) null else saveRepository.loadSave(difficulty)
             val restoredState = if (save != null) restoreState(freshPuzzle, save) else freshPuzzle
             val restoredElapsed = save?.elapsedMs ?: 0L
 
@@ -69,10 +71,6 @@ class GameViewModel(
             startSync()
             startTimer()
         }
-    }
-
-    fun clearSave() {
-        viewModelScope.launch { saveRepository.clearSave(currentDifficulty) }
     }
 
     fun select(row: Int, col: Int) = boardManager.select(row, col)
