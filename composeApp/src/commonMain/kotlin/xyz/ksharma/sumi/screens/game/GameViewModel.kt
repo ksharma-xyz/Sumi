@@ -170,10 +170,12 @@ class GameViewModel(
     private companion object {
         const val TIMER_TICK_MS = 1000L
         const val BOARD_SIZE = 9
+        // solution uses 1 (not 0) so isComplete = (0 == 1) = false before init() fires.
+        // A solution of all-zeros would make isComplete immediately true and trigger Win navigation.
         val EMPTY_BOARD = BoardState(
             cells = List(9) { List(9) { Cell(0, false) } },
             difficulty = Difficulty.Medium,
-            solution = List(9) { List(9) { 0 } },
+            solution = List(9) { List(9) { 1 } },
         )
     }
 }

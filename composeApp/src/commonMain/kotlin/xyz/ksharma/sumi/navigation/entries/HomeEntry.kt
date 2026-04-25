@@ -10,6 +10,7 @@ import org.koin.compose.viewmodel.koinViewModel
 import xyz.ksharma.sumi.FREE_QUOTES
 import xyz.ksharma.sumi.navigation.GameRoute
 import xyz.ksharma.sumi.navigation.HomeRoute
+import xyz.ksharma.sumi.navigation.PaywallRoute
 import xyz.ksharma.sumi.navigation.SettingsRoute
 import xyz.ksharma.sumi.navigation.SumiNavigator
 import xyz.ksharma.sumi.screens.home.HomeScreen
@@ -31,8 +32,12 @@ fun EntryProviderScope<NavKey>.HomeEntry(navigator: SumiNavigator) {
         HomeScreen(
             streakDays = streak,
             quote = quote,
-            onStartGame = { difficulty -> navigator.goTo(GameRoute(difficulty = difficulty)) },
+            onStartGame = { difficulty ->
+                if (difficulty == "Edo") navigator.goTo(PaywallRoute)
+                else navigator.goTo(GameRoute(difficulty = difficulty))
+            },
             onSettings = { navigator.goTo(SettingsRoute) },
+            lockedDifficulties = setOf("Edo"),
         )
     }
 }

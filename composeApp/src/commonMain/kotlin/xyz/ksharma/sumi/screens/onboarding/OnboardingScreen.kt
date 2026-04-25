@@ -2,6 +2,12 @@
 
 package xyz.ksharma.sumi.screens.onboarding
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -28,8 +34,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -37,6 +45,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextAlign
@@ -44,11 +53,14 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import xyz.ksharma.sumi.design.components.LogoEnso
+import xyz.ksharma.sumi.design.components.PetalBurstConfig
 import xyz.ksharma.sumi.design.components.SumiButton
 import xyz.ksharma.sumi.design.components.SumiButtonSize
+import xyz.ksharma.sumi.design.components.SumiPetalBurst
 import xyz.ksharma.sumi.design.components.WashiBG
 import xyz.ksharma.sumi.resources.Res
 import xyz.ksharma.sumi.resources.ink_bleed_01
@@ -76,6 +88,11 @@ private val BLEED_CONFIGS = listOf(
     BleedConfig(Res.drawable.ink_bleed_01, 360.dp, Alignment.Center, 0.dp, 0.dp, 0f, 0.08f),
     BleedConfig(Res.drawable.ink_bleed_02, 280.dp, Alignment.TopStart, (-20).dp, 20.dp, -6f, 0.08f),
 )
+
+private fun seasonPetalColors(season: SumiSeason): List<Color> {
+    val p = SumiTokens.Color.Season.forSeason(season)
+    return listOf(p.accent, p.accentDeep, p.paperEdge, p.paper)
+}
 
 @Composable
 fun OnboardingScreen(
@@ -212,42 +229,60 @@ private fun SlidePage(page: Int) {
 
 @Composable
 private fun SeasonPickerSlide(selected: SumiSeason, onSelect: (SumiSeason) -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(top = 40.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Text(
-            text = "Choose your season.",
-            style = SumiTheme.typography.h2.copy(
-                fontSize = 34.sp,
-                fontStyle = FontStyle.Italic,
-                lineHeight = (34 * 1.15f).sp,
-                letterSpacing = (-0.02f).em,
-            ),
-            color = SumiTheme.colors.ink,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth(),
-        )
-        Spacer(Modifier.height(12.dp))
-        Text(
-            text = "Sets the accent colour. You can change it in Settings.",
-            style = SumiTheme.typography.body.copy(fontSize = 15.sp, lineHeight = 22.sp),
-            color = SumiTheme.colors.inkSoft,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth(),
-        )
-        Spacer(Modifier.height(48.dp))
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
+    var burstTrigger by remember { mutableIntStateOf(0) }
+    var burstColors by remember { mutableStateOf(seasonPetalColors(SumiSeason.Spring)) }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(top = 40.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            SeasonTile(season = SumiSeason.Spring, selected = selected == SumiSeason.Spring, onSelect = onSelect)
-            SeasonTile(season = SumiSeason.Autumn, selected = selected == SumiSeason.Autumn, onSelect = onSelect)
-            SeasonTile(season = SumiSeason.Winter, selected = selected == SumiSeason.Winter, onSelect = onSelect)
+            Text(
+                text = "Choose your season.",
+                style = SumiTheme.typography.h2.copy(
+                    fontSize = 34.sp,
+                    fontStyle = FontStyle.Italic,
+                    lineHeight = (34 * 1.15f).sp,
+                    letterSpacing = (-0.02f).em,
+                ),
+                color = SumiTheme.colors.ink,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Spacer(Modifier.height(12.dp))
+            Text(
+                text = "Sets the accent colour. You can change it in Settings.",
+                style = SumiTheme.typography.body.copy(fontSize = 15.sp, lineHeight = 22.sp),
+                color = SumiTheme.colors.inkSoft,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Spacer(Modifier.height(48.dp))
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                SumiSeason.entries.forEach { season ->
+                    SeasonTile(
+                        season = season,
+                        selected = selected == season,
+                        onSelect = { picked ->
+                            burstColors = seasonPetalColors(picked)
+                            burstTrigger++
+                            onSelect(picked)
+                        },
+                    )
+                }
+            }
         }
+        SumiPetalBurst(
+            trigger = burstTrigger,
+            modifier = Modifier.fillMaxSize(),
+            config = PetalBurstConfig(count = 24, durationMs = 2_500, colors = burstColors),
+        )
     }
 }
 
@@ -255,43 +290,43 @@ private fun SeasonPickerSlide(selected: SumiSeason, onSelect: (SumiSeason) -> Un
 private fun SeasonTile(season: SumiSeason, selected: Boolean, onSelect: (SumiSeason) -> Unit) {
     val palette = SumiTokens.Color.Season.forSeason(season)
     val accentColor = palette.accent
-    val paperColor = palette.paper
-    val kanji = when (season) { SumiSeason.Spring -> "春"
-        SumiSeason.Autumn -> "秋"
-        SumiSeason.Winter -> "冬" }
-    val label = when (season) { SumiSeason.Spring -> "Spring"
-        SumiSeason.Autumn -> "Autumn"
-        SumiSeason.Winter -> "Winter" }
     val src = remember { MutableInteractionSource() }
+    val scale = remember { Animatable(1f) }
+    val scope = rememberCoroutineScope()
+    val borderWidth by animateDpAsState(targetValue = if (selected) 2.dp else 1.dp, label = "borderWidth")
+    val borderColor by animateColorAsState(
+        targetValue = if (selected) accentColor else SumiTokens.Color.paperEdge,
+        label = "borderColor",
+    )
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
+            .graphicsLayer {
+                scaleX = scale.value
+                scaleY = scale.value
+            }
             .clip(RoundedCornerShape(8.dp))
-            .clickable(interactionSource = src, indication = null) { onSelect(season) },
+            .clickable(interactionSource = src, indication = null) {
+                scope.launch {
+                    scale.snapTo(1f)
+                    scale.animateTo(1.2f, tween(120))
+                    scale.animateTo(1f, spring(Spring.DampingRatioMediumBouncy, Spring.StiffnessMedium))
+                }
+                onSelect(season)
+            },
     ) {
-        val borderMod: Modifier = if (selected) {
-            Modifier.border(2.dp, accentColor, RoundedCornerShape(8.dp))
-        } else {
-            Modifier.border(1.dp, SumiTokens.Color.paperEdge, RoundedCornerShape(8.dp))
-        }
-        Box(
-            modifier = Modifier
-                .size(80.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .background(paperColor)
-                .then(borderMod),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                text = kanji,
-                style = SumiTheme.typography.cjk.copy(fontSize = 36.sp),
-                color = if (selected) accentColor else SumiTokens.Color.inkSoft,
-            )
-        }
+        SeasonTileBox(
+            season = season,
+            accentColor = accentColor,
+            paperColor = palette.paper,
+            selected = selected,
+            borderWidth = borderWidth,
+            borderColor = borderColor,
+        )
         Spacer(Modifier.height(8.dp))
         Text(
-            text = label,
+            text = seasonLabel(season),
             style = SumiTheme.typography.uiLabel,
             color = if (selected) SumiTheme.colors.ink else SumiTheme.colors.inkSoft,
         )
@@ -300,6 +335,43 @@ private fun SeasonTile(season: SumiSeason, selected: Boolean, onSelect: (SumiSea
             Box(modifier = Modifier.size(4.dp).background(accentColor, CircleShape))
         }
     }
+}
+
+@Composable
+private fun SeasonTileBox(
+    season: SumiSeason,
+    accentColor: Color,
+    paperColor: Color,
+    selected: Boolean,
+    borderWidth: Dp,
+    borderColor: Color,
+) {
+    Box(
+        modifier = Modifier
+            .size(80.dp)
+            .clip(RoundedCornerShape(8.dp))
+            .background(paperColor)
+            .border(borderWidth, borderColor, RoundedCornerShape(8.dp)),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = seasonKanji(season),
+            style = SumiTheme.typography.cjk.copy(fontSize = 36.sp),
+            color = if (selected) accentColor else SumiTokens.Color.inkSoft,
+        )
+    }
+}
+
+private fun seasonKanji(season: SumiSeason) = when (season) {
+    SumiSeason.Spring -> "春"
+    SumiSeason.Autumn -> "秋"
+    SumiSeason.Winter -> "冬"
+}
+
+private fun seasonLabel(season: SumiSeason) = when (season) {
+    SumiSeason.Spring -> "Spring"
+    SumiSeason.Autumn -> "Autumn"
+    SumiSeason.Winter -> "Winter"
 }
 
 @Composable

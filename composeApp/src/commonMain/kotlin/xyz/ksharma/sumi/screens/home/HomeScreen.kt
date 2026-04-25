@@ -57,6 +57,7 @@ fun HomeScreen(
     onStartGame: (difficulty: String) -> Unit,
     onSettings: () -> Unit,
     modifier: Modifier = Modifier,
+    lockedDifficulties: Set<String> = emptySet(),
 ) {
 
     WashiBG(modifier = modifier.fillMaxSize()) {
@@ -76,7 +77,7 @@ fun HomeScreen(
             Spacer(Modifier.height(Sumi.Space.s5))
             StreakCard(streakDays = streakDays)
             Spacer(Modifier.height(Sumi.Space.s4))
-            NewPracticeGrid(onStartGame = onStartGame)
+            NewPracticeGrid(onStartGame = onStartGame, lockedDifficulties = lockedDifficulties)
         }
     }
 }
@@ -181,7 +182,7 @@ private fun StreakCard(streakDays: Int) {
 }
 
 @Composable
-private fun NewPracticeGrid(onStartGame: (String) -> Unit) {
+private fun NewPracticeGrid(onStartGame: (String) -> Unit, lockedDifficulties: Set<String>) {
     Column {
         SumiEyebrow(text = "New Practice", color = SumiTheme.colors.inkFaint)
         Spacer(Modifier.height(Sumi.Space.s3))
@@ -194,6 +195,7 @@ private fun NewPracticeGrid(onStartGame: (String) -> Unit) {
                             name = name,
                             kanji = kanji,
                             avgTime = time,
+                            isLocked = name in lockedDifficulties,
                             onClick = { onStartGame(name) },
                             modifier = Modifier.weight(1f),
                         )
@@ -210,37 +212,53 @@ private fun DifficultyTile(
     name: String,
     kanji: String,
     avgTime: String,
+    isLocked: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val src = remember { MutableInteractionSource() }
-    Row(
-        modifier = modifier
-            .border(1.dp, SumiTheme.colors.paperEdge)
-            .clickable(interactionSource = src, indication = null, onClick = onClick)
-            .padding(horizontal = Sumi.Space.s3, vertical = Sumi.Space.s3),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(Sumi.Space.s3),
-    ) {
-        Text(
-            text = kanji,
-            style = SumiTheme.typography.cjk.copy(fontSize = 26.sp),
-            color = SumiTheme.colors.red,
-        )
-        Column {
+    val borderColor = if (isLocked) SumiTheme.colors.gold else SumiTheme.colors.paperEdge
+    val kanjiColor = if (isLocked) SumiTheme.colors.gold else SumiTheme.colors.red
+    Box(modifier = modifier) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .border(1.dp, borderColor)
+                .clickable(interactionSource = src, indication = null, onClick = onClick)
+                .padding(horizontal = Sumi.Space.s3, vertical = Sumi.Space.s3),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Sumi.Space.s3),
+        ) {
             Text(
-                text = name,
-                style = SumiTheme.typography.h3.copy(
-                    fontSize = 17.sp,
-                    fontStyle = FontStyle.Italic,
-                    fontWeight = FontWeight(500),
-                ),
-                color = SumiTheme.colors.ink,
+                text = kanji,
+                style = SumiTheme.typography.cjk.copy(fontSize = 26.sp),
+                color = kanjiColor,
             )
+            Column {
+                Text(
+                    text = name,
+                    style = SumiTheme.typography.h3.copy(
+                        fontSize = 17.sp,
+                        fontStyle = FontStyle.Italic,
+                        fontWeight = FontWeight(500),
+                    ),
+                    color = SumiTheme.colors.ink,
+                )
+                Text(
+                    text = if (isLocked) "Sumi Pro" else avgTime,
+                    style = SumiTheme.typography.uiMeta.copy(letterSpacing = 1.sp),
+                    color = if (isLocked) SumiTheme.colors.gold else SumiTheme.colors.inkFaint,
+                )
+            }
+        }
+        if (isLocked) {
             Text(
-                text = avgTime,
-                style = SumiTheme.typography.uiMeta.copy(letterSpacing = 1.sp),
-                color = SumiTheme.colors.inkFaint,
+                text = "PRO",
+                style = SumiTheme.typography.uiMeta.copy(letterSpacing = 1.sp, fontSize = 9.sp),
+                color = SumiTheme.colors.gold,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(top = 4.dp, end = 6.dp),
             )
         }
     }
