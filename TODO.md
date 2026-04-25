@@ -85,7 +85,7 @@ Last updated: 2026-04-25
   - Gate Edo difficulty and unlimited hints behind "Sumi Pro"
   - Show paywall when user taps a gated feature, not on cold launch
 
-- [ ] **Petal wind physics overhaul** — Natural wind-blown blizzard effect
+- [x] **Petal wind physics overhaul** — Natural wind-blown blizzard effect
   - All petals drift diagonally (wind angle 30–70°), not purely vertical
   - 2× density: 20 ambient petals on splash, 32 per burst in game
   - 40% of petals enter from left edge (side wind), rest from top
