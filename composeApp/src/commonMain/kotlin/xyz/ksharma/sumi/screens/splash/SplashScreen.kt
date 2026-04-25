@@ -66,7 +66,7 @@ fun SplashScreen(
     LaunchedEffect(uiState.navigationTarget) { uiState.navigationTarget?.let { currentOnNavigate(it) } }
 
     WashiBG(modifier = modifier.fillMaxSize()) {
-        SumiPetals(modifier = Modifier.fillMaxSize(), count = 28, sizeMultiplier = 1.8f, speedFactor = 8f)
+        SumiPetals(modifier = Modifier.fillMaxSize(), count = 17, sizeMultiplier = 1.8f, speedFactor = 3f)
         SplashInkBleed()
         SplashEnso(ensoProgress.value)
         SplashWordmark(wordmarkAlpha.value)
