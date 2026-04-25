@@ -27,6 +27,11 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.isTraversalGroup
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -57,7 +62,7 @@ fun SumiBoard(
     val activeSweeps = rememberHouseSweeps(state)
     val currentOnCellTap by rememberUpdatedState(onCellTap)
 
-    Box(modifier = modifier.size(boardSize)) {
+    Box(modifier = modifier.size(boardSize).semantics { isTraversalGroup = true }) {
         Canvas(
             modifier = Modifier
                 .size(boardSize)
@@ -83,6 +88,12 @@ fun SumiBoard(
             cellSize = cellSize,
             boardSize = boardSize,
             tone = tone,
+        )
+        CellA11yGrid(
+            state = state,
+            cellSize = cellSize,
+            onCellTap = onCellTap,
+            modifier = Modifier.size(boardSize),
         )
     }
 }
@@ -365,6 +376,70 @@ private fun DrawScope.drawGridLines(px: Float, ink: Color) {
         size = Size(boardPx, boardPx),
         style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.dp.toPx()),
     )
+}
+
+@Composable
+private fun CellA11yGrid(
+    state: BoardState,
+    cellSize: Dp,
+    onCellTap: ((Int, Int) -> Unit)?,
+    modifier: Modifier = Modifier,
+) {
+    Layout(
+        modifier = modifier,
+        content = {
+            for (r in 0..8) {
+                for (c in 0..8) {
+                    val cell = state.cells[r][c]
+                    val isSelected = state.selected?.first == r && state.selected?.second == c
+                    val isError = (r to c) in state.errorCells
+                    val desc = buildCellDescription(r, c, cell, isSelected, isError)
+                    Box(
+                        modifier = Modifier
+                            .size(cellSize)
+                            .semantics(mergeDescendants = false) {
+                                contentDescription = desc
+                                if (onCellTap != null) {
+                                    onClick(label = "Select") {
+                                        onCellTap(r, c)
+                                        true
+                                    }
+                                }
+                            },
+                    )
+                }
+            }
+        },
+    ) { measurables, _ ->
+        val sizePx = cellSize.roundToPx()
+        val placeables = measurables.map { it.measure(Constraints.fixed(sizePx, sizePx)) }
+        layout(sizePx * 9, sizePx * 9) {
+            placeables.forEachIndexed { i, p ->
+                val r = i / 9
+                val c = i % 9
+                p.placeRelative(c * sizePx, r * sizePx)
+            }
+        }
+    }
+}
+
+private fun buildCellDescription(
+    row: Int,
+    col: Int,
+    cell: Cell,
+    isSelected: Boolean,
+    isError: Boolean,
+): String {
+    val base = "Row ${row + 1}, column ${col + 1}"
+    val value = when {
+        cell.value != 0 && cell.given -> "Given: ${cell.value}"
+        cell.value != 0 && isError -> "Error: ${cell.value}"
+        cell.value != 0 -> "Entered: ${cell.value}"
+        cell.notes.isNotEmpty() -> "Notes: ${cell.notes.sorted().joinToString()}"
+        else -> "Empty"
+    }
+    val sel = if (isSelected) ", selected" else ""
+    return "$base. $value$sel"
 }
 
 private fun sameBox(r1: Int, c1: Int, r2: Int, c2: Int): Boolean =

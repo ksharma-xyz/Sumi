@@ -6,6 +6,7 @@ import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
+import xyz.ksharma.sumi.analytics.SumiAnalytics
 import xyz.ksharma.sumi.navigation.HomeRoute
 import xyz.ksharma.sumi.navigation.OnboardingRoute
 import xyz.ksharma.sumi.navigation.SumiNavigator
@@ -19,6 +20,7 @@ fun EntryProviderScope<NavKey>.OnboardingEntry(navigator: SumiNavigator) {
     entry<OnboardingRoute> {
         val prefs = koinInject<SumiPreferences>()
         val themePrefs = koinInject<ThemePreferences>()
+        val analytics = koinInject<SumiAnalytics>()
         val scope = rememberCoroutineScope()
         OnboardingScreen(
             onComplete = { season ->
@@ -26,6 +28,7 @@ fun EntryProviderScope<NavKey>.OnboardingEntry(navigator: SumiNavigator) {
                     themePrefs.setSeason(season)
                     prefs.setSeenOnboarding()
                 }
+                analytics.logOnboardingCompleted(season.name)
                 navigator.goTo(HomeRoute)
             },
         )

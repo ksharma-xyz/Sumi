@@ -44,6 +44,9 @@ kotlin {
             implementation(libs.kotlinx.coroutines.android)
             implementation(libs.ktor.client.okhttp)
             implementation(libs.sqldelight.android.driver)
+            implementation(project.dependencies.platform(libs.firebase.bom))
+            implementation(libs.admob)
+            implementation(libs.android.ump)
         }
 
         commonMain.dependencies {
@@ -69,6 +72,9 @@ kotlin {
             implementation(libs.sqldelight.coroutines)
             implementation(libs.datastore.preferences)
             implementation(libs.kotlinx.datetime)
+            implementation(libs.basic.ads)
+            implementation(libs.firebase.gitLiveAnalytics)
+            implementation(libs.firebase.gitLiveCrashlytics)
             implementation(projects.game)
             implementation(projects.share)
         }

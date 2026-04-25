@@ -28,6 +28,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.hideFromAccessibility
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -129,6 +132,9 @@ private fun DailyQuoteBlock(quote: Quote) {
 @Composable
 private fun StreakCard(streakDays: Int) {
     Row(
+        modifier = Modifier.semantics(mergeDescendants = true) {
+            contentDescription = if (streakDays == 1) "1 day streak" else "$streakDays day streak"
+        },
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Sumi.Space.s4),
     ) {
@@ -219,11 +225,13 @@ private fun DifficultyTile(
     val src = remember { MutableInteractionSource() }
     val borderColor = if (isLocked) SumiTheme.colors.gold else SumiTheme.colors.paperEdge
     val kanjiColor = if (isLocked) SumiTheme.colors.gold else SumiTheme.colors.red
+    val tileDescription = if (isLocked) "Start $name game, requires Sumi Pro" else "Start $name game, about $avgTime"
     Box(modifier = modifier) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .border(1.dp, borderColor)
+                .semantics(mergeDescendants = true) { contentDescription = tileDescription }
                 .clickable(interactionSource = src, indication = null, onClick = onClick)
                 .padding(horizontal = Sumi.Space.s3, vertical = Sumi.Space.s3),
             verticalAlignment = Alignment.CenterVertically,
@@ -233,6 +241,7 @@ private fun DifficultyTile(
                 text = kanji,
                 style = SumiTheme.typography.cjk.copy(fontSize = 26.sp),
                 color = kanjiColor,
+                modifier = Modifier.semantics { hideFromAccessibility() },
             )
             Column {
                 Text(

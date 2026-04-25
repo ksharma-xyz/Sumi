@@ -4,5 +4,19 @@
 <dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+
+	<!-- AdMob iOS App ID — replace with real ID from AdMob console before release -->
+	<!-- Test App ID (safe for dev): ca-app-pub-3940256099942544~1458002511 -->
+	<key>GADApplicationIdentifier</key>
+	<string>ca-app-pub-3940256099942544~1458002511</string>
+
+	<!-- Required for SKAdNetwork attribution -->
+	<key>SKAdNetworkItems</key>
+	<array>
+		<dict>
+			<key>SKAdNetworkIdentifier</key>
+			<string>cstr6suwn9.skadnetwork</string>
+		</dict>
+	</array>
 </dict>
 </plist>

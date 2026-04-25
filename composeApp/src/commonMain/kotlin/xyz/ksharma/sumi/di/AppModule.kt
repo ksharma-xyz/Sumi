@@ -3,6 +3,8 @@ package xyz.ksharma.sumi.di
 import org.koin.core.module.dsl.viewModel
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
+import xyz.ksharma.sumi.analytics.FirebaseSumiAnalytics
+import xyz.ksharma.sumi.analytics.SumiAnalytics
 import xyz.ksharma.sumi.game.di.gameModule
 import xyz.ksharma.sumi.preferences.DataStoreGameSaveRepository
 import xyz.ksharma.sumi.preferences.DataStoreSumiPreferences
@@ -20,6 +22,7 @@ import xyz.ksharma.sumi.screens.win.WinViewModel
 
 val appModule = module {
     includes(gameModule)
+    single<SumiAnalytics> { FirebaseSumiAnalytics() }
     single { DataStoreSumiPreferences(store = get()) }
     single<SumiPreferences> { get<DataStoreSumiPreferences>() }
     single<DebugPreferences> { get<DataStoreSumiPreferences>() }

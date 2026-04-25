@@ -1,6 +1,8 @@
 plugins {
     alias(libs.plugins.sumi.android.application)
     alias(libs.plugins.composeCompiler)
+    alias(libs.plugins.google.services)
+    alias(libs.plugins.firebase.crashlyticsPlugin)
 }
 
 android {
@@ -17,6 +19,8 @@ android {
         debug {
             applicationIdSuffix = ".debug"
             isDebuggable = true
+            // Google's public test AdMob App ID — safe to commit, won't generate real revenue
+            manifestPlaceholders["admobAppId"] = "ca-app-pub-3940256099942544~3347511713"
         }
         release {
             isMinifyEnabled = true
@@ -25,6 +29,8 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+            // Replace with real Android AdMob App ID from AdMob console before shipping
+            manifestPlaceholders["admobAppId"] = "ca-app-pub-XXXXXXXXXXXXXXXX~XXXXXXXXXX"
         }
     }
 
@@ -59,5 +65,8 @@ dependencies {
     implementation(libs.core.ktx)
     implementation(libs.di.koinAndroid)
     implementation(libs.datastore.preferences)
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.analytics)
+    implementation(libs.firebase.crashlytics)
     debugImplementation(libs.compose.ui.tooling)
 }

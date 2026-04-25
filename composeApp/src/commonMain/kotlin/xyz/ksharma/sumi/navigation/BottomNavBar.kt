@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.Text
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -78,11 +79,9 @@ private fun BottomNavItem(
     val color = if (selected) colors.red else colors.inkFaint
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.clickable(
-            interactionSource = interactionSource,
-            indication = null,
-            onClick = onClick,
-        ),
+        modifier = Modifier
+            .minimumInteractiveComponentSize()
+            .clickable(interactionSource = interactionSource, indication = null, onClick = onClick),
     ) {
         SumiIcon(icon = icon, contentDescription = label, tint = color, size = 20.dp)
         Spacer(Modifier.height(Sumi.Space.s1))

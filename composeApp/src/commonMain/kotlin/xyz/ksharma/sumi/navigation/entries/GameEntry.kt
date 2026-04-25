@@ -11,6 +11,7 @@ import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
+import xyz.ksharma.sumi.analytics.SumiAnalytics
 import xyz.ksharma.sumi.game.model.BoardState
 import xyz.ksharma.sumi.game.model.Difficulty
 import xyz.ksharma.sumi.haptic.HapticEngine
@@ -31,6 +32,8 @@ private class HapticContext(private val engine: HapticEngine, private val enable
     fun win() { if (enabled) engine.win() }
 }
 
+private class GameContext(val haptic: HapticContext, val analytics: SumiAnalytics)
+
 @Suppress("ComposableNaming")
 @Composable
 fun EntryProviderScope<NavKey>.GameEntry(navigator: SumiNavigator) {
@@ -38,21 +41,25 @@ fun EntryProviderScope<NavKey>.GameEntry(navigator: SumiNavigator) {
         val vm: GameViewModel = koinViewModel()
         val haptic = rememberHapticEngine()
         val themePrefs = koinInject<ThemePreferences>()
+        val analytics = koinInject<SumiAnalytics>()
         val diff = Difficulty.entries.firstOrNull { it.name == key.difficulty } ?: Difficulty.Medium
 
-        LaunchedEffect(key.difficulty) { vm.init(diff) }
+        LaunchedEffect(key.difficulty) {
+            vm.init(diff)
+            analytics.logGameStarted(key.difficulty)
+        }
 
         val state by vm.state.collectAsState()
         val elapsedMs by vm.elapsedMs.collectAsState()
         val hapticsEnabled by themePrefs.observeHapticsEnabled().collectAsState(initial = true)
-        val hapticCtx = HapticContext(haptic, hapticsEnabled)
+        val ctx = GameContext(HapticContext(haptic, hapticsEnabled), analytics)
 
         GameEntryContent(
             vm = vm,
             state = state,
             elapsedMs = elapsedMs,
             diff = diff,
-            haptic = hapticCtx,
+            ctx = ctx,
             routeKey = key,
             navigator = navigator,
         )
@@ -65,7 +72,7 @@ private fun GameEntryContent(
     state: BoardState,
     elapsedMs: Long,
     diff: Difficulty,
-    haptic: HapticContext,
+    ctx: GameContext,
     routeKey: GameRoute,
     navigator: SumiNavigator,
 ) {
@@ -74,7 +81,12 @@ private fun GameEntryContent(
 
     LaunchedEffect(state.isComplete) {
         if (state.isComplete) {
-            haptic.win()
+            ctx.haptic.win()
+            ctx.analytics.logGameCompleted(
+                difficulty = routeKey.difficulty,
+                elapsedSeconds = elapsedMs / 1000L,
+                mistakes = state.mistakeCount,
+            )
             // Clear back to home first so Win is never stacked on top of Game.
             // System back from Win → Home; "Next Practice" from Win → new Game on fresh stack.
             navigator.resetRoot(HomeRoute)
@@ -82,6 +94,10 @@ private fun GameEntryContent(
                 WinRoute(elapsedMs = elapsedMs, mistakeCount = state.mistakeCount, difficulty = routeKey.difficulty),
             )
         }
+    }
+
+    LaunchedEffect(state.isGameOver) {
+        if (state.isGameOver) ctx.analytics.logGameOver(routeKey.difficulty)
     }
 
     GameScreen(
@@ -96,7 +112,7 @@ private fun GameEntryContent(
         difficulty = diff,
         callbacks = buildGameCallbacks(
             vm = vm,
-            haptic = haptic,
+            ctx = ctx,
             state = state,
             navigator = navigator,
             onPause = { paused = true },
@@ -112,7 +128,7 @@ private fun GameEntryContent(
 
 private fun buildGameCallbacks(
     vm: GameViewModel,
-    haptic: HapticContext,
+    ctx: GameContext,
     state: BoardState,
     navigator: SumiNavigator,
     onPause: () -> Unit,
@@ -123,32 +139,33 @@ private fun buildGameCallbacks(
     onPause = onPause,
     onResume = onResume,
     onSelect = { r, c ->
-        haptic.tick()
+        ctx.haptic.tick()
         vm.select(r, c)
     },
     onEnter = { digit ->
         val sel = state.selected
         when {
-            state.notesMode -> haptic.tick()
-            sel != null && digit == state.solution[sel.first][sel.second] -> haptic.confirm()
-            else -> haptic.error()
+            state.notesMode -> ctx.haptic.tick()
+            sel != null && digit == state.solution[sel.first][sel.second] -> ctx.haptic.confirm()
+            else -> ctx.haptic.error()
         }
         vm.enter(digit)
     },
     onErase = {
-        haptic.tick()
+        ctx.haptic.tick()
         vm.erase()
     },
     onUndo = {
-        haptic.tick()
+        ctx.haptic.tick()
         vm.undo()
     },
     onHint = {
-        haptic.tick()
+        ctx.haptic.tick()
+        ctx.analytics.logHintUsed(state.difficulty.name)
         vm.hint()
     },
     onToggleNotes = {
-        haptic.tick()
+        ctx.haptic.tick()
         vm.toggleNotes()
     },
     onNewPuzzle = onNewPuzzle,

@@ -23,7 +23,6 @@ import xyz.ksharma.sumi.resources.washi_ink_dark
 import xyz.ksharma.sumi.resources.washi_paper_dark
 import xyz.ksharma.sumi.resources.washi_paper_light
 import xyz.ksharma.sumi.theme.SumiTheme
-import xyz.ksharma.sumi.theme.SumiTokens as Sumi
 
 /**
  * Three-layer paper background: base color → PNG texture → radial vignette.
@@ -42,7 +41,7 @@ fun WashiBG(
         dark -> Res.drawable.washi_paper_dark
         else -> Res.drawable.washi_paper_light
     }
-    val baseColor = if (dark) Sumi.Color.Night.paper else Sumi.Color.paper
+    val baseColor = SumiTheme.colors.paper
 
     Box(modifier = modifier.fillMaxSize()) {
         // Layer 1 — base color (visible even if PNG fails to load)

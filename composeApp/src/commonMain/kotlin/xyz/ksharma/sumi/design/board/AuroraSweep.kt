@@ -14,6 +14,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.unit.Dp
+import xyz.ksharma.sumi.a11y.rememberReducedMotion
 import xyz.ksharma.sumi.theme.SumiTokens
 
 private val AURORA_HUES_PAPER = listOf(
@@ -39,6 +40,7 @@ fun AuroraSweep(
     modifier: Modifier = Modifier,
     tone: AuroraTone = AuroraTone.Paper,
 ) {
+    if (rememberReducedMotion()) return
     val duration = when (kind) {
         is BoardSweep.Win -> SumiTokens.Duration.CEREMONY
         is BoardSweep.Box -> 1200

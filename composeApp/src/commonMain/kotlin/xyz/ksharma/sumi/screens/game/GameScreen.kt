@@ -22,14 +22,23 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.Text
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -75,6 +84,7 @@ fun GameScreen(
             GameBody(state = state, elapsedMs = elapsedMs, diff = difficulty, callbacks = callbacks)
         }
         SumiPetalBurst(trigger = celebrationCount, modifier = Modifier.fillMaxSize())
+        GameAnnouncer(state = state)
         if (paused) {
             PauseOverlay(
                 onResume = callbacks.onResume,
@@ -305,7 +315,9 @@ private fun ToolsRow(
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(5.dp),
-                modifier = Modifier.clickable(interactionSource = src, indication = null, onClick = tool.onClick),
+                modifier = Modifier
+                    .minimumInteractiveComponentSize()
+                    .clickable(interactionSource = src, indication = null, onClick = tool.onClick),
             ) {
                 Box(
                     modifier = Modifier
@@ -357,6 +369,7 @@ private fun NumberPad(state: BoardState, onDigit: (Int) -> Unit) {
                 modifier = Modifier
                     .weight(1f)
                     .aspectRatio(1f)
+                    .minimumInteractiveComponentSize()
                     .clickable(interactionSource = src, indication = null, enabled = remaining > 0) { onDigit(n) },
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center,
@@ -374,6 +387,43 @@ private fun NumberPad(state: BoardState, onDigit: (Int) -> Unit) {
             }
         }
     }
+}
+
+@Composable
+private fun GameAnnouncer(state: BoardState) {
+    var announcement by remember { mutableStateOf("") }
+    var prevRows by remember { mutableStateOf(emptySet<Int>()) }
+    var prevCols by remember { mutableStateOf(emptySet<Int>()) }
+    var prevBoxes by remember { mutableStateOf(emptySet<Int>()) }
+    var prevErrors by remember { mutableStateOf(emptySet<Pair<Int, Int>>()) }
+
+    LaunchedEffect(state.completedRows, state.completedCols, state.completedBoxes, state.isComplete, state.errorCells) {
+        val newRows = state.completedRows - prevRows
+        val newCols = state.completedCols - prevCols
+        val newBoxes = state.completedBoxes - prevBoxes
+        val newErrors = state.errorCells - prevErrors
+        announcement = when {
+            state.isComplete -> "Puzzle complete"
+            newRows.isNotEmpty() -> "Row ${newRows.min() + 1} complete"
+            newCols.isNotEmpty() -> "Column ${newCols.min() + 1} complete"
+            newBoxes.isNotEmpty() -> "Box complete"
+            newErrors.isNotEmpty() -> "Conflict"
+            else -> announcement
+        }
+        prevRows = state.completedRows
+        prevCols = state.completedCols
+        prevBoxes = state.completedBoxes
+        prevErrors = state.errorCells
+    }
+
+    Box(
+        modifier = Modifier
+            .size(1.dp)
+            .semantics {
+                liveRegion = LiveRegionMode.Polite
+                contentDescription = announcement
+            },
+    )
 }
 
 private fun formatTime(ms: Long): String {

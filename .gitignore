@@ -17,3 +17,7 @@ captures
 !*.xcworkspace/contents.xcworkspacedata
 **/xcshareddata/WorkspaceSettings.xcsettings
 node_modules/
+
+# Firebase config — never commit; download from Firebase Console per project
+google-services.json
+GoogleService-Info.plist

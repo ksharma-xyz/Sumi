@@ -26,6 +26,7 @@ import xyz.ksharma.sumi.screens.win.WinScreen
 import xyz.ksharma.sumi.screens.win.WinViewModel
 import xyz.ksharma.sumi.share.ShareManager
 import xyz.ksharma.sumi.share.withBrandingHeader
+import xyz.ksharma.sumi.theme.SumiTheme
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
@@ -50,8 +51,8 @@ fun EntryProviderScope<NavKey>.WinEntry(navigator: SumiNavigator) {
         val dayOfYear = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).dayOfYear
         val quote = FREE_QUOTES[dayOfYear % FREE_QUOTES.size]
 
-        val paperColor = xyz.ksharma.sumi.theme.SumiTokens.Color.paper
-        val inkColor = xyz.ksharma.sumi.theme.SumiTokens.Color.ink
+        val paperColor = SumiTheme.colors.paper
+        val inkColor = SumiTheme.colors.ink
 
         WinScreen(
             elapsedMs = key.elapsedMs,

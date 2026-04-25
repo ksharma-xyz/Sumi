@@ -108,6 +108,33 @@ Last updated: 2026-04-25
   - `BoardState`: 50 tests — notes cleared on digit entry, remainingCounts invariant, all difficulties
   - `PuzzleRepository`: 10 tests — daily() determinism + validity, fromSeed(), getOptions()
 
+- [x] **Logo composables** — `LogoEnso`, `LogoGrid` (nine-dot 3×3), `LogoNine`, `LogoChop`, `LogoStrokes`, `LogoWordmark` all implemented in `Logos.kt`
+
+- [x] **Ink bleeds** — All screens now have ink bleed textures per BACKGROUNDS.md spec:
+  - Splash: `ink_bleed_01` (360dp, alpha 0.12, centered)
+  - Win: `ink_bleed_02` (280dp, top-left, alpha 0.08) + `ink_bleed_03` (220dp, bottom-right, alpha 0.10)
+  - Paywall: `ink_bleed_01` (400dp, top-center, alpha 0.14)
+  - Daily: `ink_bleed_01` (120dp, top-right, alpha 0.06)
+  - Stats: `ink_bleed_01` (200dp, center, alpha 0.08)
+
+- [x] **Accessibility — Phase 1** — Core semantics wired across all screens:
+  - `SumiEyebrow` → `semantics { heading() }` (propagates to all section labels app-wide)
+  - `DifficultyTile` → `semantics(mergeDescendants=true) { contentDescription = "Start Easy game, about 3 min" }` per tile; decorative kanji marked `hideFromAccessibility()`
+  - `StreakCard` → merged with spoken label "N day streak"
+  - Win `完` / separator → `hideFromAccessibility()`; level kanji → `contentDescription = difficulty`
+  - Win stats cells → `mergeDescendants = true` so label + value read as one unit
+  - Stats hero → `mergeDescendants` + `contentDescription = "$total puzzles solved, all time"`
+  - Stats cells → `mergeDescendants = true`
+  - Stats eyebrow "練習" → `contentDescription = "Practice Stats"` (no raw CJK to screen reader)
+
+- [x] **Accessibility — Phase 2**
+  - Board cells: `CellA11yGrid` overlay in `SumiBoard` — per-cell `contentDescription` ("Row 3, column 5. Given: 7"); `semantics { onClick }` for assistive-tech activation; board `Box` marked `isTraversalGroup = true`
+  - Game-state live region: `GameAnnouncer` composable in `GameScreen` — polite live region announces row/col/box completions, conflicts, puzzle solved
+  - `minimumInteractiveComponentSize()` on number pad cells, tool row items, and bottom nav items
+  - Reduced motion: `rememberReducedMotion()` expect/actual (Android: `ANIMATOR_DURATION_SCALE == 0`; iOS: `UIAccessibilityIsReduceMotionEnabled`) — wired into `SumiPetals` (ambient + burst) and `AuroraSweep` (sweep skipped entirely)
+  - Pause overlay: 0.82 (light) / 0.88 (dark) paper scrim in `PauseOverlay.kt` per BACKGROUNDS.md §BG-5
+  - Firebase Analytics + Crashlytics: `SumiAnalytics` interface + `FirebaseSumiAnalytics` impl; events: game_started, game_completed, game_over, hint_used, onboarding_completed; wired at GameEntry, WinEntry, OnboardingEntry
+
 ### Phase 3 — Monetisation (UI first, SDK integration deferred)
 
 - [ ] **In-app purchases (IAP)** — build the full purchase flow UI; wire to real billing last
@@ -116,7 +143,8 @@ Last updated: 2026-04-25
 
 - [ ] **Restore purchases** — required for App Store submission *(deferred with billing SDK)*
 
-- [ ] **Ads** — integration deferred to last (post-IAP). Reserve ad placement slots in UI now.
+- [x] **AdMob infrastructure** — Gradle deps wired (basic-ads, admob, android-ump); `BasicAds.Initialize()` in App.kt; test App IDs in AndroidManifest + Info.plist; ad composables not yet placed in screens (deferred post-IAP)
+- [x] **Firebase Analytics + Crashlytics** — GitLive KMP deps wired; `SumiAnalytics` interface + `FirebaseSumiAnalytics` impl; events: game_started, game_completed, game_over, hint_used, onboarding_completed; Crashlytics auto-collects crashes
 
 ### Phase 4 — Future Features
 
@@ -142,15 +170,108 @@ Last updated: 2026-04-25
 
 ## Your Action Items (needs you)
 
-- [x] **SVG → Vector XML: `logo-enso.svg`** — Converted to `logo_enso.xml` (Android Vector Drawable) in `composeApp/src/commonMain/composeResources/drawable/`. Uses path + circles from the SVG; ink-texture filter omitted (not supported in AVD). `LogoEnso` composable updated to use `logo_enso.xml` with `ColorFilter.tint` for theme support.
+---
 
-- [ ] **SVG → Vector XML: `wordmark.svg`** — Convert `docs/handoff/svg/wordmark.svg` to `wordmark.xml` if you want a vector asset instead of live Cormorant text. Optional — live text renders correctly today.
+> **Build note:** The Kotlin code compiles fine without these files. Building an actual APK (`assembleDebug` / `assembleRelease`) or an iOS `.ipa` will fail until `google-services.json` and `GoogleService-Info.plist` are in place. Complete steps 1–3 before running the app on a device.
 
-- [ ] **SVG → Vector XML: `icons/`** — Audit `docs/handoff/svg/icons/` against `SumiIcons.kt`. Any icon present in the SVG folder but missing from `SumiIcons` should be converted and wired.
+---
 
-- [ ] **README screenshots** — Once the app is running and polished, take screenshots of Splash, Home, Game, and Win screens. Drop them in `docs/screenshots/` and I'll wire them into the README hero section.
+### 1 · Firebase — Console setup
 
-- [ ] **App Store assets** — When submitting: App Store Connect needs 6.7″ and 6.1″ screenshots for iOS, and Play Console needs phone + 7″ tablet screenshots. The app icon SVGs are in `docs/handoff/svg/`.
+Go to **console.firebase.google.com** → your project (or create one named "Sumi").
+
+**Android — register TWO apps** (same project, two package IDs):
+
+| App | Package name | What it's for |
+|---|---|---|
+| Debug | `xyz.ksharma.sumi.debug` | Development builds on your device / CI |
+| Release | `xyz.ksharma.sumi` | Production / App Store |
+
+For each registration, Firebase will offer you a `google-services.json`. Download the one for **debug** and the one for **release** separately — they will contain different App IDs and API keys.
+
+- [ ] Place the **debug** `google-services.json` at → `androidApp/src/debug/google-services.json`
+- [ ] Place the **release** `google-services.json` at → `androidApp/src/release/google-services.json`
+- [ ] Both files are already in `.gitignore` — do not commit them
+
+**iOS — register ONE app:**
+
+| App | Bundle ID |
+|---|---|
+| iOS | `xyz.ksharma.sumi` |
+
+Firebase will give you `GoogleService-Info.plist`.
+
+- [ ] Place it at → `iosApp/iosApp/GoogleService-Info.plist`
+- [ ] Open Xcode → in the Project Navigator drag `GoogleService-Info.plist` into the `iosApp/iosApp/` group → in the dialog that appears tick **"Add to target: iosApp"** → click Finish
+- [ ] File is already in `.gitignore` — do not commit it
+
+---
+
+### 2 · Firebase — Xcode: add firebase-ios-sdk via SPM
+
+The Kotlin/GitLive side is already wired. iOS still needs the native SDK linked.
+
+- [ ] Xcode → **File → Add Package Dependencies…**
+- [ ] Paste URL: `https://github.com/firebase/firebase-ios-sdk`
+- [ ] Version rule: **Up to Next Major Version** from `11.6.0`
+- [ ] In the product list, select **only these two** and add them to the **iosApp target**:
+  - `FirebaseAnalyticsWithoutAdIdSupport` ← use this one (NOT `FirebaseAnalytics`) because AdMob is also in the project and both claim IDFA access — using both causes a rejection
+  - `FirebaseCrashlytics`
+
+---
+
+### 3 · Firebase — Xcode: Crashlytics dSYM upload script
+
+Crashlytics needs this to symbolicate crash reports (turn memory addresses into readable function names).
+
+- [ ] Xcode → select the **iosApp** target → **Build Phases** tab
+- [ ] Click **`+`** → **New Run Script Phase**
+- [ ] Drag the new phase so it sits **after "Compile Sources"**
+- [ ] Paste this into the script box:
+  ```sh
+  "${SHARED_PRECOMPS_DIR%/Build/*}/SourcePackages/checkouts/firebase-ios-sdk/Crashlytics/run"
+  ```
+- [ ] Under **Input Files**, click `+` and add:
+  ```
+  $(SRCROOT)/$(BUILT_PRODUCTS_DIR)/$(INFOPLIST_PATH)
+  ```
+
+---
+
+### 4 · AdMob — Console setup
+
+Go to **apps.admob.com** → **Apps → Add app** — register **separately** for Android and iOS (each gets its own App ID and ad unit IDs).
+
+**What you'll get and where it goes:**
+
+| ID | Where to put it |
+|---|---|
+| Android App ID (`ca-app-pub-…~…`) | Open `androidApp/build.gradle.kts` → find the `release` block → replace `ca-app-pub-XXXXXXXXXXXXXXXX~XXXXXXXXXX` with your real ID. The `debug` block already uses Google's public test ID — leave it as-is. |
+| iOS App ID (`ca-app-pub-…~…`) | Open `iosApp/iosApp/Info.plist` → find `<key>GADApplicationIdentifier</key>` → replace the value with your real iOS App ID |
+
+**Create ad units** (do this after the apps are registered):
+
+For each platform create three units: **Banner**, **Interstitial**, **Rewarded** (not Rewarded Interstitial — different format).
+Save all six ad unit IDs — they'll be needed when wiring ad composables into screens.
+
+---
+
+### 5 · AdMob — Xcode: add GoogleMobileAds via SPM
+
+- [ ] Xcode → **File → Add Package Dependencies…**
+- [ ] Paste URL: `https://github.com/googleads/swift-package-manager-google-mobile-ads`
+- [ ] Version rule: **Up to Next Major Version**
+- [ ] Select **`GoogleMobileAds`** and add it to the **iosApp target**
+
+---
+
+### 6 · Assets
+
+- [x] **SVG → Vector XML: `logo-enso.svg`** — Converted to `logo_enso.xml`; `LogoEnso` composable updated with `ColorFilter.tint`.
+- [ ] **SVG → Vector XML: `wordmark.svg`** — Optional; live Cormorant text renders correctly today.
+- [ ] **SVG → Vector XML: `icons/`** — Audit `docs/handoff/svg/icons/` against `SumiIcons.kt` for any missing icons.
+- [ ] **README screenshots** — Take screenshots of Splash, Home, Game, and Win screens; drop them into `docs/screenshots/` and ask me to wire them into the README.
+- [ ] **App Store assets** — App Store Connect needs 6.7″ and 6.1″ screenshots for iOS. Play Console needs phone + 7″ tablet screenshots. App icon SVGs are in `docs/handoff/svg/`.
 
 ---
 

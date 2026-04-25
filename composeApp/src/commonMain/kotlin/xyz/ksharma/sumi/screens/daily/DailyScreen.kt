@@ -2,6 +2,7 @@
 
 package xyz.ksharma.sumi.screens.daily
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -23,11 +24,15 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import org.jetbrains.compose.resources.painterResource
 import xyz.ksharma.sumi.design.components.SumiEyebrow
 import xyz.ksharma.sumi.design.components.WashiBG
+import xyz.ksharma.sumi.resources.Res
+import xyz.ksharma.sumi.resources.ink_bleed_01
 import xyz.ksharma.sumi.theme.SumiTheme
 import xyz.ksharma.sumi.theme.SumiTokens as Sumi
 
@@ -40,6 +45,15 @@ fun DailyScreen(
 ) {
 
     WashiBG(modifier = modifier.fillMaxSize()) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopEnd) {
+            Image(
+                painter = painterResource(Res.drawable.ink_bleed_01),
+                contentDescription = null,
+                modifier = Modifier.size(120.dp),
+                contentScale = ContentScale.Fit,
+                alpha = 0.06f,
+            )
+        }
         Column(
             modifier = Modifier
                 .fillMaxSize()

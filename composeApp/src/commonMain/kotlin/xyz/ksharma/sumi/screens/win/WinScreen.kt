@@ -26,6 +26,9 @@ import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.hideFromAccessibility
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -161,16 +164,19 @@ private fun WinHeroSection() {
         Row(
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.semantics(mergeDescendants = true) { contentDescription = "Complete" },
         ) {
             Text(
                 text = "完",
                 style = SumiTheme.typography.cjk.copy(fontSize = 28.sp),
                 color = SumiTheme.colors.red,
+                modifier = Modifier.semantics { hideFromAccessibility() },
             )
             Text(
                 text = " · ",
                 style = SumiTheme.typography.body.copy(fontSize = 14.sp),
                 color = SumiTheme.colors.inkSoft,
+                modifier = Modifier.semantics { hideFromAccessibility() },
             )
             Text(
                 text = "COMPLETE",
@@ -210,7 +216,8 @@ private fun WinStatsRow(
                 modifier = Modifier
                     .weight(1f)
                     .then(if (i > 0) Modifier.border(1.dp, SumiTheme.colors.paperEdge) else Modifier)
-                    .padding(vertical = Sumi.Space.s4, horizontal = Sumi.Space.s2),
+                    .padding(vertical = Sumi.Space.s4, horizontal = Sumi.Space.s2)
+                    .semantics(mergeDescendants = true) {},
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
@@ -230,7 +237,8 @@ private fun WinStatsRow(
             modifier = Modifier
                 .weight(1f)
                 .border(1.dp, SumiTheme.colors.paperEdge)
-                .padding(vertical = Sumi.Space.s4, horizontal = Sumi.Space.s2),
+                .padding(vertical = Sumi.Space.s4, horizontal = Sumi.Space.s2)
+                .semantics(mergeDescendants = true) {},
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(text = "LEVEL", style = SumiTheme.typography.uiLabel, color = SumiTheme.colors.inkFaint)
@@ -239,6 +247,7 @@ private fun WinStatsRow(
                 text = levelKanji,
                 style = SumiTheme.typography.cjk.copy(fontSize = 28.sp),
                 color = SumiTheme.colors.ink,
+                modifier = Modifier.semantics { contentDescription = difficulty },
             )
         }
     }

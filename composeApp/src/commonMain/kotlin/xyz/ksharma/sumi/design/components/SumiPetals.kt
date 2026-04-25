@@ -22,6 +22,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.withTransform
+import xyz.ksharma.sumi.a11y.rememberReducedMotion
 import xyz.ksharma.sumi.theme.SumiTokens
 import kotlin.math.PI
 import kotlin.math.cos
@@ -239,6 +240,7 @@ fun SumiPetals(
     count: Int = 20,
     colors: List<Color> = SAKURA_COLORS,
 ) {
+    if (rememberReducedMotion()) return
     val petals = remember(count, colors) { generateAmbientPetals(count, colors) }
     val transition = rememberInfiniteTransition(label = "petals")
     val timeMs by transition.animateFloat(
@@ -271,6 +273,7 @@ fun SumiPetalBurst(
     modifier: Modifier = Modifier,
     config: PetalBurstConfig = PetalBurstConfig(),
 ) {
+    if (rememberReducedMotion()) return
     val colors = config.colors ?: SAKURA_COLORS
     var petals by remember { mutableStateOf(emptyList<PetalData>()) }
     val progress = remember { Animatable(0f) }

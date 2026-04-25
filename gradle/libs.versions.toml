@@ -23,6 +23,13 @@ kotlinx-coroutines = "1.10.2"
 kotlinx-datetime = "0.7.1-0.6.x-compat"
 detekt = "1.23.8"
 detektCompose = "0.4.27"
+firebaseGitLive = "2.4.0"
+firebaseBom = "34.11.0"
+admob = "24.9.0"
+basic-ads = "1.1.0"
+android-ump = "4.0.0"
+google-services = "4.4.4"
+firebase-crashlytics-plugin = "3.0.6"
 
 [libraries]
 # Android
@@ -79,6 +86,18 @@ kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.
 # Test
 test-kotlin = { group = "org.jetbrains.kotlin", name = "kotlin-test", version.ref = "kotlin" }
 
+# Firebase (GitLive KMP wrapper)
+firebase-bom                 = { module = "com.google.firebase:firebase-bom",           version.ref = "firebaseBom" }
+firebase-analytics           = { module = "com.google.firebase:firebase-analytics" }
+firebase-crashlytics         = { module = "com.google.firebase:firebase-crashlytics" }
+firebase-gitLiveAnalytics    = { module = "dev.gitlive:firebase-analytics",             version.ref = "firebaseGitLive" }
+firebase-gitLiveCrashlytics  = { module = "dev.gitlive:firebase-crashlytics",           version.ref = "firebaseGitLive" }
+
+# AdMob
+admob       = { module = "com.google.android.gms:play-services-ads",  version.ref = "admob" }
+basic-ads   = { module = "app.lexilabs.basic:basic-ads",              version.ref = "basic-ads" }
+android-ump = { module = "com.google.android.ump:user-messaging-platform", version.ref = "android-ump" }
+
 # Detekt
 detekt-formatting = { module = "io.gitlab.arturbosch.detekt:detekt-formatting", version.ref = "detekt" }
 detekt-compose = { group = "io.nlopez.compose.rules", name = "detekt", version.ref = "detektCompose" }
@@ -99,6 +118,8 @@ kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref =
 kotlinSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 sqldelight = { id = "app.cash.sqldelight", version.ref = "sqldelight" }
 detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
+google-services            = { id = "com.google.gms.google-services",    version.ref = "google-services" }
+firebase-crashlyticsPlugin = { id = "com.google.firebase.crashlytics",   version.ref = "firebase-crashlytics-plugin" }
 
 # Convention plugins
 sumi-android-application = { id = "sumi.android.application", version = "unspecified" }

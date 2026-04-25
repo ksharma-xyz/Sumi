@@ -4,9 +4,11 @@ package xyz.ksharma.sumi.screens.paywall
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -15,8 +17,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -24,10 +29,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.painterResource
 import xyz.ksharma.sumi.design.components.LogoEnso
 import xyz.ksharma.sumi.design.components.QuoteRule
 import xyz.ksharma.sumi.design.components.SumiButtonVariant
@@ -35,6 +43,8 @@ import xyz.ksharma.sumi.design.components.SumiIcon
 import xyz.ksharma.sumi.design.components.SumiTextButton
 import xyz.ksharma.sumi.design.components.WashiBG
 import xyz.ksharma.sumi.design.icons.SumiIcons
+import xyz.ksharma.sumi.resources.Res
+import xyz.ksharma.sumi.resources.ink_bleed_01
 import xyz.ksharma.sumi.theme.SumiTheme
 import xyz.ksharma.sumi.theme.SumiTokens as Sumi
 
@@ -63,7 +73,6 @@ fun PaywallScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // Per-row alpha/translateY animatables
     val rowAlphas = remember { List(PRO_FEATURES.size) { Animatable(0f) } }
     val rowOffsets = remember { List(PRO_FEATURES.size) { Animatable(24f) } }
     val pricingAlpha = remember { Animatable(0f) }
@@ -72,50 +81,92 @@ fun PaywallScreen(
     val headerAlpha = remember { Animatable(0f) }
 
     LaunchedEffect(Unit) {
-        val lastRowDelay = (PRO_FEATURES.size - 1) * ROW_STAGGER_MS
-        // Feature rows stagger in
-        PRO_FEATURES.indices.forEach { i ->
-            launch {
-                delay((i * ROW_STAGGER_MS).toLong())
-                launch { rowAlphas[i].animateTo(1f, tween(ROW_APPEAR_MS, easing = Sumi.Ease.paper)) }
-                launch { rowOffsets[i].animateTo(0f, tween(ROW_APPEAR_MS, easing = Sumi.Ease.paper)) }
-            }
-        }
-        // Pricing after all rows
-        launch {
-            delay(lastRowDelay + ROW_APPEAR_MS - 40L + PRICING_DELAY_MS)
-            launch { pricingAlpha.animateTo(1f, tween(PRICING_APPEAR_MS, easing = Sumi.Ease.paper)) }
-            launch { pricingOffset.animateTo(0f, tween(PRICING_APPEAR_MS, easing = Sumi.Ease.paper)) }
-        }
-        // Logo draws last — after pricing starts appearing
-        launch {
-            delay(lastRowDelay + ROW_APPEAR_MS.toLong())
-            ensoProgress.animateTo(1f, tween(LOGO_DRAW_MS, easing = Sumi.Ease.brush))
-        }
-        launch {
-            delay(lastRowDelay + ROW_APPEAR_MS + LOGO_TEXT_DELAY_MS)
-            headerAlpha.animateTo(1f, tween(400, easing = Sumi.Ease.paper))
-        }
+        launchPaywallAnimation(rowAlphas, rowOffsets, pricingAlpha, pricingOffset, ensoProgress, headerAlpha)
     }
 
     WashiBG(modifier = modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .windowInsetsPadding(WindowInsets.statusBars)
-                .padding(horizontal = Sumi.Space.s6)
-                .padding(top = Sumi.Space.s7, bottom = Sumi.Space.s6),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            PaywallHeader(ensoProgress = ensoProgress.value, textAlpha = headerAlpha.value)
-            PaywallFeatures(rowAlphas = rowAlphas.map { it.value }, rowOffsets = rowOffsets.map { it.value })
-            Spacer(Modifier.weight(1f))
-            PaywallPricing(
-                alpha = pricingAlpha.value,
-                offsetDp = pricingOffset.value,
-                onRestorePurchase = onBack,
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+            Image(
+                painter = painterResource(Res.drawable.ink_bleed_01),
+                contentDescription = null,
+                modifier = Modifier.size(400.dp),
+                contentScale = ContentScale.Fit,
+                alpha = 0.14f,
             )
         }
+        PaywallContent(
+            ensoProgress = ensoProgress.value,
+            headerAlpha = headerAlpha.value,
+            rowAlphas = rowAlphas.map { it.value },
+            rowOffsets = rowOffsets.map { it.value },
+            pricingAlpha = pricingAlpha.value,
+            pricingOffset = pricingOffset.value,
+            onBack = onBack,
+        )
+    }
+}
+
+@Composable
+private fun PaywallContent(
+    ensoProgress: Float,
+    headerAlpha: Float,
+    rowAlphas: List<Float>,
+    rowOffsets: List<Float>,
+    pricingAlpha: Float,
+    pricingOffset: Float,
+    onBack: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .windowInsetsPadding(WindowInsets.statusBars)
+            .padding(horizontal = Sumi.Space.s6),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(top = Sumi.Space.s7, bottom = Sumi.Space.s4),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            PaywallHeader(ensoProgress = ensoProgress, textAlpha = headerAlpha)
+            PaywallFeatures(rowAlphas = rowAlphas, rowOffsets = rowOffsets)
+        }
+        PaywallPricing(alpha = pricingAlpha, offsetDp = pricingOffset, onRestorePurchase = onBack)
+        Spacer(Modifier.height(Sumi.Space.s6))
+    }
+}
+
+private fun CoroutineScope.launchPaywallAnimation(
+    rowAlphas: List<Animatable<Float, *>>,
+    rowOffsets: List<Animatable<Float, *>>,
+    pricingAlpha: Animatable<Float, *>,
+    pricingOffset: Animatable<Float, *>,
+    ensoProgress: Animatable<Float, *>,
+    headerAlpha: Animatable<Float, *>,
+) {
+    val lastRowDelay = (PRO_FEATURES.size - 1) * ROW_STAGGER_MS
+    PRO_FEATURES.indices.forEach { i ->
+        launch {
+            delay((i * ROW_STAGGER_MS).toLong())
+            launch { rowAlphas[i].animateTo(1f, tween(ROW_APPEAR_MS, easing = Sumi.Ease.paper)) }
+            launch { rowOffsets[i].animateTo(0f, tween(ROW_APPEAR_MS, easing = Sumi.Ease.paper)) }
+        }
+    }
+    launch {
+        delay(lastRowDelay + ROW_APPEAR_MS - 40L + PRICING_DELAY_MS)
+        launch { pricingAlpha.animateTo(1f, tween(PRICING_APPEAR_MS, easing = Sumi.Ease.paper)) }
+        launch { pricingOffset.animateTo(0f, tween(PRICING_APPEAR_MS, easing = Sumi.Ease.paper)) }
+    }
+    launch {
+        delay(lastRowDelay + ROW_APPEAR_MS.toLong())
+        ensoProgress.animateTo(1f, tween(LOGO_DRAW_MS, easing = Sumi.Ease.brush))
+    }
+    launch {
+        delay(lastRowDelay + ROW_APPEAR_MS + LOGO_TEXT_DELAY_MS)
+        headerAlpha.animateTo(1f, tween(400, easing = Sumi.Ease.paper))
     }
 }
 
