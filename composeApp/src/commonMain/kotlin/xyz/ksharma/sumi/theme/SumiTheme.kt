@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
@@ -62,27 +63,37 @@ private fun sumiLightColors(season: SumiSeason): SumiColors {
     )
 }
 
-private val SumiDarkColors = SumiColors(
-    paper = SumiTokens.Color.Night.paper,
-    paperWarm = SumiTokens.Color.Night.paperWarm,
-    paperDeep = SumiTokens.Color.Night.paperDeep,
-    paperEdge = SumiTokens.Color.Night.paperEdge,
-    paperGlow = SumiTokens.Color.Night.paperDeep,
-    ink = SumiTokens.Color.Night.ink,
-    inkSoft = SumiTokens.Color.Night.inkSoft,
-    inkFaint = SumiTokens.Color.Night.inkFaint,
-    inkGhost = SumiTokens.Color.Night.inkGhost,
-    red = SumiTokens.Color.Night.red,
-    redDeep = SumiTokens.Color.Night.red,
-    teal = SumiTokens.Color.Night.teal,
-    tealSoft = SumiTokens.Color.Night.teal,
-    gold = SumiTokens.Color.Night.gold,
-    goldLight = SumiTokens.Color.Night.gold,
-    success = SumiTokens.Color.success,
-    warning = SumiTokens.Color.warning,
-    error = SumiTokens.Color.Night.red,
-    hint = SumiTokens.Color.Night.gold,
-)
+private const val DARK_ACCENT_LIGHTEN = 0.40f
+private const val DARK_ACCENT_DEEP_LIGHTEN = 0.30f
+
+private fun sumiDarkColors(season: SumiSeason): SumiColors {
+    val s = SumiTokens.Color.Season.forSeason(season)
+    val nightInk = SumiTokens.Color.Night.ink
+    // Lighten season accents toward night ink (cream) so they read well on dark paper.
+    val accent = lerp(s.accent, nightInk, DARK_ACCENT_LIGHTEN)
+    val accentDeep = lerp(s.accentDeep, nightInk, DARK_ACCENT_DEEP_LIGHTEN)
+    return SumiColors(
+        paper = SumiTokens.Color.Night.paper,
+        paperWarm = SumiTokens.Color.Night.paperWarm,
+        paperDeep = SumiTokens.Color.Night.paperDeep,
+        paperEdge = SumiTokens.Color.Night.paperEdge,
+        paperGlow = SumiTokens.Color.Night.paperDeep,
+        ink = SumiTokens.Color.Night.ink,
+        inkSoft = SumiTokens.Color.Night.inkSoft,
+        inkFaint = SumiTokens.Color.Night.inkFaint,
+        inkGhost = SumiTokens.Color.Night.inkGhost,
+        red = accent,
+        redDeep = accentDeep,
+        teal = SumiTokens.Color.Night.teal,
+        tealSoft = SumiTokens.Color.Night.teal,
+        gold = SumiTokens.Color.Night.gold,
+        goldLight = SumiTokens.Color.Night.gold,
+        success = SumiTokens.Color.success,
+        warning = SumiTokens.Color.warning,
+        error = accent,
+        hint = SumiTokens.Color.Night.gold,
+    )
+}
 
 val LocalSumiColors = staticCompositionLocalOf<SumiColors> {
     error("SumiColors not provided — wrap your app in SumiTheme.")
@@ -178,7 +189,7 @@ fun SumiTheme(
     dark: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit,
 ) {
-    val sumiColors = if (dark) SumiDarkColors else sumiLightColors(season)
+    val sumiColors = if (dark) sumiDarkColors(season) else sumiLightColors(season)
     val colorScheme = if (dark) {
         darkColorScheme(
             background = sumiColors.paper,
