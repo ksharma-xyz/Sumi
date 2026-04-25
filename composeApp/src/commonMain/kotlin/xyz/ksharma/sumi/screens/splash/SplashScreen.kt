@@ -25,6 +25,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -44,7 +45,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import xyz.ksharma.sumi.design.components.LogoEnso
-import xyz.ksharma.sumi.design.components.SumiPetals
+import xyz.ksharma.sumi.design.components.PetalBurstConfig
+import xyz.ksharma.sumi.design.components.SumiPetalBurst
 import xyz.ksharma.sumi.design.components.WashiBG
 import xyz.ksharma.sumi.resources.Res
 import xyz.ksharma.sumi.resources.ink_bleed_01
@@ -61,12 +63,23 @@ fun SplashScreen(
     val ensoProgress = remember { Animatable(0f) }
     val wordmarkAlpha = remember { Animatable(0f) }
     var dotsVisible by remember { mutableStateOf(false) }
+    var petalTrigger by remember { mutableIntStateOf(1) }
 
     LaunchedEffect(Unit) { runSplashSequence(ensoProgress, wordmarkAlpha) { dotsVisible = true } }
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(2_200)
+            petalTrigger++
+        }
+    }
     LaunchedEffect(uiState.navigationTarget) { uiState.navigationTarget?.let { currentOnNavigate(it) } }
 
     WashiBG(modifier = modifier.fillMaxSize()) {
-        SumiPetals(modifier = Modifier.fillMaxSize())
+        SumiPetalBurst(
+            trigger = petalTrigger,
+            modifier = Modifier.fillMaxSize(),
+            config = PetalBurstConfig(count = 24, durationMs = 2_500),
+        )
         SplashInkBleed()
         SplashEnso(ensoProgress.value)
         SplashWordmark(wordmarkAlpha.value)
