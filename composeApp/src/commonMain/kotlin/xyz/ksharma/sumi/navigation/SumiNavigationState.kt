@@ -58,10 +58,12 @@ class SumiNavigationState(
 
     fun pop() {
         val currentStack = backStacks[topLevelRoute] ?: return
-        if (currentStack.last() == topLevelRoute) {
-            if (topLevelRoute != startRoute) topLevelRoute = startRoute
-        } else {
-            currentStack.removeLastOrNull()
+        when {
+            currentStack.last() == topLevelRoute -> {
+                if (topLevelRoute != startRoute) topLevelRoute = startRoute
+            }
+            currentStack.size > 1 -> currentStack.removeLastOrNull()
+            // Single non-root item — can't pop without emptying; do nothing.
         }
         logStack("pop()")
     }

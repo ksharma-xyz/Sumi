@@ -29,6 +29,7 @@ fun EntryProviderScope<NavKey>.OnboardingEntry(navigator: SumiNavigator) {
                     prefs.setSeenOnboarding()
                 }
                 analytics.logOnboardingCompleted(season.name)
+                navigator.resetRoot(HomeRoute)
                 navigator.goTo(HomeRoute)
             },
         )

@@ -59,17 +59,16 @@ fun SplashScreen(
 ) {
     val currentOnNavigate by rememberUpdatedState(onNavigate)
     val ensoProgress = remember { Animatable(0f) }
-    val kanjiAlpha = remember { Animatable(0f) }
     val wordmarkAlpha = remember { Animatable(0f) }
     var dotsVisible by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) { runSplashSequence(ensoProgress, kanjiAlpha, wordmarkAlpha) { dotsVisible = true } }
+    LaunchedEffect(Unit) { runSplashSequence(ensoProgress, wordmarkAlpha) { dotsVisible = true } }
     LaunchedEffect(uiState.navigationTarget) { uiState.navigationTarget?.let { currentOnNavigate(it) } }
 
     WashiBG(modifier = modifier.fillMaxSize()) {
-        SumiPetals(modifier = Modifier.fillMaxSize(), count = 8)
+        SumiPetals(modifier = Modifier.fillMaxSize())
         SplashInkBleed()
-        SplashEnsoKanji(ensoProgress.value, kanjiAlpha.value)
+        SplashEnso(ensoProgress.value)
         SplashWordmark(wordmarkAlpha.value)
         if (dotsVisible) SplashDots()
     }
@@ -77,21 +76,16 @@ fun SplashScreen(
 
 private suspend fun runSplashSequence(
     ensoProgress: Animatable<Float, *>,
-    kanjiAlpha: Animatable<Float, *>,
     wordmarkAlpha: Animatable<Float, *>,
     onDotsReady: () -> Unit,
 ) = coroutineScope {
     launch { ensoProgress.animateTo(1f, tween(700, easing = Sumi.Ease.brush)) }
     launch {
         delay(800)
-        kanjiAlpha.animateTo(1f, tween(240, easing = Sumi.Ease.paper))
+        wordmarkAlpha.animateTo(1f, tween(500, easing = Sumi.Ease.paper))
     }
     launch {
-        delay(1100)
-        wordmarkAlpha.animateTo(1f, tween(400, easing = Sumi.Ease.paper))
-    }
-    launch {
-        delay(1500)
+        delay(1400)
         onDotsReady()
     }
 }
@@ -110,22 +104,13 @@ private fun SplashInkBleed() {
 }
 
 @Composable
-private fun SplashEnsoKanji(ensoProgress: Float, kanjiAlpha: Float) {
+private fun SplashEnso(ensoProgress: Float) {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
         Box(
             modifier = Modifier.fillMaxWidth().padding(top = 240.dp),
             contentAlignment = Alignment.TopCenter,
         ) {
             LogoEnso(size = 140.dp, color = SumiTheme.colors.ink, progress = ensoProgress)
-            Text(
-                text = "墨",
-                style = SumiTheme.typography.cjk.copy(fontSize = 52.sp),
-                color = SumiTheme.colors.ink,
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = 38.dp)
-                    .alpha(kanjiAlpha),
-            )
         }
     }
 }

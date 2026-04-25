@@ -2,12 +2,17 @@
 
 package xyz.ksharma.sumi.screens.onboarding
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -37,7 +42,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -53,7 +57,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import xyz.ksharma.sumi.design.components.LogoEnso
@@ -286,79 +289,87 @@ private fun SeasonPickerSlide(selected: SumiSeason, onSelect: (SumiSeason) -> Un
     }
 }
 
+private data class SeasonTileAnim(
+    val scale: Float,
+    val borderWidth: Dp,
+    val borderColor: Color,
+    val kanjiColor: Color,
+    val labelColor: Color,
+)
+
+@Composable
+private fun rememberSeasonTileAnim(selected: Boolean, accentColor: Color): SeasonTileAnim {
+    val scale by animateFloatAsState(
+        targetValue = if (selected) 1.12f else 0.92f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessLow),
+        label = "tile_scale",
+    )
+    val borderWidth by animateDpAsState(
+        targetValue = if (selected) 2.dp else 1.dp,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessLow),
+        label = "tile_border",
+    )
+    val borderColor by animateColorAsState(
+        targetValue = if (selected) accentColor else SumiTokens.Color.paperEdge,
+        animationSpec = tween(durationMillis = 350),
+        label = "tile_border_color",
+    )
+    val kanjiColor by animateColorAsState(
+        targetValue = if (selected) accentColor else SumiTokens.Color.inkSoft,
+        animationSpec = tween(durationMillis = 350),
+        label = "tile_kanji_color",
+    )
+    val labelColor by animateColorAsState(
+        targetValue = if (selected) SumiTheme.colors.ink else SumiTheme.colors.inkSoft,
+        animationSpec = tween(durationMillis = 350),
+        label = "tile_label_color",
+    )
+    return SeasonTileAnim(scale, borderWidth, borderColor, kanjiColor, labelColor)
+}
+
 @Composable
 private fun SeasonTile(season: SumiSeason, selected: Boolean, onSelect: (SumiSeason) -> Unit) {
     val palette = SumiTokens.Color.Season.forSeason(season)
     val accentColor = palette.accent
     val src = remember { MutableInteractionSource() }
-    val scale = remember { Animatable(1f) }
-    val scope = rememberCoroutineScope()
-    val borderWidth by animateDpAsState(targetValue = if (selected) 2.dp else 1.dp, label = "borderWidth")
-    val borderColor by animateColorAsState(
-        targetValue = if (selected) accentColor else SumiTokens.Color.paperEdge,
-        label = "borderColor",
-    )
+    val anim = rememberSeasonTileAnim(selected, accentColor)
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .graphicsLayer {
-                scaleX = scale.value
-                scaleY = scale.value
+                scaleX = anim.scale
+                scaleY = anim.scale
             }
             .clip(RoundedCornerShape(8.dp))
-            .clickable(interactionSource = src, indication = null) {
-                scope.launch {
-                    scale.snapTo(1f)
-                    scale.animateTo(1.2f, tween(120))
-                    scale.animateTo(1f, spring(Spring.DampingRatioMediumBouncy, Spring.StiffnessMedium))
-                }
-                onSelect(season)
-            },
+            .clickable(interactionSource = src, indication = null) { onSelect(season) },
     ) {
-        SeasonTileBox(
-            season = season,
-            accentColor = accentColor,
-            paperColor = palette.paper,
-            selected = selected,
-            borderWidth = borderWidth,
-            borderColor = borderColor,
-        )
-        Spacer(Modifier.height(8.dp))
-        Text(
-            text = seasonLabel(season),
-            style = SumiTheme.typography.uiLabel,
-            color = if (selected) SumiTheme.colors.ink else SumiTheme.colors.inkSoft,
-        )
-        if (selected) {
-            Spacer(Modifier.height(4.dp))
-            Box(modifier = Modifier.size(4.dp).background(accentColor, CircleShape))
+        Box(
+            modifier = Modifier
+                .size(80.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(palette.paper)
+                .border(anim.borderWidth, anim.borderColor, RoundedCornerShape(8.dp)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = seasonKanji(season),
+                style = SumiTheme.typography.cjk.copy(fontSize = 36.sp),
+                color = anim.kanjiColor,
+            )
         }
-    }
-}
-
-@Composable
-private fun SeasonTileBox(
-    season: SumiSeason,
-    accentColor: Color,
-    paperColor: Color,
-    selected: Boolean,
-    borderWidth: Dp,
-    borderColor: Color,
-) {
-    Box(
-        modifier = Modifier
-            .size(80.dp)
-            .clip(RoundedCornerShape(8.dp))
-            .background(paperColor)
-            .border(borderWidth, borderColor, RoundedCornerShape(8.dp)),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = seasonKanji(season),
-            style = SumiTheme.typography.cjk.copy(fontSize = 36.sp),
-            color = if (selected) accentColor else SumiTokens.Color.inkSoft,
-        )
+        Spacer(Modifier.height(8.dp))
+        Text(text = seasonLabel(season), style = SumiTheme.typography.uiLabel, color = anim.labelColor)
+        AnimatedVisibility(
+            visible = selected,
+            enter = fadeIn(tween(300)) + scaleIn(initialScale = 0.4f),
+            exit = fadeOut(tween(200)) + scaleOut(targetScale = 0.4f),
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Spacer(Modifier.height(4.dp))
+                Box(modifier = Modifier.size(4.dp).background(accentColor, CircleShape))
+            }
+        }
     }
 }
 
