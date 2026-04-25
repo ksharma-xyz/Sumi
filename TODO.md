@@ -81,7 +81,7 @@ Last updated: 2026-04-25
   `celebrationCount` so each burst is uniquely random; triggered in `GameViewModel` via
   `completionKey()` diff on every board state change (rows, cols, boxes, grid)
 
-- [ ] **Paywall entry point** — UI and paywalling logic to implement; billing SDK integration deferred to last.
+- [x] **Paywall entry point** — UI and paywalling logic to implement; billing SDK integration deferred to last.
   - Gate Edo difficulty and unlimited hints behind "Sumi Pro"
   - Show paywall when user taps a gated feature, not on cold launch
 
@@ -92,7 +92,7 @@ Last updated: 2026-04-25
   - Stronger turbulence (swayAmp 45–110px), aggressive tumbling rotation
   - Season-coloured petals on season selection in onboarding
 
-- [ ] **Season tile liquid / bubble animation** — Onboarding season picker
+- [x] **Season tile liquid / bubble animation** — Onboarding season picker
   - On tap: tile inflates to 1.20× (120ms ease-in) then spring settles to 1× (MediumBouncy)
   - Border animates from thin+grey to 2dp+accent colour
   - Petal burst triggers with season-accent colours on selection; old petals fade when switching
