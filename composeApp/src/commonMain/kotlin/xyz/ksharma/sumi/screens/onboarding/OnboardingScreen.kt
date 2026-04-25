@@ -69,6 +69,7 @@ import xyz.ksharma.sumi.resources.Res
 import xyz.ksharma.sumi.resources.ink_bleed_01
 import xyz.ksharma.sumi.resources.ink_bleed_02
 import xyz.ksharma.sumi.resources.ink_bleed_03
+import xyz.ksharma.sumi.resources.logo_grid
 import xyz.ksharma.sumi.theme.SumiSeason
 import xyz.ksharma.sumi.theme.SumiTheme
 import xyz.ksharma.sumi.theme.SumiTokens
@@ -202,7 +203,12 @@ private fun SlidePage(page: Int) {
         Box(modifier = Modifier.size(200.dp), contentAlignment = Alignment.Center) {
             when (page) {
                 0 -> LogoEnso(size = 200.dp, color = SumiTheme.colors.ink)
-                1 -> HandDigits()
+                1 -> Image(
+                    painter = painterResource(Res.drawable.logo_grid),
+                    contentDescription = null,
+                    modifier = Modifier.size(180.dp),
+                    contentScale = ContentScale.Fit,
+                )
                 2 -> RestKanji()
             }
         }
@@ -383,23 +389,6 @@ private fun seasonLabel(season: SumiSeason) = when (season) {
     SumiSeason.Spring -> "Spring"
     SumiSeason.Autumn -> "Autumn"
     SumiSeason.Winter -> "Winter"
-}
-
-@Composable
-private fun HandDigits() {
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(24.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        for ((digit, rotation) in listOf("3" to -6f, "5" to 0f, "9" to 8f)) {
-            Text(
-                text = digit,
-                style = SumiTheme.typography.hand.copy(fontSize = 96.sp),
-                color = SumiTheme.colors.ink,
-                modifier = Modifier.rotate(rotation),
-            )
-        }
-    }
 }
 
 @Composable

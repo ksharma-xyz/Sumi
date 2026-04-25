@@ -25,7 +25,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -45,8 +44,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import xyz.ksharma.sumi.design.components.LogoEnso
-import xyz.ksharma.sumi.design.components.PetalBurstConfig
-import xyz.ksharma.sumi.design.components.SumiPetalBurst
+import xyz.ksharma.sumi.design.components.SumiPetals
 import xyz.ksharma.sumi.design.components.WashiBG
 import xyz.ksharma.sumi.resources.Res
 import xyz.ksharma.sumi.resources.ink_bleed_01
@@ -63,23 +61,12 @@ fun SplashScreen(
     val ensoProgress = remember { Animatable(0f) }
     val wordmarkAlpha = remember { Animatable(0f) }
     var dotsVisible by remember { mutableStateOf(false) }
-    var petalTrigger by remember { mutableIntStateOf(1) }
 
     LaunchedEffect(Unit) { runSplashSequence(ensoProgress, wordmarkAlpha) { dotsVisible = true } }
-    LaunchedEffect(Unit) {
-        while (true) {
-            delay(2_200)
-            petalTrigger++
-        }
-    }
     LaunchedEffect(uiState.navigationTarget) { uiState.navigationTarget?.let { currentOnNavigate(it) } }
 
     WashiBG(modifier = modifier.fillMaxSize()) {
-        SumiPetalBurst(
-            trigger = petalTrigger,
-            modifier = Modifier.fillMaxSize(),
-            config = PetalBurstConfig(count = 24, durationMs = 2_500),
-        )
+        SumiPetals(modifier = Modifier.fillMaxSize(), count = 28, sizeMultiplier = 1.8f, speedFactor = 8f)
         SplashInkBleed()
         SplashEnso(ensoProgress.value)
         SplashWordmark(wordmarkAlpha.value)
@@ -92,13 +79,13 @@ private suspend fun runSplashSequence(
     wordmarkAlpha: Animatable<Float, *>,
     onDotsReady: () -> Unit,
 ) = coroutineScope {
-    launch { ensoProgress.animateTo(1f, tween(700, easing = Sumi.Ease.brush)) }
+    launch { ensoProgress.animateTo(1f, tween(1100, easing = Sumi.Ease.brush)) }
     launch {
-        delay(800)
-        wordmarkAlpha.animateTo(1f, tween(500, easing = Sumi.Ease.paper))
+        delay(1300)
+        wordmarkAlpha.animateTo(1f, tween(800, easing = Sumi.Ease.paper))
     }
     launch {
-        delay(1400)
+        delay(2300)
         onDotsReady()
     }
 }
@@ -142,7 +129,7 @@ private fun SplashWordmark(wordmarkAlpha: Float) {
             modifier = Modifier
                 .padding(top = 420.dp)
                 .alpha(wordmarkAlpha)
-                .graphicsLayer { translationY = (1f - wordmarkAlpha) * 6.dp.toPx() },
+                .graphicsLayer { translationY = (1f - wordmarkAlpha) * 14.dp.toPx() },
         )
     }
 }

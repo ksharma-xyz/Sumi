@@ -71,8 +71,12 @@ private val SAKURA_COLORS = listOf(
  * 40% enter from the left edge; the rest enter from the top. This creates a natural
  * "blizzard" where the wind carries petals across the full screen in varied paths.
  */
-private fun generateAmbientPetals(count: Int, colors: List<Color>): List<PetalData> {
-    val twoPi = (2f * PI).toFloat()
+private fun generateAmbientPetals(
+    count: Int,
+    colors: List<Color>,
+    sizeMultiplier: Float = 1f,
+    speedFactor: Float = 1f,
+): List<PetalData> {
     return List(count) { i ->
         val a = i * 37 + 17
         val b = i * 53 + 29
@@ -98,19 +102,19 @@ private fun generateAmbientPetals(count: Int, colors: List<Color>): List<PetalDa
             startYFraction = startYFraction,
             windDx = windDx,
             windDy = windDy,
-            travelScale = 1.5f + (b % 60) / 100f, // 1.5–2.1× screen width
-            swayAmp1 = 45f + (d % 65).toFloat(), // 45–110 px turbulence
-            swayFreq1 = 1.5f + (b % 28) / 10f, // 1.5–4.3
-            swayAmp2 = 16f + (c % 28).toFloat(), // 16–44 px
-            swayFreq2 = 3.5f + (a % 22) / 10f, // 3.5–5.7
+            travelScale = 1.5f + (b % 60) / 100f,
+            swayAmp1 = 45f + (d % 65).toFloat(),
+            swayFreq1 = 1.5f + (b % 28) / 10f,
+            swayAmp2 = 16f + (c % 28).toFloat(),
+            swayFreq2 = 3.5f + (a % 22) / 10f,
             swayPhase2 = (e % 628) / 100f,
             delayFraction = (b % 100) / 100f,
-            durationMs = 14000f + (c % 13000).toFloat(), // 14–27 s
-            sizePx = 15f + (a % 23).toFloat(), // 15–38 px; varied density
+            durationMs = (14000f + (c % 13000).toFloat()) / speedFactor,
+            sizePx = (15f + (a % 23).toFloat()) * sizeMultiplier,
             initialRotation = (b % 360).toFloat(),
             totalSpin = (if (i % 2 == 0) 1f else -1f) * (50f + (c % 150).toFloat()),
             color = colors[i % colors.size],
-            alpha = 0.38f + (d % 37) / 100f, // 0.38–0.75
+            alpha = (0.38f + (d % 37) / 100f) * (0.6f + sizeMultiplier * 0.4f).coerceAtMost(1f),
         )
     }
 }
@@ -232,16 +236,21 @@ private fun DrawScope.renderPetalAtProgress(
 
 /**
  * Ambient infinite petal shower — used on the splash screen background.
- * Default count is 20 (doubled from original 8) for the blizzard feel.
+ * Default count is 20 for the standard blizzard feel.
+ * Use [sizeMultiplier] > 1 and [speedFactor] > 1 for a dramatic burst-like look.
  */
 @Composable
 fun SumiPetals(
     modifier: Modifier = Modifier,
     count: Int = 20,
     colors: List<Color> = SAKURA_COLORS,
+    sizeMultiplier: Float = 1f,
+    speedFactor: Float = 1f,
 ) {
     if (rememberReducedMotion()) return
-    val petals = remember(count, colors) { generateAmbientPetals(count, colors) }
+    val petals = remember(count, colors, sizeMultiplier, speedFactor) {
+        generateAmbientPetals(count, colors, sizeMultiplier, speedFactor)
+    }
     val transition = rememberInfiniteTransition(label = "petals")
     val timeMs by transition.animateFloat(
         initialValue = 0f,
