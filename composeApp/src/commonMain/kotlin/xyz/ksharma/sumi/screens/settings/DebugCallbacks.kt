@@ -5,4 +5,8 @@ data class DebugCallbacks(
     val onClearStats: () -> Unit,
     val onClearSaves: () -> Unit,
     val onClearAll: () -> Unit,
+    val isSimulatingPro: Boolean,
+    val onToggleSimulatePro: () -> Unit,
+    val isAdsEnabled: Boolean,
+    val onToggleAdsEnabled: () -> Unit,
 )

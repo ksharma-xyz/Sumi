@@ -21,6 +21,12 @@ class SettingsViewModel(
     val isHapticsEnabled: StateFlow<Boolean> = themes.observeHapticsEnabled()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), true)
 
+    val isSimulatingPro: StateFlow<Boolean> = debug.observeSimulatePro()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), false)
+
+    val isAdsEnabled: StateFlow<Boolean> = debug.observeAdsEnabled()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), true)
+
     fun setSeason(season: SumiSeason) = viewModelScope.launch { themes.setSeason(season) }
 
     fun setHapticsEnabled(enabled: Boolean) = viewModelScope.launch {
@@ -34,4 +40,12 @@ class SettingsViewModel(
     fun clearGameSaves() = viewModelScope.launch { gameSaves.clearAllSaves() }
 
     fun clearAll() = viewModelScope.launch { debug.clearAll() }
+
+    fun toggleSimulatePro() = viewModelScope.launch {
+        debug.setSimulatePro(!isSimulatingPro.value)
+    }
+
+    fun toggleAdsEnabled() = viewModelScope.launch {
+        debug.setAdsEnabled(!isAdsEnabled.value)
+    }
 }

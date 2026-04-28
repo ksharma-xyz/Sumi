@@ -24,12 +24,17 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.delay
 import xyz.ksharma.sumi.design.components.SumiButtonVariant
 import xyz.ksharma.sumi.design.components.SumiTextButton
 import xyz.ksharma.sumi.design.components.WashiBG
@@ -149,6 +154,24 @@ private fun DebugSection(callbacks: DebugCallbacks) {
     Column(modifier = Modifier.fillMaxWidth()) {
         SettingsSectionLabel("Debug")
         Spacer(Modifier.height(Sumi.Space.s3))
+        SettingsPanel {
+            SettingsToggleRow(
+                label = "Simulate Pro",
+                description = "Unlocks all Pro features. Persists across launches.",
+                checked = callbacks.isSimulatingPro,
+                onToggle = callbacks.onToggleSimulatePro,
+            )
+        }
+        Spacer(Modifier.height(Sumi.Space.s4))
+        SettingsPanel {
+            SettingsToggleRow(
+                label = "Show Ads",
+                description = "Toggle ad placeholders on/off.",
+                checked = callbacks.isAdsEnabled,
+                onToggle = callbacks.onToggleAdsEnabled,
+            )
+        }
+        Spacer(Modifier.height(Sumi.Space.s4))
         DebugItem(
             label = "Reset Onboarding",
             description = "Shows intro slides on next launch.",
@@ -179,6 +202,8 @@ private fun DebugSection(callbacks: DebugCallbacks) {
     }
 }
 
+private const val CONFIRM_VISIBLE_MS = 2000L
+
 @Composable
 private fun DebugItem(
     label: String,
@@ -186,12 +211,22 @@ private fun DebugItem(
     buttonText: String,
     onClick: () -> Unit,
 ) {
+    var confirmed by remember { mutableStateOf(false) }
+    LaunchedEffect(confirmed) {
+        if (confirmed) {
+            delay(CONFIRM_VISIBLE_MS)
+            confirmed = false
+        }
+    }
     SettingsPanel {
         SettingsRow(label = label, description = description)
         Spacer(Modifier.height(Sumi.Space.s3))
         SumiTextButton(
-            text = buttonText,
-            onClick = onClick,
+            text = if (confirmed) "All cleared" else buttonText,
+            onClick = {
+                onClick()
+                confirmed = true
+            },
             variant = SumiButtonVariant.Ghost,
             modifier = Modifier.fillMaxWidth(),
         )

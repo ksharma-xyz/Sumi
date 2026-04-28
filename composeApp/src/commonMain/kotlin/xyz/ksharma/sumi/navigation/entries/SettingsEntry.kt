@@ -25,6 +25,8 @@ fun EntryProviderScope<NavKey>.SettingsEntry(navigator: SumiNavigator) {
         val themePrefs = koinInject<ThemePreferences>()
         val currentSeason by themePrefs.observeSeason().collectAsState(initial = SumiSeason.Spring)
         val isHapticsEnabled by vm.isHapticsEnabled.collectAsState()
+        val isSimulatingPro by vm.isSimulatingPro.collectAsState()
+        val isAdsEnabled by vm.isAdsEnabled.collectAsState()
         SettingsScreen(
             onBack = { navigator.pop() },
             onLicenses = { navigator.goTo(LicensesRoute) },
@@ -37,6 +39,10 @@ fun EntryProviderScope<NavKey>.SettingsEntry(navigator: SumiNavigator) {
                     onClearStats = { vm.clearStats() },
                     onClearSaves = { vm.clearGameSaves() },
                     onClearAll = { vm.clearAll() },
+                    isSimulatingPro = isSimulatingPro,
+                    onToggleSimulatePro = { vm.toggleSimulatePro() },
+                    isAdsEnabled = isAdsEnabled,
+                    onToggleAdsEnabled = { vm.toggleAdsEnabled() },
                 )
             } else null,
         )

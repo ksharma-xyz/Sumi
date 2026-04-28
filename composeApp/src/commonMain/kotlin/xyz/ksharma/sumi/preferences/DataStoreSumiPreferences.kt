@@ -25,6 +25,8 @@ private val KEY_BEST_STREAK = intPreferencesKey("best_streak")
 private val KEY_LAST_SOLVE_DAY = longPreferencesKey("last_solve_day")
 private val KEY_SOLVE_DAYS = stringSetPreferencesKey("solve_days")
 private val KEY_TOTAL_PUZZLES = intPreferencesKey("total_puzzles")
+private val KEY_DEBUG_SIMULATE_PRO = booleanPreferencesKey("debug_simulate_pro")
+private val KEY_DEBUG_ADS_ENABLED = booleanPreferencesKey("debug_ads_enabled")
 
 class DataStoreSumiPreferences(
     private val store: DataStore<Preferences>,
@@ -86,6 +88,20 @@ class DataStoreSumiPreferences(
 
     override suspend fun clearAll() {
         store.edit { it.clear() }
+    }
+
+    override fun observeSimulatePro(): Flow<Boolean> =
+        store.data.map { it[KEY_DEBUG_SIMULATE_PRO] ?: false }
+
+    override suspend fun setSimulatePro(enabled: Boolean) {
+        store.edit { it[KEY_DEBUG_SIMULATE_PRO] = enabled }
+    }
+
+    override fun observeAdsEnabled(): Flow<Boolean> =
+        store.data.map { it[KEY_DEBUG_ADS_ENABLED] ?: true }
+
+    override suspend fun setAdsEnabled(enabled: Boolean) {
+        store.edit { it[KEY_DEBUG_ADS_ENABLED] = enabled }
     }
 
     override fun observeSeason(): Flow<SumiSeason> = store.data.map { prefs ->

@@ -31,6 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
@@ -48,15 +49,18 @@ import xyz.ksharma.sumi.resources.ink_bleed_01
 import xyz.ksharma.sumi.theme.SumiTheme
 import xyz.ksharma.sumi.theme.SumiTokens as Sumi
 
+// TODO: Replace dummy URLs with real privacy policy and terms of service before release
+private const val URL_PRIVACY = "https://example.com/privacy"
+private const val URL_TERMS = "https://example.com/terms"
+
 private val PRO_FEATURES = listOf(
-    "Remove all ads · Forever quiet",
-    "Unlimited hints · Use what you need",
-    "The full quote library · 600 passages",
+    "Remove all ads. Forever quiet.",
+    "Unlimited hints whenever you need them",
+    "The full quote library, 600 passages",
     "Hard, Master, Edo difficulties",
-    "The Salon · weekly global register",
-    "Practice log · stats + streaks",
+    "The Salon, weekly global register",
+    "Practice log with stats and streaks",
     "Gold, Indigo, Edo themes",
-    "iCloud / Drive sync · across devices",
     "Export PDF puzzle books",
 )
 
@@ -234,8 +238,11 @@ private fun PaywallPricing(alpha: Float, offsetDp: Float, onRestorePurchase: () 
     ) {
         QuoteRule(color = SumiTheme.colors.paperEdge, ornament = "墓")
         Spacer(Modifier.height(Sumi.Space.s5))
+        // TODO: pricing strings must come from RevenueCat (product.priceString, savings %).
+        //       Do not hardcode prices — currency, amount, and discount vary by locale and product config.
+        // TODO: replace em dash in button text with a locale-safe separator once pricing is dynamic.
         SumiTextButton(
-            text = "$29 / year  ·  Save 38%",
+            text = "$29 / year — Save 38%",
             onClick = {},
             modifier = Modifier.fillMaxWidth(),
         )
@@ -247,26 +254,52 @@ private fun PaywallPricing(alpha: Float, offsetDp: Float, onRestorePurchase: () 
             modifier = Modifier.fillMaxWidth(),
         )
         Spacer(Modifier.height(Sumi.Space.s4))
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(Sumi.Space.s2),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            val restoreSource = remember { MutableInteractionSource() }
-            Text(
-                text = "Restore purchase",
-                style = SumiTheme.typography.uiMeta,
-                color = SumiTheme.colors.inkFaint,
-                modifier = Modifier.clickable(
-                    interactionSource = restoreSource,
-                    indication = null,
-                    onClick = onRestorePurchase,
-                ),
-            )
-            Text(text = "·", style = SumiTheme.typography.uiMeta, color = SumiTheme.colors.inkFaint)
-            Text(text = "Terms", style = SumiTheme.typography.uiMeta, color = SumiTheme.colors.inkFaint)
-            Text(text = "·", style = SumiTheme.typography.uiMeta, color = SumiTheme.colors.inkFaint)
-            Text(text = "Privacy", style = SumiTheme.typography.uiMeta, color = SumiTheme.colors.inkFaint)
-        }
+        PaywallFooterLinks(onRestorePurchase = onRestorePurchase)
+    }
+}
+
+@Composable
+private fun PaywallFooterLinks(onRestorePurchase: () -> Unit) {
+    val uriHandler = LocalUriHandler.current
+    val restoreSource = remember { MutableInteractionSource() }
+    val termsSource = remember { MutableInteractionSource() }
+    val privacySource = remember { MutableInteractionSource() }
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(Sumi.Space.s2),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = "Restore purchase",
+            style = SumiTheme.typography.uiMeta,
+            color = SumiTheme.colors.inkFaint,
+            modifier = Modifier.clickable(
+                interactionSource = restoreSource,
+                indication = null,
+                onClick = onRestorePurchase,
+            ),
+        )
+        Text(text = "/", style = SumiTheme.typography.uiMeta, color = SumiTheme.colors.inkFaint)
+        Text(
+            text = "Terms",
+            style = SumiTheme.typography.uiMeta,
+            color = SumiTheme.colors.inkFaint,
+            modifier = Modifier.clickable(
+                interactionSource = termsSource,
+                indication = null,
+                onClick = { uriHandler.openUri(URL_TERMS) },
+            ),
+        )
+        Text(text = "/", style = SumiTheme.typography.uiMeta, color = SumiTheme.colors.inkFaint)
+        Text(
+            text = "Privacy",
+            style = SumiTheme.typography.uiMeta,
+            color = SumiTheme.colors.inkFaint,
+            modifier = Modifier.clickable(
+                interactionSource = privacySource,
+                indication = null,
+                onClick = { uriHandler.openUri(URL_PRIVACY) },
+            ),
+        )
     }
 }
 
