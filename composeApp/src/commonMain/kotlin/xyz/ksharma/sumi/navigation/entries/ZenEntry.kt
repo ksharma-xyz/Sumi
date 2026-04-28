@@ -3,8 +3,10 @@ package xyz.ksharma.sumi.navigation.entries
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
+import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import xyz.ksharma.sumi.navigation.SplashRoute
@@ -23,6 +25,7 @@ fun EntryProviderScope<NavKey>.ZenEntry(navigator: SumiNavigator) {
     entry<ZenRoute> {
         val proRepo = koinInject<ProRepository>()
         val isPro by proRepo.isPro().collectAsState(initial = false)
+        val scope = rememberCoroutineScope()
 
         if (isPro) {
             val vm: ZenViewModel = koinViewModel()
@@ -51,6 +54,7 @@ fun EntryProviderScope<NavKey>.ZenEntry(navigator: SumiNavigator) {
                     onShare = { vm.shareBook() },
                 ),
                 onPageChange = { vm.setQuoteIndex(it) },
+                onRestorePurchase = { scope.launch { proRepo.restorePurchases() } },
                 onDesignerVisibilityChange = { navigator.setDesignerOpen(it) },
             )
         } else {

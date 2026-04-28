@@ -1,4 +1,4 @@
-@file:Suppress("MagicNumber")
+@file:Suppress("MagicNumber", "TooManyFunctions")
 
 package xyz.ksharma.sumi.screens.zen
 
@@ -30,7 +30,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -55,7 +54,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -162,6 +160,7 @@ fun ProZenScreen(
     designerState: BookDesignerState,
     designerCallbacks: BookDesignerCallbacks,
     onPageChange: (Int) -> Unit,
+    onRestorePurchase: () -> Unit,
     modifier: Modifier = Modifier,
     onDesignerVisibilityChange: (Boolean) -> Unit = {},
 ) {
@@ -186,55 +185,90 @@ fun ProZenScreen(
                 onBack = { showDesigner = false },
             )
         } else {
-            Box(modifier = Modifier.fillMaxSize()) {
-                WashiBG(modifier = Modifier.fillMaxSize())
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .windowInsetsPadding(WindowInsets.statusBars)
-                        .verticalScroll(rememberScrollState())
-                        .padding(horizontal = Sumi.Space.s6)
-                        .padding(top = Sumi.Space.s8, bottom = Sumi.Space.s9),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    ProThankYouCard()
-                    Spacer(Modifier.height(Sumi.Space.s7))
-                    ZenSectionLabel(text = "The Library")
-                    Spacer(Modifier.height(Sumi.Space.s4))
-                    if (quotes.isNotEmpty()) {
-                        QuoteBrowser(quotes = quotes, quoteIndex = quoteIndex, onPageChange = onPageChange)
-                    }
-                    Spacer(Modifier.height(Sumi.Space.s7))
-                    ZenSectionLabel(text = "Puzzle Book")
-                    Spacer(Modifier.height(Sumi.Space.s4))
-                    PuzzleBookCard(onClick = { showDesigner = true })
-                }
-            }
+            ZenLanding(
+                quotes = quotes,
+                quoteIndex = quoteIndex,
+                onPageChange = onPageChange,
+                onOpenDesigner = { showDesigner = true },
+                onRestorePurchase = onRestorePurchase,
+            )
         }
     }
 }
 
-// ── Thank-you card ─────────────────────────────────────────────────────────────
-
 @Composable
-private fun ProThankYouCard() {
+private fun ZenLanding(
+    quotes: List<Quote>,
+    quoteIndex: Int,
+    onPageChange: (Int) -> Unit,
+    onOpenDesigner: () -> Unit,
+    onRestorePurchase: () -> Unit,
+) {
+    Box(modifier = Modifier.fillMaxSize()) {
+        WashiBG(modifier = Modifier.fillMaxSize())
+        // Ambient gold petals — sparse + slow so the page reads as still and
+        // premium, not festive. Drawn behind content so swipes/taps still land.
+        SumiPetals(
+            modifier = Modifier.fillMaxSize(),
+            count = 7,
+            colors = remember {
+                listOf(
+                    Color(0xFFD9A855), // goldLight
+                    Color(0xFF8A6B2A), // gold
+                    Color(0xFFC9B48A), // paperEdge
+                )
+            },
+            sizeMultiplier = 0.85f,
+            speedFactor = 0.35f,
+        )
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .windowInsetsPadding(WindowInsets.statusBars)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = Sumi.Space.s6)
+                .padding(top = Sumi.Space.s8, bottom = Sumi.Space.s9),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            ProBadge()
+            Spacer(Modifier.height(Sumi.Space.s8))
+            ZenSectionLabel(text = "The Library")
+            Spacer(Modifier.height(Sumi.Space.s4))
+            if (quotes.isNotEmpty()) {
+                QuoteStage(quotes = quotes, quoteIndex = quoteIndex, onPageChange = onPageChange)
+            }
+            Spacer(Modifier.height(Sumi.Space.s8))
+            ZenSectionLabel(text = "Puzzle Book")
+            Spacer(Modifier.height(Sumi.Space.s4))
+            PuzzleBookCard(onClick = onOpenDesigner)
+            Spacer(Modifier.height(Sumi.Space.s8))
+            ZenFooter(onRestorePurchase = onRestorePurchase)
+        }
+    }
+}
+
+// ── Pro badge ──────────────────────────────────────────────────────────────────
+
+/**
+ * Minimal Pro identity. Three elements only — enso, wordmark, thank-you note —
+ * because the Zen tab IS the proof of value; we don't need to list features.
+ */
+@Composable
+private fun ProBadge() {
     val ensoProgress = remember { Animatable(0f) }
     val contentAlpha = remember { Animatable(0f) }
 
     LaunchedEffect(Unit) {
         ensoProgress.animateTo(1f, tween(900, easing = Sumi.Ease.brush))
-        contentAlpha.animateTo(1f, tween(500, easing = Sumi.Ease.paper))
+        contentAlpha.animateTo(1f, tween(520, easing = Sumi.Ease.paper))
     }
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
-            .fillMaxWidth()
-            .border(1.dp, SumiTheme.colors.gold.copy(alpha = 0.35f))
-            .padding(vertical = Sumi.Space.s7, horizontal = Sumi.Space.s5),
+        modifier = Modifier.fillMaxWidth(),
     ) {
-        LogoEnso(size = 64.dp, color = SumiTheme.colors.gold, progress = ensoProgress.value)
-        Spacer(Modifier.height(Sumi.Space.s4))
+        LogoEnso(size = 56.dp, color = SumiTheme.colors.gold, progress = ensoProgress.value)
+        Spacer(Modifier.height(Sumi.Space.s3))
         Text(
             text = "Sumi Pro",
             style = SumiTheme.typography.h2,
@@ -249,23 +283,25 @@ private fun ProThankYouCard() {
             textAlign = TextAlign.Center,
             modifier = Modifier.graphicsLayer { alpha = contentAlpha.value },
         )
-        Spacer(Modifier.height(Sumi.Space.s4))
-        Text(
-            text = "Ad-free / Unlimited hints / All difficulties\nFull quote library / PDF puzzle books / Themes",
-            style = SumiTheme.typography.uiMeta,
-            color = SumiTheme.colors.inkFaint,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.graphicsLayer { alpha = contentAlpha.value },
-        )
     }
 }
 
-// ── Quote browser ──────────────────────────────────────────────────────────────
+// ── Quote stage ────────────────────────────────────────────────────────────────
 
+private val QUOTE_CARD_HEIGHT: Dp = 320.dp
+
+/**
+ * Fixed-height swipeable quote pager. Card height stays constant regardless of
+ * quote length — quotes vertically centre inside the card so a 6-word koan
+ * and a 30-word passage occupy the same visual slot. No more layout jitter on
+ * page change.
+ *
+ * Premium touches: hairline gold corner mark, large CJK quote glyph, page
+ * silhouette with subtle parallax on swipe via [HorizontalPager.pageOffset].
+ */
 @Composable
-private fun QuoteBrowser(quotes: List<Quote>, quoteIndex: Int, onPageChange: (Int) -> Unit) {
+private fun QuoteStage(quotes: List<Quote>, quoteIndex: Int, onPageChange: (Int) -> Unit) {
     val pagerState = rememberPagerState(initialPage = quoteIndex, pageCount = { quotes.size })
-    val scope = rememberCoroutineScope()
     val currentOnPageChange by rememberUpdatedState(onPageChange)
 
     LaunchedEffect(pagerState) {
@@ -275,114 +311,214 @@ private fun QuoteBrowser(quotes: List<Quote>, quoteIndex: Int, onPageChange: (In
         if (pagerState.settledPage != quoteIndex) pagerState.animateScrollToPage(quoteIndex)
     }
 
-    Column(
-        modifier = Modifier.fillMaxWidth().border(1.dp, SumiTheme.colors.paperEdge),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        HorizontalPager(state = pagerState, modifier = Modifier.fillMaxWidth()) { page ->
-            QuotePage(quote = quotes[page])
+    Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(QUOTE_CARD_HEIGHT),
+        ) { page ->
+            val pageOffset = ((pagerState.currentPage - page) + pagerState.currentPageOffsetFraction).coerceIn(-1f, 1f)
+            QuoteCard(quote = quotes[page], pageOffset = pageOffset)
         }
-        QuoteProgressBar(current = pagerState.currentPage, total = quotes.size)
-        QuoteNavRow(
-            index = pagerState.currentPage,
-            total = quotes.size,
-            onPrev = { scope.launch { pagerState.animateScrollToPage(maxOf(0, pagerState.currentPage - 1)) } },
-            onNext = {
-                scope.launch { pagerState.animateScrollToPage(minOf(quotes.size - 1, pagerState.currentPage + 1)) }
-            },
-        )
-    }
-}
-
-@Composable
-private fun QuotePage(quote: Quote) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = Sumi.Space.s5, vertical = Sumi.Space.s6),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Text(
-            text = "“${quote.text}”",
-            style = SumiTheme.typography.quote.copy(fontSize = 16.sp, fontStyle = FontStyle.Italic),
-            color = SumiTheme.colors.ink,
-            textAlign = TextAlign.Center,
-        )
         Spacer(Modifier.height(Sumi.Space.s4))
-        Text(
-            text = "— ${quote.attribution}",
-            style = SumiTheme.typography.uiMeta,
-            color = SumiTheme.colors.inkSoft,
-            textAlign = TextAlign.Center,
-        )
+        QuoteDots(current = pagerState.currentPage, total = quotes.size)
     }
 }
 
 @Composable
-private fun QuoteProgressBar(current: Int, total: Int) {
-    Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(SumiTheme.colors.paperEdge)) {
+private fun QuoteCard(quote: Quote, pageOffset: Float) {
+    val cornerInk = SumiTheme.colors.gold.copy(alpha = 0.55f)
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = Sumi.Space.s2)
+            .graphicsLayer {
+                // Subtle parallax — adjacent pages drift slightly so the swipe reads
+                // as paper sliding rather than a stiff slot machine.
+                translationX = pageOffset * 24f
+                alpha = 1f - (kotlin.math.abs(pageOffset) * 0.4f).coerceAtMost(0.4f)
+            }
+            .border(1.dp, SumiTheme.colors.paperEdge),
+    ) {
+        QuoteCornerOrnaments(cornerColor = cornerInk)
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = Sumi.Space.s6, vertical = Sumi.Space.s7),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                text = "「",
+                style = SumiTheme.typography.cjk.copy(fontSize = 36.sp),
+                color = SumiTheme.colors.gold.copy(alpha = 0.45f),
+            )
+            Spacer(Modifier.height(Sumi.Space.s3))
+            Text(
+                text = quote.text,
+                style = SumiTheme.typography.quote.copy(fontSize = 18.sp, fontStyle = FontStyle.Italic),
+                color = SumiTheme.colors.ink,
+                textAlign = TextAlign.Center,
+            )
+            Spacer(Modifier.height(Sumi.Space.s5))
+            Box(
+                modifier = Modifier
+                    .width(Sumi.Space.s7)
+                    .height(1.dp)
+                    .background(SumiTheme.colors.gold.copy(alpha = 0.5f)),
+            )
+            Spacer(Modifier.height(Sumi.Space.s3))
+            Text(
+                text = quote.attribution,
+                style = SumiTheme.typography.uiMeta,
+                color = SumiTheme.colors.inkSoft,
+                textAlign = TextAlign.Center,
+            )
+        }
+    }
+}
+
+/** Four hairline gold L-marks anchoring the quote card corners — paper-of-record feel. */
+@Composable
+private fun QuoteCornerOrnaments(cornerColor: Color) {
+    val markLen = 14.dp
+    val inset = 10.dp
+    Box(modifier = Modifier.fillMaxSize()) {
+        listOf(
+            Alignment.TopStart to (true to true),
+            Alignment.TopEnd to (false to true),
+            Alignment.BottomStart to (true to false),
+            Alignment.BottomEnd to (false to false),
+        ).forEach { (align, dir) ->
+            CornerMark(
+                color = cornerColor,
+                length = markLen,
+                inset = inset,
+                isLeft = dir.first,
+                isTop = dir.second,
+                modifier = Modifier.align(align),
+            )
+        }
+    }
+}
+
+@Suppress("LongParameterList")
+@Composable
+private fun CornerMark(
+    color: Color,
+    length: Dp,
+    inset: Dp,
+    isLeft: Boolean,
+    isTop: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    Box(modifier = modifier.padding(inset)) {
         Box(
             modifier = Modifier
-                .fillMaxHeight()
-                .fillMaxWidth((current + 1f) / total)
-                .background(SumiTheme.colors.inkFaint),
+                .align(if (isTop) Alignment.TopStart else Alignment.BottomStart)
+                .width(length)
+                .height(1.dp)
+                .background(color),
+        )
+        Box(
+            modifier = Modifier
+                .align(if (isLeft) Alignment.TopStart else Alignment.TopEnd)
+                .width(1.dp)
+                .height(length)
+                .background(color),
         )
     }
 }
 
 @Composable
-private fun QuoteNavRow(index: Int, total: Int, onPrev: () -> Unit, onNext: () -> Unit) {
-    val prevSrc = remember { MutableInteractionSource() }
-    val nextSrc = remember { MutableInteractionSource() }
+private fun QuoteDots(current: Int, total: Int) {
     Row(
+        horizontalArrangement = Arrangement.spacedBy(Sumi.Space.s2),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(Sumi.Space.s4),
-        modifier = Modifier.padding(vertical = Sumi.Space.s4),
     ) {
-        SumiIcon(
-            icon = SumiIcons.Back,
-            contentDescription = "Previous quote",
-            tint = SumiTheme.colors.inkFaint,
-            size = 20.dp,
-            modifier = Modifier.clickable(interactionSource = prevSrc, indication = null, onClick = onPrev),
-        )
-        Text(text = "${index + 1} / $total", style = SumiTheme.typography.uiMeta, color = SumiTheme.colors.inkFaint)
-        SumiIcon(
-            icon = SumiIcons.Back,
-            contentDescription = "Next quote",
-            tint = SumiTheme.colors.inkFaint,
-            size = 20.dp,
-            modifier = Modifier
-                .graphicsLayer { rotationZ = 180f }
-                .clickable(interactionSource = nextSrc, indication = null, onClick = onNext),
+        Text(
+            text = "${current + 1} / $total",
+            style = SumiTheme.typography.uiMeta,
+            color = SumiTheme.colors.inkFaint,
         )
     }
 }
 
 // ── Puzzle book CTA ────────────────────────────────────────────────────────────
 
+/**
+ * Two-column card: large CJK glyph on the left grounds the action, copy on the
+ * right reads naturally. A right-arrow chevron + gold corner marker make the
+ * tap-target unambiguous without resorting to a button bar.
+ */
 @Composable
 private fun PuzzleBookCard(onClick: () -> Unit) {
     val src = remember { MutableInteractionSource() }
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxWidth()
             .border(1.dp, SumiTheme.colors.paperEdge)
             .clickable(interactionSource = src, indication = null, onClick = onClick)
             .padding(horizontal = Sumi.Space.s5, vertical = Sumi.Space.s6),
-        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text(text = "活", style = SumiTheme.typography.cjk.copy(fontSize = 36.sp), color = SumiTheme.colors.inkFaint)
-        Spacer(Modifier.height(Sumi.Space.s3))
-        Text(text = "Design a Puzzle Book", style = SumiTheme.typography.h2, color = SumiTheme.colors.ink)
-        Spacer(Modifier.height(Sumi.Space.s2))
-        Text(
-            text = "Mix difficulties, choose a theme, export a print-ready A5 book.",
-            style = SumiTheme.typography.bodySmall,
-            color = SumiTheme.colors.inkSoft,
-            textAlign = TextAlign.Center,
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .size(Sumi.Space.s2)
+                .background(SumiTheme.colors.gold.copy(alpha = 0.6f)),
         )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Sumi.Space.s5),
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(72.dp)
+                    .border(1.dp, SumiTheme.colors.gold.copy(alpha = 0.45f)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = "本",
+                    style = SumiTheme.typography.cjk.copy(fontSize = 38.sp),
+                    color = SumiTheme.colors.gold,
+                )
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Design a puzzle book",
+                    style = SumiTheme.typography.h3,
+                    color = SumiTheme.colors.ink,
+                )
+                Spacer(Modifier.height(Sumi.Space.s1))
+                Text(
+                    text = "Mix difficulties, choose a theme, export a print-ready A5 book.",
+                    style = SumiTheme.typography.bodySmall,
+                    color = SumiTheme.colors.inkSoft,
+                )
+            }
+            SumiIcon(
+                icon = SumiIcons.Back,
+                contentDescription = null,
+                tint = SumiTheme.colors.gold,
+                size = 18.dp,
+                modifier = Modifier.graphicsLayer { rotationZ = 180f },
+            )
+        }
     }
+}
+
+@Composable
+private fun ZenFooter(onRestorePurchase: () -> Unit) {
+    val src = remember { MutableInteractionSource() }
+    Text(
+        text = "Restore purchase",
+        style = SumiTheme.typography.uiMeta,
+        color = SumiTheme.colors.inkFaint,
+        modifier = Modifier
+            .clickable(interactionSource = src, indication = null, onClick = onRestorePurchase)
+            .padding(Sumi.Space.s2),
+    )
 }
 
 @Composable
