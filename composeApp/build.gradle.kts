@@ -1,12 +1,16 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import xyz.ksharma.sumi.gradle.AndroidVersion
 
+import com.codingfeline.buildkonfig.compiler.FieldSpec.Type.BOOLEAN
+import com.codingfeline.buildkonfig.compiler.FieldSpec.Type.STRING
+
 plugins {
     alias(libs.plugins.sumi.kotlin.multiplatform)
     alias(libs.plugins.sumi.compose.multiplatform)
     alias(libs.plugins.sumi.android.kmp.library)
     alias(libs.plugins.kotlinSerialization)
     alias(libs.plugins.sqldelight)
+    alias(libs.plugins.buildkonfig)
 }
 
 kotlin {
@@ -102,4 +106,38 @@ compose.resources {
     publicResClass = true
     packageOfResClass = "xyz.ksharma.sumi.resources"
     generateResClass = auto
+}
+
+buildkonfig {
+    packageName = "xyz.ksharma.sumi"
+    objectName = "BuildKonfig"
+    exposeObjectWithName = "BuildKonfig"
+
+    // Defaults = debug. AdMob test unit IDs are safe to commit and won't generate revenue.
+    // Reference: https://developers.google.com/admob/android/test-ads
+    defaultConfigs {
+        buildConfigField(BOOLEAN, "IS_DEBUG", "true")
+        buildConfigField(STRING, "BUILD_TYPE", "\"debug\"")
+
+        buildConfigField(STRING, "AD_BANNER_ANDROID",       "\"ca-app-pub-3940256099942544/6300978111\"")
+        buildConfigField(STRING, "AD_BANNER_IOS",           "\"ca-app-pub-3940256099942544/2934735716\"")
+        buildConfigField(STRING, "AD_INTERSTITIAL_ANDROID", "\"ca-app-pub-3940256099942544/1033173712\"")
+        buildConfigField(STRING, "AD_INTERSTITIAL_IOS",     "\"ca-app-pub-3940256099942544/4411468910\"")
+        buildConfigField(STRING, "AD_REWARDED_ANDROID",     "\"ca-app-pub-3940256099942544/5224354917\"")
+        buildConfigField(STRING, "AD_REWARDED_IOS",         "\"ca-app-pub-3940256099942544/1712485313\"")
+    }
+
+    // Activate with: ./gradlew ... -Pbuildkonfig.flavor=release
+    // TODO(launch): replace AD_* with real Sumi unit IDs from the AdMob console before shipping.
+    defaultConfigs("release") {
+        buildConfigField(BOOLEAN, "IS_DEBUG", "false")
+        buildConfigField(STRING, "BUILD_TYPE", "\"release\"")
+
+        buildConfigField(STRING, "AD_BANNER_ANDROID",       "\"ca-app-pub-3940256099942544/6300978111\"")
+        buildConfigField(STRING, "AD_BANNER_IOS",           "\"ca-app-pub-3940256099942544/2934735716\"")
+        buildConfigField(STRING, "AD_INTERSTITIAL_ANDROID", "\"ca-app-pub-3940256099942544/1033173712\"")
+        buildConfigField(STRING, "AD_INTERSTITIAL_IOS",     "\"ca-app-pub-3940256099942544/4411468910\"")
+        buildConfigField(STRING, "AD_REWARDED_ANDROID",     "\"ca-app-pub-3940256099942544/5224354917\"")
+        buildConfigField(STRING, "AD_REWARDED_IOS",         "\"ca-app-pub-3940256099942544/1712485313\"")
+    }
 }

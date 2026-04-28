@@ -11,6 +11,7 @@ interface BoardManager {
     fun erase()
     fun undo()
     fun hint(): Boolean
+    fun addHints(count: Int)
     fun toggleNotes()
     fun tick(deltaMs: Long)
 }

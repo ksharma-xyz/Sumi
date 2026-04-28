@@ -20,12 +20,6 @@ class FirebaseSumiAnalytics : SumiAnalytics {
         }
     }
 
-    override fun logGameOver(difficulty: String) {
-        Firebase.analytics.logEvent("game_over") {
-            param("difficulty", difficulty)
-        }
-    }
-
     override fun logHintUsed(difficulty: String) {
         Firebase.analytics.logEvent("hint_used") {
             param("difficulty", difficulty)

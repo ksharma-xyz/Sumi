@@ -5,16 +5,20 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
+import app.lexilabs.basic.ads.DependsOnGoogleMobileAds
+import app.lexilabs.basic.ads.composable.BannerAd
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import xyz.ksharma.sumi.FREE_QUOTES
+import xyz.ksharma.sumi.ads.AdUnits
 import xyz.ksharma.sumi.navigation.GameRoute
 import xyz.ksharma.sumi.navigation.HomeRoute
 import xyz.ksharma.sumi.navigation.PaywallRoute
 import xyz.ksharma.sumi.navigation.SettingsRoute
 import xyz.ksharma.sumi.navigation.SumiNavigator
+import xyz.ksharma.sumi.preferences.DebugPreferences
 import xyz.ksharma.sumi.preferences.ProRepository
 import xyz.ksharma.sumi.screens.home.HomeScreen
 import xyz.ksharma.sumi.screens.home.HomeViewModel
@@ -24,17 +28,22 @@ import kotlin.time.ExperimentalTime
 private val PRO_DIFFICULTIES = setOf("Hard", "Master", "Edo")
 
 @Suppress("ComposableNaming")
+@OptIn(DependsOnGoogleMobileAds::class)
 @androidx.compose.runtime.Composable
 fun EntryProviderScope<NavKey>.HomeEntry(navigator: SumiNavigator) {
     entry<HomeRoute> {
         val vm: HomeViewModel = koinViewModel()
         val streak by vm.streak.collectAsState()
         val proRepo = koinInject<ProRepository>()
+        val debugPrefs = koinInject<DebugPreferences>()
         val isPro by proRepo.isPro().collectAsState(initial = false)
+        val isAdsEnabled by debugPrefs.observeAdsEnabled().collectAsState(initial = true)
 
         @OptIn(ExperimentalTime::class)
         val dayOfYear = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).dayOfYear
         val quote = FREE_QUOTES[dayOfYear % FREE_QUOTES.size]
+
+        val showBanner = !isPro && isAdsEnabled
 
         HomeScreen(
             streakDays = streak,
@@ -45,6 +54,9 @@ fun EntryProviderScope<NavKey>.HomeEntry(navigator: SumiNavigator) {
             },
             onSettings = { navigator.goTo(SettingsRoute) },
             lockedDifficulties = if (isPro) emptySet() else PRO_DIFFICULTIES,
+            bottomBanner = if (showBanner) {
+                @Composable { BannerAd(adUnitId = AdUnits.Banner) }
+            } else null,
         )
     }
 }

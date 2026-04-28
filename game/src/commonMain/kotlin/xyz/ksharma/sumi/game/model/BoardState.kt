@@ -2,14 +2,14 @@
 
 package xyz.ksharma.sumi.game.model
 
-private const val MAX_MISTAKES = 3
-
 data class BoardState(
     val cells: List<List<Cell>>,
     val selected: Pair<Int, Int>? = null,
     val notesMode: Boolean = false,
     val hintsRemaining: Int = DEFAULT_HINTS,
     val mistakeCount: Int = 0,
+    /** Number of digit-entry actions the player has taken in normal (not notes) mode. */
+    val moveCount: Int = 0,
     val elapsedMs: Long = 0L,
     val difficulty: Difficulty,
     val solution: List<List<Int>>,
@@ -73,16 +73,13 @@ data class BoardState(
     val isComplete: Boolean
         get() = cells.indices.all { r -> cells[r].indices.all { c -> cells[r][c].value == solution[r][c] } }
 
-    val isGameOver: Boolean
-        get() = mistakeCount >= MAX_MISTAKES
-
     fun select(row: Int, col: Int): BoardState {
         val newSelected = if (selected == Pair(row, col)) null else Pair(row, col)
         return copy(selected = newSelected)
     }
 
     fun enter(digit: Int): BoardState {
-        if (isGameOver || isComplete) return this
+        if (isComplete) return this
         val (row, col) = selected ?: return this
         val cell = cells[row][col]
         if (cell.given) return this
@@ -99,13 +96,13 @@ data class BoardState(
             copy(
                 cells = newCells,
                 mistakeCount = if (incrementMistake) mistakeCount + 1 else mistakeCount,
+                moveCount = moveCount + 1,
                 history = history + listOf(cells),
             )
         }
     }
 
     fun erase(): BoardState {
-        if (isGameOver) return this
         val (row, col) = selected ?: return this
         val cell = cells[row][col]
         if (cell.given) return this
@@ -118,7 +115,7 @@ data class BoardState(
     }
 
     fun hint(): BoardState {
-        if (isGameOver || hintsRemaining <= 0) return this
+        if (hintsRemaining <= 0) return this
         val candidates = mutableListOf<Pair<Int, Int>>()
         for (r in 0..8) for (c in 0..8) {
             if (!cells[r][c].given && cells[r][c].value != solution[r][c]) candidates.add(r to c)
@@ -132,9 +129,18 @@ data class BoardState(
 
     fun toggleNotes(): BoardState = copy(notesMode = !notesMode)
 
-    // Timer stops automatically once the game ends.
+    /**
+     * Adds [count] hints to the player's pool. Used by the rewarded-ad flow:
+     * watch a video → earn +1 hint. No-op when hints are already unlimited (Pro).
+     */
+    fun addHints(count: Int): BoardState {
+        if (hintsRemaining == HINTS_UNLIMITED || count <= 0) return this
+        return copy(hintsRemaining = hintsRemaining + count)
+    }
+
+    // Timer stops automatically once the puzzle is solved.
     fun tick(deltaMs: Long): BoardState =
-        if (isGameOver || isComplete) this else copy(elapsedMs = elapsedMs + deltaMs)
+        if (isComplete) this else copy(elapsedMs = elapsedMs + deltaMs)
 
     private fun updateCell(row: Int, col: Int, cell: Cell): BoardState =
         copy(cells = updatedCells(row, col, cell), history = history + listOf(cells))

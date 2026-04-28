@@ -33,7 +33,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.draw.blur
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
@@ -44,7 +43,6 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import xyz.ksharma.sumi.design.board.SumiBoard
 import xyz.ksharma.sumi.design.components.SumiIcon
@@ -71,20 +69,36 @@ fun GameScreen(
     elapsedMs: Long,
     celebrationCount: Int,
     paused: Boolean,
-    gameOver: Boolean,
     difficulty: Difficulty,
     callbacks: GameCallbacks,
     modifier: Modifier = Modifier,
+    bottomBanner: (@Composable () -> Unit)? = null,
+    rewardedHintAvailable: Boolean = false,
 ) {
     Box(modifier = modifier.fillMaxSize()) {
         // Game content — blurred when paused so the scrim reads as frosted glass
         val blurMod = if (paused) Modifier.blur(24.dp, BlurredEdgeTreatment.Unbounded) else Modifier
         Box(modifier = Modifier.fillMaxSize().then(blurMod)) {
             WashiBG(modifier = Modifier.fillMaxSize(), variant = WashiVariant.Quiet)
-            GameBody(state = state, elapsedMs = elapsedMs, diff = difficulty, callbacks = callbacks)
+            GameBody(
+                state = state,
+                elapsedMs = elapsedMs,
+                diff = difficulty,
+                callbacks = callbacks,
+                bottomReservedHeight = if (bottomBanner != null) 64.dp else 0.dp,
+                rewardedHintAvailable = rewardedHintAvailable,
+            )
         }
         SumiPetalBurst(trigger = celebrationCount, modifier = Modifier.fillMaxSize())
         GameAnnouncer(state = state)
+        if (bottomBanner != null) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth(),
+                contentAlignment = Alignment.BottomCenter,
+            ) { bottomBanner() }
+        }
         if (paused) {
             PauseOverlay(
                 onResume = callbacks.onResume,
@@ -92,25 +106,34 @@ fun GameScreen(
                 onHome = callbacks.onBack,
             )
         }
-        if (gameOver) {
-            GameOverOverlay(onNewPuzzle = callbacks.onNewPuzzle, onHome = callbacks.onBack)
-        }
     }
 }
 
 @Composable
-private fun GameBody(state: BoardState, elapsedMs: Long, diff: Difficulty, callbacks: GameCallbacks) {
+private fun GameBody(
+    state: BoardState,
+    elapsedMs: Long,
+    diff: Difficulty,
+    callbacks: GameCallbacks,
+    bottomReservedHeight: androidx.compose.ui.unit.Dp = 0.dp,
+    rewardedHintAvailable: Boolean = false,
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
             .windowInsetsPadding(WindowInsets.statusBars)
-            .padding(horizontal = Sumi.Space.s6),
+            .padding(horizontal = Sumi.Space.s6)
+            .padding(bottom = bottomReservedHeight),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Spacer(Modifier.height(Sumi.Space.s3))
         GameTopBar(difficulty = diff, elapsedMs = elapsedMs, onBack = callbacks.onBack, onPause = callbacks.onPause)
         Spacer(Modifier.height(Sumi.Space.s3))
-        MarksHintsRow(mistakeCount = state.mistakeCount, hintsRemaining = state.hintsRemaining)
+        MarksHintsRow(
+            mistakeCount = state.mistakeCount,
+            hintsRemaining = state.hintsRemaining,
+            rewardedHintAvailable = rewardedHintAvailable,
+        )
         Spacer(Modifier.height(Sumi.Space.s3))
         Box(
             modifier = Modifier
@@ -130,84 +153,6 @@ private fun GameBody(state: BoardState, elapsedMs: Long, diff: Difficulty, callb
         )
         Spacer(Modifier.height(Sumi.Space.s3))
         NumberPad(state = state, onDigit = callbacks.onEnter)
-    }
-}
-
-@Composable
-private fun GameOverOverlay(
-    onNewPuzzle: () -> Unit,
-    onHome: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(Color(0xFF0A0705).copy(alpha = 0.88f)),
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = Sumi.Space.s6),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(Sumi.Space.s3),
-        ) {
-            Text(
-                text = "誤",
-                style = SumiTheme.typography.cjk.copy(fontSize = 52.sp),
-                color = SumiTheme.colors.paper,
-            )
-            Text(
-                text = "Three marks.",
-                style = SumiTheme.typography.h2.copy(fontSize = 34.sp, letterSpacing = (-0.02f).em),
-                color = SumiTheme.colors.paper,
-            )
-            Text(
-                text = "The practice is complete.",
-                style = SumiTheme.typography.body.copy(lineHeight = (15 * 1.5f).sp),
-                color = SumiTheme.colors.paper.copy(alpha = 0.65f),
-            )
-            Spacer(Modifier.height(Sumi.Space.s4))
-            GameOverButtons(onNewPuzzle = onNewPuzzle, onHome = onHome)
-        }
-    }
-}
-
-@Composable
-private fun GameOverButtons(onNewPuzzle: () -> Unit, onHome: () -> Unit) {
-    val newSrc = remember { MutableInteractionSource() }
-    val homeSrc = remember { MutableInteractionSource() }
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(Sumi.Space.s3),
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(SumiTheme.colors.paper)
-                .clickable(interactionSource = newSrc, indication = null, onClick = onNewPuzzle)
-                .padding(vertical = Sumi.Space.s4),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                text = "NEW PUZZLE",
-                style = SumiTheme.typography.uiButton.copy(letterSpacing = 3.sp),
-                color = SumiTheme.colors.ink,
-            )
-        }
-        Box(
-            modifier = Modifier
-                .clickable(interactionSource = homeSrc, indication = null, onClick = onHome)
-                .padding(vertical = Sumi.Space.s3),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                text = "RETURN HOME",
-                style = SumiTheme.typography.uiLabel.copy(letterSpacing = 2.5.sp),
-                color = SumiTheme.colors.paper.copy(alpha = 0.55f),
-            )
-        }
     }
 }
 
@@ -264,7 +209,11 @@ private fun GameTopBar(difficulty: Difficulty, elapsedMs: Long, onBack: () -> Un
 }
 
 @Composable
-private fun MarksHintsRow(mistakeCount: Int, hintsRemaining: Int) {
+private fun MarksHintsRow(
+    mistakeCount: Int,
+    hintsRemaining: Int,
+    rewardedHintAvailable: Boolean = false,
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -274,7 +223,7 @@ private fun MarksHintsRow(mistakeCount: Int, hintsRemaining: Int) {
             text = buildAnnotatedString {
                 withStyle(SpanStyle(color = SumiTheme.colors.inkSoft)) { append("MARKS ") }
                 withStyle(SpanStyle(color = SumiTheme.colors.red, fontWeight = FontWeight.Bold)) {
-                    append("$mistakeCount / 3")
+                    append("$mistakeCount")
                 }
             },
             style = SumiTheme.typography.uiMeta.copy(letterSpacing = 1.5.sp),
@@ -284,6 +233,13 @@ private fun MarksHintsRow(mistakeCount: Int, hintsRemaining: Int) {
                 withStyle(SpanStyle(color = SumiTheme.colors.inkSoft)) { append("HINTS ") }
                 withStyle(SpanStyle(color = SumiTheme.colors.gold, fontWeight = FontWeight.Bold)) {
                     append(if (hintsRemaining == BoardState.HINTS_UNLIMITED) "∞" else "$hintsRemaining")
+                }
+                // Hint indicator: tells the user the empty Hint button can earn one via rewarded ad.
+                if (hintsRemaining == 0 && rewardedHintAvailable) {
+                    withStyle(SpanStyle(color = SumiTheme.colors.inkSoft)) { append("  /  ") }
+                    withStyle(SpanStyle(color = SumiTheme.colors.teal, fontWeight = FontWeight.Bold)) {
+                        append("+1 AD")
+                    }
                 }
             },
             style = SumiTheme.typography.uiMeta.copy(letterSpacing = 1.5.sp),

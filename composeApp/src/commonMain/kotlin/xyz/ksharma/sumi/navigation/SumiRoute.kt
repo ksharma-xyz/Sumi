@@ -28,6 +28,7 @@ data class GameRoute(
 @Serializable data class WinRoute(
     val elapsedMs: Long = 0L,
     val mistakeCount: Int = 0,
+    val moveCount: Int = 0,
     val difficulty: String = "Easy",
 ) : SumiRoute
 

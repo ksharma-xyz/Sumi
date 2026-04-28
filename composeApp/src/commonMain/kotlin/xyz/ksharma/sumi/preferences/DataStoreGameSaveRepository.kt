@@ -25,6 +25,7 @@ class DataStoreGameSaveRepository(private val store: DataStore<Preferences>) : G
             cells = prefs[slot.cellsKey] ?: return null,
             elapsedMs = prefs[slot.elapsedKey] ?: 0L,
             mistakeCount = prefs[slot.mistakesKey] ?: 0,
+            moveCount = prefs[slot.movesKey] ?: 0,
             hintsRemaining = prefs[slot.hintsKey] ?: 3,
             puzzleSeed = prefs[slot.seedKey] ?: 0L,
         )
@@ -37,6 +38,7 @@ class DataStoreGameSaveRepository(private val store: DataStore<Preferences>) : G
             prefs[slot.cellsKey] = save.cells
             prefs[slot.elapsedKey] = save.elapsedMs
             prefs[slot.mistakesKey] = save.mistakeCount
+            prefs[slot.movesKey] = save.moveCount
             prefs[slot.hintsKey] = save.hintsRemaining
             prefs[slot.seedKey] = save.puzzleSeed
         }
@@ -49,6 +51,7 @@ class DataStoreGameSaveRepository(private val store: DataStore<Preferences>) : G
             prefs.remove(slot.cellsKey)
             prefs.remove(slot.elapsedKey)
             prefs.remove(slot.mistakesKey)
+            prefs.remove(slot.movesKey)
             prefs.remove(slot.hintsKey)
             prefs.remove(slot.seedKey)
         }
@@ -67,6 +70,7 @@ private class SaveSlot(private val diff: String) {
     val cellsKey = stringPreferencesKey("save_${diff}_cells")
     val elapsedKey = longPreferencesKey("save_${diff}_elapsed")
     val mistakesKey = intPreferencesKey("save_${diff}_mistakes")
+    val movesKey = intPreferencesKey("save_${diff}_moves")
     val hintsKey = intPreferencesKey("save_${diff}_hints")
     val seedKey = longPreferencesKey("save_${diff}_seed")
 }

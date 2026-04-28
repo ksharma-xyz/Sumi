@@ -6,6 +6,7 @@ data class GameSave(
     val cells: String, // 81 comma-separated ints; 0=empty or given, 1-9=user-placed
     val elapsedMs: Long,
     val mistakeCount: Int,
+    val moveCount: Int = 0,
     val hintsRemaining: Int,
     val puzzleSeed: Long = 0L, // 0 = today's daily seed; non-zero = custom seed from fromSeed()
 )

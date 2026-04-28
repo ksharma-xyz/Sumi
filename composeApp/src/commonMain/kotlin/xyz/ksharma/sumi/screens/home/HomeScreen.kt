@@ -61,26 +61,39 @@ fun HomeScreen(
     onSettings: () -> Unit,
     modifier: Modifier = Modifier,
     lockedDifficulties: Set<String> = emptySet(),
+    bottomBanner: (@Composable () -> Unit)? = null,
 ) {
 
     WashiBG(modifier = modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .windowInsetsPadding(WindowInsets.statusBars)
-                .padding(horizontal = Sumi.Space.s6)
-                .padding(top = Sumi.Space.s4, bottom = Sumi.Space.s5),
-        ) {
-            HomeTopChrome(onSettings = onSettings)
-            Spacer(Modifier.height(Sumi.Space.s5))
-            DailyQuoteBlock(quote = quote)
-            Spacer(Modifier.height(Sumi.Space.s5))
-            QuoteRule()
-            Spacer(Modifier.height(Sumi.Space.s5))
-            StreakCard(streakDays = streakDays)
-            Spacer(Modifier.height(Sumi.Space.s4))
-            NewPracticeGrid(onStartGame = onStartGame, lockedDifficulties = lockedDifficulties)
+        Box(modifier = Modifier.fillMaxSize()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .windowInsetsPadding(WindowInsets.statusBars)
+                    .padding(horizontal = Sumi.Space.s6)
+                    // Reserve room at the bottom so banner-anchored content doesn't overlap
+                    // the last difficulty tile when scrolled to the end.
+                    .padding(top = Sumi.Space.s4, bottom = if (bottomBanner != null) 64.dp else Sumi.Space.s5),
+            ) {
+                HomeTopChrome(onSettings = onSettings)
+                Spacer(Modifier.height(Sumi.Space.s5))
+                DailyQuoteBlock(quote = quote)
+                Spacer(Modifier.height(Sumi.Space.s5))
+                QuoteRule()
+                Spacer(Modifier.height(Sumi.Space.s5))
+                StreakCard(streakDays = streakDays)
+                Spacer(Modifier.height(Sumi.Space.s4))
+                NewPracticeGrid(onStartGame = onStartGame, lockedDifficulties = lockedDifficulties)
+            }
+            if (bottomBanner != null) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth(),
+                    contentAlignment = Alignment.BottomCenter,
+                ) { bottomBanner() }
+            }
         }
     }
 }

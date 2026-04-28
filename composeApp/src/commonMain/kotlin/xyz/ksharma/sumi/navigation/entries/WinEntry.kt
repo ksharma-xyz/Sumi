@@ -3,10 +3,7 @@ package xyz.ksharma.sumi.navigation.entries
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.platform.LocalDensity
 import androidx.navigation3.runtime.EntryProviderScope
@@ -51,7 +48,6 @@ fun EntryProviderScope<NavKey>.WinEntry(navigator: SumiNavigator) {
         val isPro by proRepo.isPro().collectAsState(initial = false)
         val isAdsEnabled by debugPrefs.observeAdsEnabled().collectAsState(initial = true)
         val showInterstitial by vm.showInterstitial.collectAsState()
-        var interstitialDismissed by remember { mutableStateOf(false) }
 
         LaunchedEffect(Unit) {
             if (hapticsEnabled) haptic.win()
@@ -68,6 +64,7 @@ fun EntryProviderScope<NavKey>.WinEntry(navigator: SumiNavigator) {
         WinScreen(
             elapsedMs = key.elapsedMs,
             mistakeCount = key.mistakeCount,
+            moveCount = key.moveCount,
             difficulty = key.difficulty,
             quote = quote,
             onHome = { navigator.resetRoot(HomeRoute) },
@@ -90,8 +87,8 @@ fun EntryProviderScope<NavKey>.WinEntry(navigator: SumiNavigator) {
                     shareManager.shareImage(branded)
                 }
             },
-            showInterstitialAd = showInterstitial && !isPro && isAdsEnabled && !interstitialDismissed,
-            onInterstitialDismiss = { interstitialDismissed = true },
+            showInterstitialAd = showInterstitial && !isPro && isAdsEnabled,
+            onInterstitialDismiss = vm::onInterstitialDone,
         )
     }
 }

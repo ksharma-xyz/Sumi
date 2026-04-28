@@ -95,23 +95,8 @@ class BoardStateTest {
     }
 
     @Test
-    fun thirdMistakeTriggersGameOver() {
-        var b = board
-        var mistakes = 0
-        outer@ for (r in 0..8) {
-            for (c in 0..8) {
-                if (b.cells[r][c].given) continue
-                val wrong = wrongDigitFor(b, r, c)
-                b = b.select(r, c).enter(wrong)
-                mistakes++
-                if (mistakes == 3) break@outer
-            }
-        }
-        assertTrue(b.isGameOver, "Three mistakes should set isGameOver")
-    }
-
-    @Test
-    fun boardLockedAfterGameOver() {
+    fun mistakesAccumulateWithoutLockingBoard() {
+        // Game does not end on mistakes — count keeps climbing and the board stays editable.
         var b = board
         var mistakes = 0
         outer@ for (r in 0..8) {
@@ -119,14 +104,15 @@ class BoardStateTest {
                 if (b.cells[r][c].given) continue
                 b = b.select(r, c).enter(wrongDigitFor(b, r, c))
                 mistakes++
-                if (mistakes == 3) break@outer
+                if (mistakes == 5) break@outer
             }
         }
-        assertTrue(b.isGameOver)
+        assertEquals(5, b.mistakeCount)
+        // Board must still accept new entries — pick another empty cell and enter the correct value.
         val (r, c) = findEmptyCell(b)
-        val before = b.cells[r][c].value
-        val b2 = b.select(r, c).enter(b.solution[r][c])
-        assertEquals(before, b2.cells[r][c].value, "Board must be locked after game over")
+        val correct = b.solution[r][c]
+        val b2 = b.select(r, c).enter(correct)
+        assertEquals(correct, b2.cells[r][c].value, "Board must remain editable regardless of mistake count")
     }
 
     // ── Erase ─────────────────────────────────────────────────────────────────
@@ -281,7 +267,8 @@ class BoardStateTest {
     }
 
     @Test
-    fun timerStopsWhenGameOver() {
+    fun timerKeepsAdvancingDespiteMistakes() {
+        // Mistakes no longer end the game; timer only stops when the puzzle is solved.
         var b = board
         var mistakes = 0
         outer@ for (r in 0..8) {
@@ -289,11 +276,11 @@ class BoardStateTest {
                 if (b.cells[r][c].given) continue
                 b = b.select(r, c).enter(wrongDigitFor(b, r, c))
                 mistakes++
-                if (mistakes == 3) break@outer
+                if (mistakes == 5) break@outer
             }
         }
         val elapsed = b.elapsedMs
-        assertEquals(elapsed, b.tick(1000L).elapsedMs, "Timer must not advance after game over")
+        assertEquals(elapsed + 1000L, b.tick(1000L).elapsedMs, "Timer must keep advancing while the puzzle is unsolved")
     }
 
     @Test
@@ -526,7 +513,6 @@ class BoardStateTest {
             val b = SudokuGenerator.generate(diff, seed = 2024L)
             assertEquals(diff, b.difficulty)
             assertFalse(b.isComplete, "Fresh board must not be complete ($diff)")
-            assertFalse(b.isGameOver, "Fresh board must not be game over ($diff)")
             assertTrue(b.errorCells.isEmpty(), "Fresh board must have no errors ($diff)")
             assertEquals(3, b.hintsRemaining)
         }

@@ -36,8 +36,10 @@ import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
+import app.lexilabs.basic.ads.DependsOnGoogleMobileAds
+import app.lexilabs.basic.ads.composable.InterstitialAd
 import xyz.ksharma.sumi.Quote
-import xyz.ksharma.sumi.design.components.AdInterstitialOverlay
+import xyz.ksharma.sumi.ads.AdUnits
 import xyz.ksharma.sumi.design.components.SealComplete
 import xyz.ksharma.sumi.design.components.SumiButton
 import xyz.ksharma.sumi.design.components.SumiButtonSize
@@ -49,10 +51,12 @@ import xyz.ksharma.sumi.resources.ink_bleed_03
 import xyz.ksharma.sumi.theme.SumiTheme
 import xyz.ksharma.sumi.theme.SumiTokens as Sumi
 
+@OptIn(DependsOnGoogleMobileAds::class)
 @Composable
 fun WinScreen(
     elapsedMs: Long,
     mistakeCount: Int,
+    moveCount: Int,
     difficulty: String,
     quote: Quote,
     onHome: () -> Unit,
@@ -96,6 +100,7 @@ fun WinScreen(
             WinShareCard(
                 elapsedMs = elapsedMs,
                 mistakeCount = mistakeCount,
+                moveCount = moveCount,
                 difficulty = difficulty,
                 quote = quote,
                 shareLayer = shareLayer,
@@ -111,7 +116,13 @@ fun WinScreen(
             )
         }
         if (showInterstitialAd) {
-            AdInterstitialOverlay(onDismiss = onInterstitialDismiss)
+            InterstitialAd(
+                adUnitId = AdUnits.Interstitial,
+                onDismissed = onInterstitialDismiss,
+                // If load/show fails (no fill, network down), behave the same as a dismissal
+                // so the user is never blocked on the Win screen waiting for an ad.
+                onFailure = { _ -> onInterstitialDismiss() },
+            )
         }
     }
 }
@@ -120,6 +131,7 @@ fun WinScreen(
 private fun WinShareCard(
     elapsedMs: Long,
     mistakeCount: Int,
+    moveCount: Int,
     difficulty: String,
     quote: Quote,
     shareLayer: GraphicsLayer,
@@ -151,6 +163,7 @@ private fun WinShareCard(
         WinStatsRow(
             timeDisplay = formatTime(elapsedMs),
             mistakeCount = mistakeCount,
+            moveCount = moveCount,
             difficulty = difficulty,
         )
         Spacer(Modifier.height(Sumi.Space.s5))
@@ -209,6 +222,7 @@ private fun WinHeroSection() {
 private fun WinStatsRow(
     timeDisplay: String,
     mistakeCount: Int,
+    moveCount: Int,
     difficulty: String,
 ) {
     val levelKanji = difficultyKanji(difficulty)
@@ -217,7 +231,12 @@ private fun WinStatsRow(
             .fillMaxWidth()
             .border(width = 1.dp, color = SumiTheme.colors.paperEdge),
     ) {
-        listOf("TIME" to timeDisplay, "MARKS" to mistakeCount.toString()).forEachIndexed { i, (label, value) ->
+        val numericStats = listOf(
+            "TIME" to timeDisplay,
+            "MARKS" to mistakeCount.toString(),
+            "MOVES" to moveCount.toString(),
+        )
+        numericStats.forEachIndexed { i, (label, value) ->
             Column(
                 modifier = Modifier
                     .weight(1f)
@@ -234,7 +253,7 @@ private fun WinStatsRow(
                 Spacer(Modifier.height(Sumi.Space.s1))
                 Text(
                     text = value,
-                    style = SumiTheme.typography.numeral.copy(fontSize = 28.sp, fontStyle = FontStyle.Italic),
+                    style = SumiTheme.typography.numeral.copy(fontSize = 24.sp, fontStyle = FontStyle.Italic),
                     color = SumiTheme.colors.ink,
                 )
             }

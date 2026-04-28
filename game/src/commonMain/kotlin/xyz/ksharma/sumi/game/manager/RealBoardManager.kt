@@ -31,6 +31,10 @@ class RealBoardManager(initialState: BoardState) : BoardManager {
         return _state.value.hintsRemaining < before
     }
 
+    override fun addHints(count: Int) {
+        _state.value = _state.value.addHints(count)
+    }
+
     override fun toggleNotes() {
         _state.value = _state.value.toggleNotes()
     }

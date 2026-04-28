@@ -9,8 +9,13 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
+import app.lexilabs.basic.ads.DependsOnGoogleMobileAds
+import app.lexilabs.basic.ads.composable.BannerAd
+import app.lexilabs.basic.ads.composable.InterstitialAd
+import app.lexilabs.basic.ads.composable.RewardedAd
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
+import xyz.ksharma.sumi.ads.AdUnits
 import xyz.ksharma.sumi.analytics.SumiAnalytics
 import xyz.ksharma.sumi.game.model.BoardState
 import xyz.ksharma.sumi.game.model.Difficulty
@@ -20,6 +25,7 @@ import xyz.ksharma.sumi.navigation.GameRoute
 import xyz.ksharma.sumi.navigation.HomeRoute
 import xyz.ksharma.sumi.navigation.SumiNavigator
 import xyz.ksharma.sumi.navigation.WinRoute
+import xyz.ksharma.sumi.preferences.DebugPreferences
 import xyz.ksharma.sumi.preferences.ProRepository
 import xyz.ksharma.sumi.preferences.ThemePreferences
 import xyz.ksharma.sumi.screens.game.GameCallbacks
@@ -36,6 +42,7 @@ private class HapticContext(private val engine: HapticEngine, private val enable
 private class GameContext(val haptic: HapticContext, val analytics: SumiAnalytics)
 
 @Suppress("ComposableNaming")
+@OptIn(DependsOnGoogleMobileAds::class)
 @Composable
 fun EntryProviderScope<NavKey>.GameEntry(navigator: SumiNavigator) {
     entry<GameRoute> { key ->
@@ -44,8 +51,10 @@ fun EntryProviderScope<NavKey>.GameEntry(navigator: SumiNavigator) {
         val themePrefs = koinInject<ThemePreferences>()
         val analytics = koinInject<SumiAnalytics>()
         val proRepo = koinInject<ProRepository>()
+        val debugPrefs = koinInject<DebugPreferences>()
         val diff = Difficulty.entries.firstOrNull { it.name == key.difficulty } ?: Difficulty.Medium
         val isPro by proRepo.isPro().collectAsState(initial = false)
+        val isAdsEnabled by debugPrefs.observeAdsEnabled().collectAsState(initial = true)
         var paused by rememberSaveable { mutableStateOf(false) }
 
         LaunchedEffect(key.difficulty) {
@@ -56,6 +65,8 @@ fun EntryProviderScope<NavKey>.GameEntry(navigator: SumiNavigator) {
         val state by vm.state.collectAsState()
         val elapsedMs by vm.elapsedMs.collectAsState()
         val celebrationCount by vm.celebrationCount.collectAsState()
+        val showIdleInterstitial by vm.showIdleInterstitial.collectAsState()
+        val showRewardedHintAd by vm.showRewardedHintAd.collectAsState()
         val hapticsEnabled by themePrefs.observeHapticsEnabled().collectAsState(initial = true)
         val ctx = GameContext(HapticContext(haptic, hapticsEnabled), analytics)
 
@@ -71,41 +82,74 @@ fun EntryProviderScope<NavKey>.GameEntry(navigator: SumiNavigator) {
                 // System back from Win → Home; "Next Practice" from Win → new Game on fresh stack.
                 navigator.resetRoot(HomeRoute)
                 navigator.goTo(
-                    WinRoute(elapsedMs = elapsedMs, mistakeCount = state.mistakeCount, difficulty = key.difficulty),
+                    WinRoute(
+                        elapsedMs = elapsedMs,
+                        mistakeCount = state.mistakeCount,
+                        moveCount = state.moveCount,
+                        difficulty = key.difficulty,
+                    ),
                 )
             }
         }
 
-        LaunchedEffect(state.isGameOver) {
-            if (state.isGameOver) ctx.analytics.logGameOver(key.difficulty)
-        }
+        val showBanner = !isPro && isAdsEnabled
 
         GameScreen(
             state = state,
             elapsedMs = elapsedMs,
             celebrationCount = celebrationCount,
             paused = paused,
-            // Derive directly from state so the overlay only shows when the game is actually over.
-            // Using rememberSaveable caused the stale "game over" state from a previous play session
-            // to re-appear when the VM hadn't yet been reset via init().
-            gameOver = state.isGameOver,
             difficulty = diff,
             callbacks = buildGameCallbacks(
                 vm = vm,
                 ctx = ctx,
                 state = state,
                 navigator = navigator,
-                onPause = { paused = true },
-                onResume = { paused = false },
+                onPause = {
+                    paused = true
+                    vm.setPaused(true)
+                },
+                onResume = {
+                    paused = false
+                    vm.setPaused(false)
+                },
                 onNewPuzzle = {
                     paused = false
+                    vm.setPaused(false)
                     vm.init(diff, fresh = true, proHints = isPro)
                 },
+                rewardedHintAvailable = !isPro && isAdsEnabled,
             ),
+            bottomBanner = if (showBanner) {
+                @Composable { BannerAd(adUnitId = AdUnits.Banner) }
+            } else null,
+            rewardedHintAvailable = !isPro && isAdsEnabled,
         )
+
+        // Idle interstitial — gated by !isPro && isAdsEnabled. Composing the InterstitialAd
+        // triggers basic-ads to load + present; we resume the game when it dismisses or fails.
+        if (showIdleInterstitial && !isPro && isAdsEnabled) {
+            InterstitialAd(
+                adUnitId = AdUnits.Interstitial,
+                onDismissed = vm::onIdleInterstitialDone,
+                onFailure = { _ -> vm.onIdleInterstitialDone() },
+            )
+        }
+
+        // Rewarded ad → +1 hint. The user opted into this by tapping Hint at zero count,
+        // so it bypasses the orchestrator's interstitial frequency cap.
+        if (showRewardedHintAd && !isPro && isAdsEnabled) {
+            RewardedAd(
+                adUnitId = AdUnits.Rewarded,
+                onRewardEarned = { _ -> vm.grantHintsFromAd(count = 1) },
+                onDismissed = vm::onRewardedHintAdDone,
+                onFailure = { _ -> vm.onRewardedHintAdDone() },
+            )
+        }
     }
 }
 
+@Suppress("LongParameterList")
 private fun buildGameCallbacks(
     vm: GameViewModel,
     ctx: GameContext,
@@ -114,6 +158,7 @@ private fun buildGameCallbacks(
     onPause: () -> Unit,
     onResume: () -> Unit,
     onNewPuzzle: () -> Unit,
+    rewardedHintAvailable: Boolean,
 ): GameCallbacks = GameCallbacks(
     onBack = { navigator.pop() },
     onPause = onPause,
@@ -141,8 +186,14 @@ private fun buildGameCallbacks(
     },
     onHint = {
         ctx.haptic.tick()
-        ctx.analytics.logHintUsed(state.difficulty.name)
-        vm.hint()
+        if (state.hintsRemaining > 0) {
+            ctx.analytics.logHintUsed(state.difficulty.name)
+            vm.hint()
+        } else if (rewardedHintAvailable) {
+            // Out of hints — surface the rewarded ad. The reward (+1 hint) is granted
+            // in the entry's onRewardEarned handler; the user then taps Hint again to spend it.
+            vm.requestRewardedHintAd()
+        }
     },
     onToggleNotes = {
         ctx.haptic.tick()
