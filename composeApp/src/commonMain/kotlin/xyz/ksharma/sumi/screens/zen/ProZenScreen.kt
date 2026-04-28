@@ -96,6 +96,7 @@ import xyz.ksharma.sumi.theme.SumiTokens as Sumi
 
 private val STEP_LABELS = listOf("DIFFICULTY", "THEME", "OPTIONS", "PREVIEW")
 private const val DESIGNER_PAGE_COUNT = 4
+private const val CRAFTING_EXIT_MS = 420L // matches CraftingTopMessage's fade-out (400ms) + a 20ms buffer
 
 private val SAMPLE_CLUES = listOf(
     5, 3, 0, 0, 7, 0, 0, 0, 0,
@@ -823,6 +824,10 @@ private fun ResultCenter(genState: BookGenState) {
     val subtitleAlpha = remember { Animatable(0f) }
     LaunchedEffect(genState) {
         if (genState is BookGenState.Ready) {
+            // Wait for the "Crafting…" message at the top to finish its 400ms fade-out
+            // (CraftingTopMessage's AnimatedVisibility exit) before starting the reveal,
+            // so the two motions don't overlap.
+            delay(CRAFTING_EXIT_MS)
             ensoProgress.animateTo(1f, tween(900, easing = Sumi.Ease.brush))
             launch { titleScale.animateTo(1f, tween(700, easing = Sumi.Ease.brush)) }
             titleAlpha.animateTo(1f, tween(520, easing = Sumi.Ease.paper))
