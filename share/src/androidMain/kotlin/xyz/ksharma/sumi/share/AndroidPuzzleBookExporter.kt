@@ -207,26 +207,17 @@ class AndroidPuzzleBookExporter(private val context: Context) : PuzzleBookExport
     }
 
     private fun drawHeader(canvas: Canvas, page: PuzzleBookPage, appName: String, c: PdfColors) {
-        val ensoR = 8f
-        val ensoX = MARGIN + ensoR + 2f
-        val ensoY = MARGIN + 14f  // circle centre — rule is 14pt below this
-        val ensoPaint = Paint().apply {
-            color = c.ink
-            style = Paint.Style.STROKE
-            strokeWidth = 2.0f
-            strokeCap = Paint.Cap.ROUND
-            isAntiAlias = true
-        }
-        canvas.drawArc(
-            RectF(ensoX - ensoR, ensoY - ensoR, ensoX + ensoR, ensoY + ensoR),
-            25f, 300f, false, ensoPaint,
-        )
-        // Vertically centre the wordmark text on the enso circle
+        // Real Sumi mark — same logo_enso.xml path data as the cover, just smaller.
+        val markSize = 22f
+        val markCx = MARGIN + markSize / 2f
+        val markCy = MARGIN + markSize / 2f
+        drawSumiLogo(canvas, markCx, markCy, size = markSize, color = c.ink)
+        // Vertically centre the wordmark on the mark
         val wordmarkPaint = textPaint(c.ink, 11f, bold = false, letterSpacing = 0.18f)
-        val wordmarkY = ensoY - (wordmarkPaint.fontMetrics.ascent + wordmarkPaint.fontMetrics.descent) / 2f
+        val wordmarkY = markCy - (wordmarkPaint.fontMetrics.ascent + wordmarkPaint.fontMetrics.descent) / 2f
         canvas.drawText(
             appName.uppercase(),
-            ensoX + ensoR + 8f,
+            markCx + markSize / 2f + 6f,
             wordmarkY,
             wordmarkPaint,
         )
