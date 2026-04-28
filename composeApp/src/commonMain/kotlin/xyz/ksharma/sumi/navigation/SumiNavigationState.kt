@@ -5,6 +5,8 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.toMutableStateList
@@ -17,8 +19,17 @@ import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 
 @Composable
 fun rememberSumiNavigationState(): SumiNavigationState {
-    val topLevelRouteState = remember { mutableStateOf<NavKey>(SplashRoute) }
-    val topLevelRoutes: Set<NavKey> = setOf(SplashRoute, HomeRoute, DailyRoute, StatsRoute, PaywallRoute)
+    val topLevelRoutes: Set<NavKey> = setOf(SplashRoute, HomeRoute, DailyRoute, StatsRoute, ZenRoute)
+    val routeByName = remember { topLevelRoutes.associateBy { it::class.simpleName!! } }
+
+    // Persist selected tab across configuration changes using the route class name as key
+    val topLevelRouteState = rememberSaveable(
+        saver = Saver(
+            save = { it.value::class.simpleName!! },
+            restore = { name -> mutableStateOf<NavKey>(routeByName[name] ?: SplashRoute) },
+        ),
+    ) { mutableStateOf<NavKey>(SplashRoute) }
+
     val backStacks = topLevelRoutes.associateWith { key ->
         rememberNavBackStack(sumiNavSerializationConfig, key)
     }
@@ -41,8 +52,15 @@ class SumiNavigationState(
     // Bottom nav is hidden on these routes — full-screen flows where the tab bar adds no value.
     private val noNavBarRoutes = setOf(SplashRoute, OnboardingRoute, SettingsRoute, LicensesRoute)
 
+    private val _designerOpen = mutableStateOf(false)
+
     val showBottomNav: Boolean
-        get() = backStacks[topLevelRoute]?.lastOrNull().let { it != null && it !in noNavBarRoutes }
+        get() = !_designerOpen.value && backStacks[topLevelRoute]?.lastOrNull()
+            .let { it != null && it !in noNavBarRoutes }
+
+    fun setDesignerOpen(open: Boolean) {
+        _designerOpen.value = open
+    }
 
     private val stacksInUse: List<NavKey>
         get() = listOf(topLevelRoute)

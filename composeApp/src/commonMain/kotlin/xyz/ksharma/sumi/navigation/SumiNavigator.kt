@@ -13,4 +13,5 @@ class SumiNavigator(private val state: SumiNavigationState) {
     fun pop() = state.pop()
     fun resetRoot(route: NavKey) = state.resetRoot(route)
     fun switchTab(tab: NavKey) = state.goTo(tab)
+    fun setDesignerOpen(open: Boolean) = state.setDesignerOpen(open)
 }

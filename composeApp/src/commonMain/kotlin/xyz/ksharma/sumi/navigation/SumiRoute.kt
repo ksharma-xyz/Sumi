@@ -13,6 +13,9 @@ sealed interface SumiRoute : NavKey
 @Serializable data object HomeRoute : SumiRoute
 @Serializable data object DailyRoute : SumiRoute
 @Serializable data object StatsRoute : SumiRoute
+@Serializable data object ZenRoute : SumiRoute
+
+// ── Pushable screens (not tabs) ────────────────────────────────────────────────
 @Serializable data object PaywallRoute : SumiRoute
 
 // ── Game flow ─────────────────────────────────────────────────────────────────

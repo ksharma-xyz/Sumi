@@ -9,7 +9,9 @@ import xyz.ksharma.sumi.game.di.gameModule
 import xyz.ksharma.sumi.preferences.DataStoreGameSaveRepository
 import xyz.ksharma.sumi.preferences.DataStoreSumiPreferences
 import xyz.ksharma.sumi.preferences.DebugPreferences
+import xyz.ksharma.sumi.preferences.DebugProRepository
 import xyz.ksharma.sumi.preferences.GameSaveRepository
+import xyz.ksharma.sumi.preferences.ProRepository
 import xyz.ksharma.sumi.preferences.SumiPreferences
 import xyz.ksharma.sumi.preferences.ThemePreferences
 import xyz.ksharma.sumi.screens.daily.DailyViewModel
@@ -19,6 +21,7 @@ import xyz.ksharma.sumi.screens.settings.SettingsViewModel
 import xyz.ksharma.sumi.screens.splash.SplashViewModel
 import xyz.ksharma.sumi.screens.stats.StatsViewModel
 import xyz.ksharma.sumi.screens.win.WinViewModel
+import xyz.ksharma.sumi.screens.zen.ZenViewModel
 
 val appModule = module {
     includes(gameModule)
@@ -28,12 +31,14 @@ val appModule = module {
     single<DebugPreferences> { get<DataStoreSumiPreferences>() }
     single<ThemePreferences> { get<DataStoreSumiPreferences>() }
     single<GameSaveRepository> { DataStoreGameSaveRepository(store = get()) }
+    single<ProRepository> { DebugProRepository(debug = get()) }
     viewModel { SplashViewModel(prefs = get()) }
     viewModel { GameViewModel(puzzleRepository = get(), saveRepository = get()) }
     viewModel { HomeViewModel(prefs = get()) }
     viewModel { WinViewModel(prefs = get()) }
     viewModel { DailyViewModel(prefs = get()) }
     viewModel { StatsViewModel(prefs = get()) }
+    viewModel { ZenViewModel(puzzleRepository = get(), exporter = get()) }
     viewModel {
         SettingsViewModel(
             debug = get(),

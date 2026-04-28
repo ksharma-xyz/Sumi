@@ -19,6 +19,7 @@ import xyz.ksharma.sumi.navigation.entries.SettingsEntry
 import xyz.ksharma.sumi.navigation.entries.SplashEntry
 import xyz.ksharma.sumi.navigation.entries.StatsEntry
 import xyz.ksharma.sumi.navigation.entries.WinEntry
+import xyz.ksharma.sumi.navigation.entries.ZenEntry
 
 @Composable
 fun SumiNavHost(modifier: Modifier = Modifier) {
@@ -39,6 +40,7 @@ fun SumiNavHost(modifier: Modifier = Modifier) {
         StatsEntry()
         GameEntry(navigator)
         WinEntry(navigator)
+        ZenEntry(navigator)
         PaywallEntry(navigator)
         SettingsEntry(navigator)
         LicensesEntry(navigator)

@@ -37,7 +37,7 @@ private val TABS = listOf(
     NavTab(SplashRoute, "Play", SumiIcons.Book),
     NavTab(DailyRoute, "Daily", SumiIcons.Calendar),
     NavTab(StatsRoute, "Stats", SumiIcons.Chart),
-    NavTab(PaywallRoute, "Zen", SumiIcons.Quote),
+    NavTab(ZenRoute, "Zen", SumiIcons.Quote),
 )
 
 @Composable
