@@ -34,13 +34,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.launch
-import org.jetbrains.compose.resources.painterResource
 import app.lexilabs.basic.ads.DependsOnGoogleMobileAds
 import app.lexilabs.basic.ads.composable.InterstitialAd
+import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.painterResource
 import xyz.ksharma.sumi.Quote
 import xyz.ksharma.sumi.ads.AdUnits
-import xyz.ksharma.sumi.design.components.SealComplete
+import xyz.ksharma.sumi.design.components.SudokuThumbnail
 import xyz.ksharma.sumi.design.components.SumiButton
 import xyz.ksharma.sumi.design.components.SumiButtonSize
 import xyz.ksharma.sumi.design.components.SumiButtonVariant
@@ -48,6 +48,7 @@ import xyz.ksharma.sumi.design.components.WashiBG
 import xyz.ksharma.sumi.resources.Res
 import xyz.ksharma.sumi.resources.ink_bleed_02
 import xyz.ksharma.sumi.resources.ink_bleed_03
+import xyz.ksharma.sumi.resources.logo_chop
 import xyz.ksharma.sumi.theme.SumiTheme
 import xyz.ksharma.sumi.theme.SumiTokens as Sumi
 
@@ -63,6 +64,8 @@ fun WinScreen(
     modifier: Modifier = Modifier,
     onNextPuzzle: (() -> Unit)? = null,
     onShare: ((ImageBitmap) -> Unit)? = null,
+    /** 81-char solution string from WinRoute; rendered inside the share card. */
+    solution: String = "",
     showInterstitialAd: Boolean = false,
     onInterstitialDismiss: () -> Unit = {},
 ) {
@@ -103,8 +106,8 @@ fun WinScreen(
                 moveCount = moveCount,
                 difficulty = difficulty,
                 quote = quote,
-                shareLayer = shareLayer,
-                cardBackground = cardBackground,
+                solution = solution,
+                surface = ShareCardSurface(layer = shareLayer, background = cardBackground),
             )
             Spacer(Modifier.weight(1f))
             WinActions(
@@ -127,6 +130,9 @@ fun WinScreen(
     }
 }
 
+/** Bundles share-layer plumbing so [WinShareCard]'s param list stays under detekt's threshold. */
+private data class ShareCardSurface(val layer: GraphicsLayer, val background: Color)
+
 @Composable
 private fun WinShareCard(
     elapsedMs: Long,
@@ -134,9 +140,11 @@ private fun WinShareCard(
     moveCount: Int,
     difficulty: String,
     quote: Quote,
-    shareLayer: GraphicsLayer,
-    cardBackground: Color,
+    solution: String,
+    surface: ShareCardSurface,
 ) {
+    val shareLayer = surface.layer
+    val cardBackground = surface.background
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -151,7 +159,15 @@ private fun WinShareCard(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         WinHeroSection()
-        Spacer(Modifier.height(Sumi.Space.s6))
+        Spacer(Modifier.height(Sumi.Space.s5))
+        // The actual completed grid — proof of the solve. Renders inside the share layer
+        // so the exported PNG includes the puzzle, not just the stats.
+        if (solution.length == 81) {
+            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                SudokuThumbnail(cells = solution, sizeDp = 220.dp)
+            }
+            Spacer(Modifier.height(Sumi.Space.s5))
+        }
         Text(
             text = "The grid is quiet again.",
             style = SumiTheme.typography.quote.copy(fontSize = 24.sp, lineHeight = 32.sp),
@@ -214,7 +230,11 @@ private fun WinHeroSection() {
             color = SumiTheme.colors.ink,
         )
         Spacer(Modifier.height(Sumi.Space.s6))
-        SealComplete(size = 120.dp)
+        Image(
+            painter = painterResource(Res.drawable.logo_chop),
+            contentDescription = "Sumi seal",
+            modifier = Modifier.size(120.dp),
+        )
     }
 }
 

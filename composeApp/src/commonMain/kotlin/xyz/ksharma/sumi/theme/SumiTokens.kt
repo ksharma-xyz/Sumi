@@ -66,8 +66,8 @@ object SumiTokens {
         object InkBleed {
             val Light = InkBleedAlphas(outer = 0.12f, middle = 0.20f, inner = 0.28f)
             val Dark = InkBleedAlphas(outer = 0.18f, middle = 0.28f, inner = 0.38f)
-            val SoftnessLight = 8.dp     // blur radius — subtle bloom on cream paper
-            val SoftnessDark = 12.dp     // slightly more diffuse on dark paper
+            val SoftnessLight = 8.dp // blur radius — subtle bloom on cream paper
+            val SoftnessDark = 12.dp // slightly more diffuse on dark paper
         }
 
         // Seasonal palettes — paper tints and accent colours per season

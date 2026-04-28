@@ -1,3 +1,6 @@
+// App-wide prefs surface — splitting hurts cohesion.
+@file:Suppress("TooManyFunctions")
+
 package xyz.ksharma.sumi.preferences
 
 import kotlinx.coroutines.flow.Flow

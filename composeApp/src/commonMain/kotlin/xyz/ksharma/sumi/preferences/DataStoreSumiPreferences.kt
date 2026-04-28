@@ -1,3 +1,6 @@
+// Implements three prefs interfaces in one DataStore — splitting fragments storage.
+@file:Suppress("TooManyFunctions")
+
 package xyz.ksharma.sumi.preferences
 
 import androidx.datastore.core.DataStore

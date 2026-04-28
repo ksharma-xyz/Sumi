@@ -1,3 +1,6 @@
+// Each callback maps 1:1 to a Game UI input — splitting hurts clarity.
+@file:Suppress("TooManyFunctions")
+
 package xyz.ksharma.sumi.screens.game
 
 import androidx.lifecycle.ViewModel
@@ -124,12 +127,30 @@ class GameViewModel(
         }
     }
 
-    fun select(row: Int, col: Int) { resetIdle(); boardManager.select(row, col) }
-    fun enter(digit: Int) { resetIdle(); boardManager.enter(digit) }
-    fun erase() { resetIdle(); boardManager.erase() }
-    fun undo() { resetIdle(); boardManager.undo() }
-    fun hint() { resetIdle(); boardManager.hint() }
-    fun toggleNotes() { resetIdle(); boardManager.toggleNotes() }
+    fun select(row: Int, col: Int) {
+        resetIdle()
+        boardManager.select(row, col)
+    }
+    fun enter(digit: Int) {
+        resetIdle()
+        boardManager.enter(digit)
+    }
+    fun erase() {
+        resetIdle()
+        boardManager.erase()
+    }
+    fun undo() {
+        resetIdle()
+        boardManager.undo()
+    }
+    fun hint() {
+        resetIdle()
+        boardManager.hint()
+    }
+    fun toggleNotes() {
+        resetIdle()
+        boardManager.toggleNotes()
+    }
 
     /** Called by GameEntry when the user pauses or resumes the game. */
     fun setPaused(value: Boolean) {
@@ -146,7 +167,7 @@ class GameViewModel(
 
     /** Called by the Game entry when the user taps Hint while hintsRemaining == 0. */
     fun requestRewardedHintAd() {
-        if (_state.value.hintsRemaining > 0) return    // already has a hint, no ad needed
+        if (_state.value.hintsRemaining > 0) return // already has a hint, no ad needed
         _showRewardedHintAd.value = true
     }
 

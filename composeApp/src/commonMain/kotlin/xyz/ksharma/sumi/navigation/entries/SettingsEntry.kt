@@ -50,7 +50,7 @@ fun EntryProviderScope<NavKey>.SettingsEntry(navigator: SumiNavigator) {
                         // designers / reviewers can see the result page on demand.
                         navigator.goTo(
                             WinRoute(
-                                elapsedMs = 7L * 60_000L + 12L * 1_000L,  // 7:12
+                                elapsedMs = 7L * 60_000L + 12L * 1_000L, // 7:12
                                 mistakeCount = 2,
                                 moveCount = 41,
                                 difficulty = "Medium",

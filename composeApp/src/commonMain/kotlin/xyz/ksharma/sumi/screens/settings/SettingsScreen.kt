@@ -149,6 +149,8 @@ private fun SeasonChip(season: SumiSeason, selected: Boolean, onSelect: (SumiSea
     }
 }
 
+// Linear list of debug-only items — splitting hurts scannability.
+@Suppress("LongMethod")
 @Composable
 private fun DebugSection(callbacks: DebugCallbacks) {
     Column(modifier = Modifier.fillMaxWidth()) {

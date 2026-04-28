@@ -41,7 +41,8 @@ private class HapticContext(private val engine: HapticEngine, private val enable
 
 private class GameContext(val haptic: HapticContext, val analytics: SumiAnalytics)
 
-@Suppress("ComposableNaming")
+// Entry composables glue many flows + ads — splitting hurts traceability.
+@Suppress("ComposableNaming", "LongMethod")
 @OptIn(DependsOnGoogleMobileAds::class)
 @Composable
 fun EntryProviderScope<NavKey>.GameEntry(navigator: SumiNavigator) {
@@ -87,6 +88,8 @@ fun EntryProviderScope<NavKey>.GameEntry(navigator: SumiNavigator) {
                         mistakeCount = state.mistakeCount,
                         moveCount = state.moveCount,
                         difficulty = key.difficulty,
+                        // 81 digits, row-major. Used by WinShareCard's grid thumbnail.
+                        solution = state.solution.flatMap { it }.joinToString("") { it.toString() },
                     ),
                 )
             }

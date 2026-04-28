@@ -46,7 +46,7 @@ class AdOrchestrator {
     }
 
     private companion object {
-        const val MIN_GAP_MS = 90_000L     // 90 seconds between any two interstitials
+        const val MIN_GAP_MS = 90_000L // 90 seconds between any two interstitials
         const val MAX_PER_DAY = 3
         const val MS_PER_DAY = 24L * 60L * 60L * 1000L
     }

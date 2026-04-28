@@ -30,6 +30,8 @@ data class GameRoute(
     val mistakeCount: Int = 0,
     val moveCount: Int = 0,
     val difficulty: String = "Easy",
+    /** 81-char string of digits 1-9, row-major, for the share-card grid thumbnail. */
+    val solution: String = "",
 ) : SumiRoute
 
 // ── Utility ───────────────────────────────────────────────────────────────────

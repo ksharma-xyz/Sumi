@@ -38,8 +38,8 @@ val appModule = module {
     viewModel { GameViewModel(puzzleRepository = get(), saveRepository = get(), adOrchestrator = get()) }
     viewModel { HomeViewModel(prefs = get()) }
     viewModel { WinViewModel(prefs = get(), adOrchestrator = get()) }
-    viewModel { DailyViewModel(prefs = get()) }
-    viewModel { StatsViewModel(prefs = get()) }
+    viewModel { DailyViewModel(prefs = get(), saveRepository = get()) }
+    viewModel { StatsViewModel(prefs = get(), proRepo = get()) }
     viewModel { ZenViewModel(puzzleRepository = get(), exporter = get()) }
     viewModel {
         SettingsViewModel(
