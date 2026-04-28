@@ -10,6 +10,10 @@
 	<key>GADApplicationIdentifier</key>
 	<string>ca-app-pub-3940256099942544~1458002511</string>
 
+	<!-- ATT prompt — App Store rejects iOS 14+ AdMob apps without this string. -->
+	<key>NSUserTrackingUsageDescription</key>
+	<string>This identifier helps show you relevant ads and supports the free version of the app.</string>
+
 	<!-- Required for SKAdNetwork attribution -->
 	<key>SKAdNetworkItems</key>
 	<array>
