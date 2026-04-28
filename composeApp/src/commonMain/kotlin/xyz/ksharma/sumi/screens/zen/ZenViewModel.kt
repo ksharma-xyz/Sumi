@@ -2,14 +2,15 @@ package xyz.ksharma.sumi.screens.zen
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import xyz.ksharma.sumi.PRO_QUOTES
 import xyz.ksharma.sumi.Quote
+import xyz.ksharma.sumi.coroutines.ext.launchWithExceptionHandler
 import xyz.ksharma.sumi.game.model.Difficulty
 import xyz.ksharma.sumi.game.puzzle.PuzzleRepository
 import xyz.ksharma.sumi.resources.Res
@@ -57,7 +58,19 @@ class ZenViewModel(
         _quoteIndex.value = index.coerceIn(0, quotes.size - 1)
     }
 
-    fun setBookDifficultyMix(mix: DifficultyMix) { _bookDifficultyMix.value = mix }
+    fun setBookDifficultyMix(mix: DifficultyMix) {
+        // Defensive clamp — even if a future caller forgets to gate the stepper UI,
+        // the VM will never accept a mix that would crash the generator.
+        val clamped = DifficultyMix(
+            easy = mix.easy.coerceIn(0, MAX_PER_DIFFICULTY),
+            medium = mix.medium.coerceIn(0, MAX_PER_DIFFICULTY),
+            hard = mix.hard.coerceIn(0, MAX_PER_DIFFICULTY),
+            master = mix.master.coerceIn(0, MAX_PER_DIFFICULTY),
+            edo = mix.edo.coerceIn(0, MAX_PER_DIFFICULTY),
+        )
+        if (clamped.total > MAX_TOTAL_PUZZLES) return
+        _bookDifficultyMix.value = clamped
+    }
     fun setBookPaper(p: BookPaper) { _bookTheme.value = _bookTheme.value.copy(paper = p) }
     fun setBookInk(i: BookInk) { _bookTheme.value = _bookTheme.value.copy(ink = i) }
     fun setBookIncludeAnswers(include: Boolean) { _bookIncludeAnswers.value = include }
@@ -66,9 +79,23 @@ class ZenViewModel(
     fun generateBook() {
         if (_bookGenState.value is BookGenState.Generating) return
         generatedBytes = null
-        viewModelScope.launch {
+        // Flip to Generating immediately on the main thread so the crafting
+        // animation appears the instant the user taps Generate. The heavy
+        // puzzle / PDF work below is dispatched off-main to avoid the ANR we
+        // were hitting when users requested 50+ puzzles.
+        _bookGenState.value = BookGenState.Generating
+        // launchWithExceptionHandler routes any uncaught throwable from the heavy
+        // generation pipeline to Crashlytics + flips the UI back to an Error state
+        // (instead of crashing the app, which is what a bare `viewModelScope.launch`
+        // would do here).
+        viewModelScope.launchWithExceptionHandler<ZenViewModel>(
+            dispatcher = Dispatchers.Default,
+            errorBlock = { _bookGenState.value = BookGenState.Error("Export failed") },
+        ) {
+            // Outer launch already runs on Dispatchers.Default — the heavy work
+            // (puzzle backtracking solver + PDF render) happens off-main here
+            // without further withContext gymnastics.
             val startTime = Clock.System.now().toEpochMilliseconds()
-            _bookGenState.value = BookGenState.Generating
             val mix = _bookDifficultyMix.value
             val theme = _bookTheme.value
             val includeAnswers = _bookIncludeAnswers.value
@@ -136,8 +163,11 @@ class ZenViewModel(
 
     fun shareBook() {
         val bytes = generatedBytes ?: return
-        viewModelScope.launch {
-            val result = exporter.share(bytes, "Sumi Puzzles")
+        viewModelScope.launchWithExceptionHandler<ZenViewModel>(
+            dispatcher = Dispatchers.Default,
+            errorBlock = { _bookGenState.value = BookGenState.Error("Share failed") },
+        ) {
+            val result = exporter.share(bytes, "Sumi — Zen Sudoku")
             if (result.isFailure) {
                 _bookGenState.value = BookGenState.Error(result.exceptionOrNull()?.message ?: "Share failed")
             }
@@ -151,5 +181,7 @@ class ZenViewModel(
     private companion object {
         const val SEED_STEP = 10_000L
         const val MIN_CRAFTING_MS = 2500L
+        const val MAX_PER_DIFFICULTY = 15
+        const val MAX_TOTAL_PUZZLES = 50
     }
 }
