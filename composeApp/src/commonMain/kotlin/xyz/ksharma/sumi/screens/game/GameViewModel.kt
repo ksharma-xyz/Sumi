@@ -38,10 +38,12 @@ class GameViewModel(
 
     private var boardManager: BoardManager = RealBoardManager(EMPTY_BOARD)
     private var currentDifficulty: Difficulty = Difficulty.Medium
+    private var currentSeed: Long = 0L
     private var timerJob: Job? = null
     private var syncJob: Job? = null
 
-    fun init(difficulty: Difficulty, fresh: Boolean = false) {
+    @OptIn(ExperimentalTime::class)
+    fun init(difficulty: Difficulty, fresh: Boolean = false, proHints: Boolean = false) {
         timerJob?.cancel()
         syncJob?.cancel()
         currentDifficulty = difficulty
@@ -51,17 +53,39 @@ class GameViewModel(
         viewModelScope.launch {
             if (fresh) saveRepository.clearSave(difficulty)
 
-            val freshPuzzle = puzzleRepository.daily(difficulty)
-            val save = if (fresh) null else saveRepository.loadSave(difficulty)
+            val freshPuzzle: BoardState
+            val save: GameSave?
+            if (fresh) {
+                // Random seed so "New Puzzle" always gives different clues from the daily puzzle.
+                currentSeed = Clock.System.now().toEpochMilliseconds()
+                freshPuzzle = puzzleRepository.fromSeed(difficulty, currentSeed)
+                save = null
+            } else {
+                val loadedSave = saveRepository.loadSave(difficulty)
+                if (loadedSave != null && loadedSave.puzzleSeed != 0L) {
+                    currentSeed = loadedSave.puzzleSeed
+                    freshPuzzle = puzzleRepository.fromSeed(difficulty, currentSeed)
+                } else {
+                    currentSeed = 0L
+                    freshPuzzle = puzzleRepository.daily(difficulty)
+                }
+                save = loadedSave
+            }
+
             val restoredState = if (save != null) restoreState(freshPuzzle, save) else freshPuzzle
             val restoredElapsed = save?.elapsedMs ?: 0L
 
-            boardManager = RealBoardManager(restoredState)
+            val hintCount = if (proHints) BoardState.HINTS_UNLIMITED
+            else minOf(restoredState.hintsRemaining, BoardState.DEFAULT_HINTS)
+            val stateWithHints = restoredState.copy(hintsRemaining = hintCount)
+
+            boardManager = RealBoardManager(stateWithHints)
             val resolved = boardManager.state.value
             if (resolved.isComplete || resolved.isGameOver) {
                 // Stale save from a completed game (process was killed before clear ran) — start fresh.
                 saveRepository.clearSave(difficulty)
-                boardManager = RealBoardManager(freshPuzzle)
+                val freshWithHints = freshPuzzle.copy(hintsRemaining = hintCount)
+                boardManager = RealBoardManager(freshWithHints)
                 _elapsedMs.value = 0L
             } else {
                 _elapsedMs.value = restoredElapsed
@@ -125,6 +149,7 @@ class GameViewModel(
             elapsedMs = _elapsedMs.value,
             mistakeCount = state.mistakeCount,
             hintsRemaining = state.hintsRemaining,
+            puzzleSeed = currentSeed,
         )
     }
 

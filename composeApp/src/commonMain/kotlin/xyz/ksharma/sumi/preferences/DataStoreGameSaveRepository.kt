@@ -26,6 +26,7 @@ class DataStoreGameSaveRepository(private val store: DataStore<Preferences>) : G
             elapsedMs = prefs[slot.elapsedKey] ?: 0L,
             mistakeCount = prefs[slot.mistakesKey] ?: 0,
             hintsRemaining = prefs[slot.hintsKey] ?: 3,
+            puzzleSeed = prefs[slot.seedKey] ?: 0L,
         )
     }
 
@@ -37,6 +38,7 @@ class DataStoreGameSaveRepository(private val store: DataStore<Preferences>) : G
             prefs[slot.elapsedKey] = save.elapsedMs
             prefs[slot.mistakesKey] = save.mistakeCount
             prefs[slot.hintsKey] = save.hintsRemaining
+            prefs[slot.seedKey] = save.puzzleSeed
         }
     }
 
@@ -48,6 +50,7 @@ class DataStoreGameSaveRepository(private val store: DataStore<Preferences>) : G
             prefs.remove(slot.elapsedKey)
             prefs.remove(slot.mistakesKey)
             prefs.remove(slot.hintsKey)
+            prefs.remove(slot.seedKey)
         }
     }
 
@@ -65,6 +68,7 @@ private class SaveSlot(private val diff: String) {
     val elapsedKey = longPreferencesKey("save_${diff}_elapsed")
     val mistakesKey = intPreferencesKey("save_${diff}_mistakes")
     val hintsKey = intPreferencesKey("save_${diff}_hints")
+    val seedKey = longPreferencesKey("save_${diff}_seed")
 }
 
 @OptIn(ExperimentalTime::class)

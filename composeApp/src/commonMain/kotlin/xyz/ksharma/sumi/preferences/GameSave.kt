@@ -7,4 +7,5 @@ data class GameSave(
     val elapsedMs: Long,
     val mistakeCount: Int,
     val hintsRemaining: Int,
+    val puzzleSeed: Long = 0L, // 0 = today's daily seed; non-zero = custom seed from fromSeed()
 )

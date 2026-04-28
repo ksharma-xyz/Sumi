@@ -92,7 +92,7 @@ private fun HomeTopChrome(onSettings: () -> Unit) {
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        LogoWordmark(scale = 0.48f, color = SumiTheme.colors.ink, accent = SumiTheme.colors.red)
+        LogoWordmark(scale = 0.56f, color = SumiTheme.colors.ink, accent = SumiTheme.colors.red)
         Spacer(Modifier.weight(1f))
         Box(
             modifier = Modifier
@@ -113,7 +113,7 @@ private fun HomeTopChrome(onSettings: () -> Unit) {
 @Composable
 private fun DailyQuoteBlock(quote: Quote) {
     Column {
-        SumiEyebrow(text = "Today · Practice", color = SumiTheme.colors.red)
+        SumiEyebrow(text = "Today / Practice", color = SumiTheme.colors.red)
         Spacer(Modifier.height(Sumi.Space.s2))
         Text(
             text = "\u201C${quote.text}\u201D",
@@ -239,7 +239,7 @@ private fun DifficultyTile(
         ) {
             Text(
                 text = kanji,
-                style = SumiTheme.typography.cjk.copy(fontSize = 26.sp),
+                style = SumiTheme.typography.cjk.copy(fontSize = 30.sp),
                 color = kanjiColor,
                 modifier = Modifier.semantics { hideFromAccessibility() },
             )
@@ -247,7 +247,7 @@ private fun DifficultyTile(
                 Text(
                     text = name,
                     style = SumiTheme.typography.h3.copy(
-                        fontSize = 17.sp,
+                        fontSize = 20.sp,
                         fontStyle = FontStyle.Italic,
                         fontWeight = FontWeight(500),
                     ),
@@ -255,7 +255,7 @@ private fun DifficultyTile(
                 )
                 Text(
                     text = if (isLocked) "Sumi Pro" else avgTime,
-                    style = SumiTheme.typography.uiMeta.copy(letterSpacing = 1.sp),
+                    style = SumiTheme.typography.uiMeta.copy(letterSpacing = 1.sp, fontSize = 12.sp),
                     color = if (isLocked) SumiTheme.colors.gold else SumiTheme.colors.inkFaint,
                 )
             }

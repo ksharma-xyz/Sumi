@@ -275,6 +275,78 @@ Save all six ad unit IDs — they'll be needed when wiring ad composables into s
 
 ---
 
+---
+
+## Zen Pro Screen — AI Visual Design Prompt
+
+Use this prompt with a visual design AI (v0, Lovable, Figma AI, etc.) to get high-fidelity designs for the Zen Pro tab before implementing the final UI.
+
+```
+Design the "Zen" tab for Sumi Pro — a minimalist Japanese-inspired sudoku app (Kotlin Multiplatform).
+
+Design system constraints:
+- Palette: ink (#1A1210 light / #E8E0D5 dark), paper (#FBF7F1 light / #1A1210 dark), gold (#B8860B), red (#8B0000), soft ink (#6B5E56), faint ink (#9A9087)
+- Background: washi paper texture (linen-cream, subtle tooth)
+- No gradients except aurora (row/col completion sweep)
+- No rounded corners except buttons (2dp radius) and bottom sheets (12dp radius)
+- No Material Design defaults, no drop shadows
+- Typography: Cormorant Garamond (display, quotes, CJK labels), Noto Sans (UI labels, numbers)
+- Spacing tokens: s1=2dp, s2=4dp, s3=6dp, s4=8dp, s5=12dp, s6=16dp, s7=24dp, s8=32dp, s9=48dp
+
+Screens to design (all on the same tab, scrollable):
+
+1. PRO THANK-YOU CARD (top of Zen tab)
+   - Thin gold-tinted border rectangle
+   - Centered enso circle (partial brushstroke arc, gold)
+   - "Sumi Pro" in Cormorant h2, gold
+   - Italic tagline: "Thank you for your practice."
+   - Benefits in Noto Sans micro text, ink-faint, centered with · separators:
+     "Ad-free  ·  Unlimited hints  ·  All difficulties"
+     "Full quote library  ·  PDF puzzle books  ·  Themes"
+   - Fade-in animation on load
+
+2. QUOTE LIBRARY BROWSER (horizontal pager card)
+   - Thin paper-edge border card
+   - Swipeable horizontal pager: one quote per page
+   - Large italic Cormorant text (16sp) centered, with curly quotes
+   - "— Author Name" in Noto Sans micro below, muted
+   - Thin horizontal progress bar at bottom of card (ink-faint fill, paper-edge track)
+   - Left/right arrow icons (subtle, ink-faint) with "n / total" counter for accessibility
+   - 20 quotes total from a philosophical/zen library
+
+3. PUZZLE BOOK ENTRY CARD (tappable)
+   - Thin paper-edge border card
+   - Centered kanji 活 (36sp, ink-faint) as decoration
+   - "Design a Puzzle Book" heading (Cormorant h2)
+   - Two-line description: "Choose difficulty, count, and theme. Generate a print-ready PDF to share or print."
+   - Tap opens full-screen slide-up designer overlay
+
+4. BOOK DESIGNER OVERLAY (full-screen slide-up)
+   - Same washi paper background
+   - Header: "Design Your Book" (Cormorant h2) + close × icon
+   - Thin ornamental rule with kanji 設 centered
+   - DIFFICULTY section: FlowRow of chips (Easy / Medium / Hard / Master / Edo)
+     - Chip: thin border, uppercase Noto Sans, fills with 6% ink tint when selected, border turns ink-dark
+   - PUZZLES section: Row of chips (25 / 50 / 100)
+   - THEME section: 3-column grid top row (Light / Dark / Gold) + 2-column bottom row (Winter / Summer / empty)
+     - Theme swatch: colored rectangle (shows actual PDF background color), theme name centered
+     - Same height for selected and unselected (show check icon always, transparent when not selected)
+     - Border turns ink-dark when selected, paper-edge otherwise
+   - GENERATE button (full-width, large): share icon + "Generate & Share" text
+     - Below button: "$count puzzles · print-ready PDF" in micro text, ink-faint
+   - Loading state: circular progress + "Generating…" text
+   - Error state: error message in red + "Dismiss" ghost button
+
+PDF output (for reference):
+- A4 page (595×842pt)
+- Header: enso circle arc logo + "Sumi" italic + page number right-aligned + horizontal rule
+- 9×9 sudoku grid centered, thin cell lines + bold 3×3 box lines
+- Footer: difficulty + quote text (truncated)
+- 5 themes: Light (cream paper), Dark (near-black), Gold (warm amber), Winter (cool blue-grey), Summer (warm sand)
+```
+
+---
+
 ## Known Limitations
 
 - `recordSolve()` counts every win as +1 to total puzzles; if the app is killed mid-solve and

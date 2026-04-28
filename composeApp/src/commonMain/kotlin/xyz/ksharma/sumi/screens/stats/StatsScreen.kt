@@ -64,7 +64,7 @@ fun StatsScreen(
                 .padding(top = Sumi.Space.s8, bottom = Sumi.Space.s7),
         ) {
             SumiEyebrow(
-                text = "練習 · Practice Stats",
+                text = "練習  Practice Stats",
                 color = SumiTheme.colors.red,
                 modifier = Modifier.semantics { contentDescription = "Practice Stats" },
             )

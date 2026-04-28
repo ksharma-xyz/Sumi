@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import xyz.ksharma.sumi.Quote
+import xyz.ksharma.sumi.design.components.AdInterstitialOverlay
 import xyz.ksharma.sumi.design.components.SealComplete
 import xyz.ksharma.sumi.design.components.SumiButton
 import xyz.ksharma.sumi.design.components.SumiButtonSize
@@ -58,6 +59,8 @@ fun WinScreen(
     modifier: Modifier = Modifier,
     onNextPuzzle: (() -> Unit)? = null,
     onShare: ((ImageBitmap) -> Unit)? = null,
+    showInterstitialAd: Boolean = false,
+    onInterstitialDismiss: () -> Unit = {},
 ) {
     val shareLayer = rememberGraphicsLayer()
     val cardBackground = SumiTheme.colors.paper
@@ -106,6 +109,9 @@ fun WinScreen(
                     { coroutineScope.launch { onShare(shareLayer.toImageBitmap()) } }
                 } else null,
             )
+        }
+        if (showInterstitialAd) {
+            AdInterstitialOverlay(onDismiss = onInterstitialDismiss)
         }
     }
 }
@@ -173,7 +179,7 @@ private fun WinHeroSection() {
                 modifier = Modifier.semantics { hideFromAccessibility() },
             )
             Text(
-                text = " · ",
+                text = "  ",
                 style = SumiTheme.typography.body.copy(fontSize = 14.sp),
                 color = SumiTheme.colors.inkSoft,
                 modifier = Modifier.semantics { hideFromAccessibility() },

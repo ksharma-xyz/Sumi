@@ -236,7 +236,7 @@ private fun GameTopBar(difficulty: Difficulty, elapsedMs: Long, onBack: () -> Un
             }
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
-                    text = "$kanji · ${difficulty.label}",
+                    text = "$kanji  ${difficulty.label}",
                     style = SumiTheme.typography.uiMeta.copy(letterSpacing = 2.5.sp),
                     color = SumiTheme.colors.inkFaint,
                 )
@@ -283,7 +283,7 @@ private fun MarksHintsRow(mistakeCount: Int, hintsRemaining: Int) {
             text = buildAnnotatedString {
                 withStyle(SpanStyle(color = SumiTheme.colors.inkSoft)) { append("HINTS ") }
                 withStyle(SpanStyle(color = SumiTheme.colors.gold, fontWeight = FontWeight.Bold)) {
-                    append("$hintsRemaining")
+                    append(if (hintsRemaining == BoardState.HINTS_UNLIMITED) "∞" else "$hintsRemaining")
                 }
             },
             style = SumiTheme.typography.uiMeta.copy(letterSpacing = 1.5.sp),

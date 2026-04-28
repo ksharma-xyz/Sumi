@@ -20,6 +20,7 @@ import xyz.ksharma.sumi.navigation.GameRoute
 import xyz.ksharma.sumi.navigation.HomeRoute
 import xyz.ksharma.sumi.navigation.SumiNavigator
 import xyz.ksharma.sumi.navigation.WinRoute
+import xyz.ksharma.sumi.preferences.ProRepository
 import xyz.ksharma.sumi.preferences.ThemePreferences
 import xyz.ksharma.sumi.screens.game.GameCallbacks
 import xyz.ksharma.sumi.screens.game.GameScreen
@@ -42,87 +43,67 @@ fun EntryProviderScope<NavKey>.GameEntry(navigator: SumiNavigator) {
         val haptic = rememberHapticEngine()
         val themePrefs = koinInject<ThemePreferences>()
         val analytics = koinInject<SumiAnalytics>()
+        val proRepo = koinInject<ProRepository>()
         val diff = Difficulty.entries.firstOrNull { it.name == key.difficulty } ?: Difficulty.Medium
+        val isPro by proRepo.isPro().collectAsState(initial = false)
+        var paused by rememberSaveable { mutableStateOf(false) }
 
         LaunchedEffect(key.difficulty) {
-            vm.init(diff)
+            vm.init(diff, proHints = isPro)
             analytics.logGameStarted(key.difficulty)
         }
 
         val state by vm.state.collectAsState()
         val elapsedMs by vm.elapsedMs.collectAsState()
+        val celebrationCount by vm.celebrationCount.collectAsState()
         val hapticsEnabled by themePrefs.observeHapticsEnabled().collectAsState(initial = true)
         val ctx = GameContext(HapticContext(haptic, hapticsEnabled), analytics)
 
-        GameEntryContent(
-            vm = vm,
+        LaunchedEffect(state.isComplete) {
+            if (state.isComplete) {
+                ctx.haptic.win()
+                ctx.analytics.logGameCompleted(
+                    difficulty = key.difficulty,
+                    elapsedSeconds = elapsedMs / 1000L,
+                    mistakes = state.mistakeCount,
+                )
+                // Clear back to home first so Win is never stacked on top of Game.
+                // System back from Win → Home; "Next Practice" from Win → new Game on fresh stack.
+                navigator.resetRoot(HomeRoute)
+                navigator.goTo(
+                    WinRoute(elapsedMs = elapsedMs, mistakeCount = state.mistakeCount, difficulty = key.difficulty),
+                )
+            }
+        }
+
+        LaunchedEffect(state.isGameOver) {
+            if (state.isGameOver) ctx.analytics.logGameOver(key.difficulty)
+        }
+
+        GameScreen(
             state = state,
             elapsedMs = elapsedMs,
-            diff = diff,
-            ctx = ctx,
-            routeKey = key,
-            navigator = navigator,
+            celebrationCount = celebrationCount,
+            paused = paused,
+            // Derive directly from state so the overlay only shows when the game is actually over.
+            // Using rememberSaveable caused the stale "game over" state from a previous play session
+            // to re-appear when the VM hadn't yet been reset via init().
+            gameOver = state.isGameOver,
+            difficulty = diff,
+            callbacks = buildGameCallbacks(
+                vm = vm,
+                ctx = ctx,
+                state = state,
+                navigator = navigator,
+                onPause = { paused = true },
+                onResume = { paused = false },
+                onNewPuzzle = {
+                    paused = false
+                    vm.init(diff, fresh = true, proHints = isPro)
+                },
+            ),
         )
     }
-}
-
-@Composable
-private fun GameEntryContent(
-    vm: GameViewModel,
-    state: BoardState,
-    elapsedMs: Long,
-    diff: Difficulty,
-    ctx: GameContext,
-    routeKey: GameRoute,
-    navigator: SumiNavigator,
-) {
-    var paused by rememberSaveable { mutableStateOf(false) }
-    val celebrationCount by vm.celebrationCount.collectAsState()
-
-    LaunchedEffect(state.isComplete) {
-        if (state.isComplete) {
-            ctx.haptic.win()
-            ctx.analytics.logGameCompleted(
-                difficulty = routeKey.difficulty,
-                elapsedSeconds = elapsedMs / 1000L,
-                mistakes = state.mistakeCount,
-            )
-            // Clear back to home first so Win is never stacked on top of Game.
-            // System back from Win → Home; "Next Practice" from Win → new Game on fresh stack.
-            navigator.resetRoot(HomeRoute)
-            navigator.goTo(
-                WinRoute(elapsedMs = elapsedMs, mistakeCount = state.mistakeCount, difficulty = routeKey.difficulty),
-            )
-        }
-    }
-
-    LaunchedEffect(state.isGameOver) {
-        if (state.isGameOver) ctx.analytics.logGameOver(routeKey.difficulty)
-    }
-
-    GameScreen(
-        state = state,
-        elapsedMs = elapsedMs,
-        celebrationCount = celebrationCount,
-        paused = paused,
-        // Derive directly from state so the overlay only shows when the game is actually over.
-        // Using rememberSaveable caused the stale "game over" state from a previous play session
-        // to re-appear when the VM hadn't yet been reset via init().
-        gameOver = state.isGameOver,
-        difficulty = diff,
-        callbacks = buildGameCallbacks(
-            vm = vm,
-            ctx = ctx,
-            state = state,
-            navigator = navigator,
-            onPause = { paused = true },
-            onResume = { paused = false },
-            onNewPuzzle = {
-                paused = false
-                vm.init(diff, fresh = true)
-            },
-        ),
-    )
 }
 
 private fun buildGameCallbacks(

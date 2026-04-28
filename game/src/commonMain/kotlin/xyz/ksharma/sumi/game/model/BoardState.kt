@@ -8,13 +8,18 @@ data class BoardState(
     val cells: List<List<Cell>>,
     val selected: Pair<Int, Int>? = null,
     val notesMode: Boolean = false,
-    val hintsRemaining: Int = 3,
+    val hintsRemaining: Int = DEFAULT_HINTS,
     val mistakeCount: Int = 0,
     val elapsedMs: Long = 0L,
     val difficulty: Difficulty,
     val solution: List<List<Int>>,
     private val history: List<List<List<Cell>>> = emptyList(),
 ) {
+    companion object {
+        const val DEFAULT_HINTS = 3
+        const val HINTS_UNLIMITED = Int.MAX_VALUE
+    }
+
     // Cells where the user's entry doesn't match the solution — computed, never stale.
     val errorCells: Set<Pair<Int, Int>>
         get() = buildSet {
@@ -121,7 +126,8 @@ data class BoardState(
         if (candidates.isEmpty()) return this
         val (r, c) = candidates.random()
         val newCells = updatedCells(r, c, cells[r][c].copy(value = solution[r][c], given = true, notes = emptySet()))
-        return copy(cells = newCells, hintsRemaining = hintsRemaining - 1, history = history + listOf(cells))
+        val newHints = if (hintsRemaining == HINTS_UNLIMITED) HINTS_UNLIMITED else hintsRemaining - 1
+        return copy(cells = newCells, hintsRemaining = newHints, history = history + listOf(cells))
     }
 
     fun toggleNotes(): BoardState = copy(notesMode = !notesMode)
