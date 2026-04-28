@@ -1,46 +1,148 @@
-# Pending — requires your action before release
+# Sumi — Pending Work
 
-## Accounts & credentials
+> Single source of truth for what's outstanding before v1.0 ships. Grouped by phase.
+> Tick boxes as you complete; move stale items into "Done / superseded" at the bottom.
 
-- [ ] **AdMob** — register app in Google AdMob console, get Android App ID + iOS App ID
-  - Replace test ID in `androidApp/build.gradle.kts` → `manifestPlaceholders["admobAppId"]`
-  - Add iOS App ID to `iosApp/Info.plist` → `GADApplicationIdentifier`
-  - Create one Interstitial ad unit per platform; add the unit IDs to the billing config
-- [ ] **RevenueCat** — create account + project at revenuecat.com
-  - Register Android app (package `xyz.ksharma.sumi`) and iOS app (bundle ID)
-  - Create entitlement named **`pro`**
-  - Link products (see below) to the entitlement
-  - Share the Android and iOS API public keys so the SDK can be wired in
-- [ ] **Google Play Console** — create the in-app products:
-  - Annual subscription: `sumi_pro_annual` · $29/year
-  - Monthly subscription: `sumi_pro_monthly` · $3.99/month
-- [ ] **App Store Connect** — create the in-app purchases:
-  - Annual subscription: $29/year
-  - Monthly subscription: $3.99/month
-  - Submit for Apple review (IAPs reviewed separately — do this early)
+---
 
-## Legal & legal URLs
+## Phase 1 — Bug fixes + debug tooling (in progress)
 
-- [ ] **Privacy Policy** — write and host; replace `https://example.com/privacy` in `PaywallScreen.kt:53`
-- [ ] **Terms of Service** — write and host; replace `https://example.com/terms` in `PaywallScreen.kt:54`
+- [x] Identify root cause: `StatsViewModel` and `DailyViewModel` read prefs **once at init** via suspend functions; never refresh after a solve. Confirmed in code: `getTotalPuzzlesSolved()` is a one-shot `store.data.first()` read.
+- [ ] **Add Flow-based prefs accessors** to `SumiPreferences`: `observeStreak()`, `observeBestStreak()`, `observeTotalPuzzlesSolved()`, `observeSolveDays()`
+- [ ] Implement Flow accessors in `DataStoreSumiPreferences` (DataStore is already Flow-based — just expose `store.data.map { ... }`)
+- [ ] Update `StatsViewModel` to `combine` the four flows into a `StateFlow<StatsState>` via `stateIn`
+- [ ] Update `DailyViewModel` to use `observeSolveDays()` + `observeStreak()` instead of the one-shot `getSolveDays()` / `getStreak()`
+- [ ] **Debug tools** in Settings → Debug section:
+   - "Seed: streak=5, totalPuzzles=20, last 5 days marked" — calls `prefs.seedSolveData(streak=5, total=20)` to fake history
+   - "Open Win screen (sample)" — pushes `WinRoute(elapsedMs=420_000, mistakeCount=2, moveCount=37, difficulty="Medium")` so the screen can be QA'd without solving
+- [ ] Verify on device: solve a puzzle → open Stats → counter is non-zero, streak shows correctly
 
-## Pro features — post-launch roadmap
+---
 
-- [ ] **Export PDF puzzle books** — requires PDF generation library; design spec in PRODUCT.md
-- [ ] **The Salon** (weekly global leaderboard) — requires backend server + weekly reset job
-- [ ] **Gold, Indigo, Edo themes** — theme tokens exist; UI selection in Settings is pending
-- [ ] **Full 600-quote library** — only 13 free quotes ship today; Pro quote library needs content work
-- [ ] **iCloud / Google Drive sync** — removed from v1 scope; post-launch
+## Phase 2 — Daily screen per `docs/handoff/screens/07_DAILY.md`
 
-## iOS setup
+Current implementation is a 30-day heatmap; spec wants a full calendar.
 
-- [ ] `GADMobileAds.sharedInstance().start()` in iOS `@main` / `AppDelegate`
-- [ ] Add AdMob iOS App ID to `Info.plist`
-- [ ] SKAdNetwork entries in `Info.plist` (required by Apple since iOS 14)
+- [ ] Header bar (← back, "Daily" title, Cormorant Italic 22sp)
+- [ ] Month hero — current month name + "X of Y days solved"
+- [ ] **Calendar grid** — 7 cols, M T W T F S S header, 40×40dp day-number cells
+   - Solved → seal-red dot below number, number in Cormorant Italic 15sp ink
+   - Today → Cormorant Italic 17sp weight 600 + 1.5dp seal ring around cell
+   - Future → Inter Regular 12sp inkSoft @ 40%
+   - Unsolved past → 70% alpha
+- [ ] **Today card** — 88dp tall, 1dp ink-8% border, no fill
+   - Top: `二 · Medium · #1420` (kanji + difficulty + puzzle id)
+   - Bottom: `Unstarted` / `In progress · 4:32` + `Play →` / `Continue →`
+- [ ] **Previous months** section — collapsible rows per past month
+- [ ] Background ink bleed → use the new `InkBleed` component (top-right, alpha auto-handled)
+- [ ] Acceptance checklist (in handoff doc): all 8 items pass
 
-## Before submission
+---
 
-- [ ] Replace all placeholder screens with real content (no "Demo" or stub screens shipped)
-- [ ] Final accessibility pass (Dynamic Type, VoiceOver)
-- [ ] App Store screenshots + metadata
-- [ ] Google Play store listing
+## Phase 3 — Stats screen per `docs/handoff/screens/08_STATS.md`
+
+Current implementation has the hero + a 3-cell summary; spec wants 4 sections.
+
+- [ ] Header bar (← back, "Practice Log" title)
+- [x] Hero number 88sp Cormorant Italic + subtitle ✓ already done
+- [ ] **Switch hero ink-bleed** to `InkBleed` component, 200dp behind hero, alpha 0.08 (token-driven)
+- [ ] **THIS WEEK** section — 2×2 grid (Solved / Avg time / Streak / Level)
+   - 160×96dp cells, 8dp radius, 1dp ink-8% border
+   - Top value Cormorant Italic 26sp ink (or kanji 28sp Shippori for Level)
+   - Bottom label Inter Medium 11sp UPPER WIDEST inkSoft
+- [ ] **IMPROVEMENT** card — 240dp tall, full-width SVG/Canvas line chart
+   - 30-day average solve time
+   - Stroke ink 2dp, no fill, no grid, no dots
+- [ ] **PERSONAL BESTS** list — 5 rows for Easy/Medium/Hard/Master/Edo
+   - Kanji 28sp + label Inter Medium 14sp on left, best time Cormorant Italic 22sp on right
+   - 56dp row, 0.5dp ink-8% divider between rows
+- [ ] **Locked state** for Pro-only sections (free user beyond 7 days)
+   - BG-4 ink-night background
+   - Hero replaced with kanji `錠` (lock) 96sp Shippori goldIvory
+   - "Full history is part of Sumi Pro." + "See Pro" CTA → paywall
+- [ ] Track `bestTimeFor(difficulty: Difficulty)` in prefs — currently not stored anywhere
+- [ ] Track per-puzzle elapsed times (rolling 30 entries) for the improvement chart — needs new prefs key
+
+---
+
+## Phase 4 — Win screen polish
+
+- [ ] Share image should include the **filled Sudoku grid** in the share card
+   - Plumb solution through `WinRoute` (add `solution: String` field, 81 chars)
+   - New `SudokuThumbnail` composable in `design/components/`
+   - Render between hero and stats row in `WinShareCard`
+- [ ] Replace `SealComplete(120dp)` with `Image(painter = painterResource(Res.drawable.logo_chop))` — 120dp red carved-kanji stamp from the handoff vector
+
+---
+
+## Phase 5 — Android banner ad not showing
+
+- [ ] Capture logcat: `adb logcat | grep -iE "ads|gma|admob"` while app is launched
+- [ ] If "Starting ad request" never logs → composable not entering composition (gating bug or `bottomBanner` slot collapses to 0 height)
+- [ ] If logged but visible banner is missing → reserve explicit height on the slot:
+   ```kotlin
+   Box(modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(60.dp)) { bottomBanner() }
+   ```
+- [ ] Test on real device with internet (test ad unit IDs require connectivity)
+
+---
+
+## Phase 6 — Pre-submission housekeeping
+
+### Accounts & credentials
+
+- [ ] **AdMob** — register real apps (Android + iOS), generate real Banner / Interstitial / Rewarded unit IDs
+   - Replace test IDs in `composeApp/build.gradle.kts` `defaultConfigs("release")` block
+   - Replace `manifestPlaceholders["admobAppId"]` for the release build type
+   - Replace `Info.plist` `GADApplicationIdentifier`
+- [ ] **App Store Connect** — register the app (likely `Sumi: Zen Sudoku` since `Sumi` is taken), Apple Team ID + cert + provisioning + ASC API key — see `docs/SUBMISSION.md`
+- [ ] **Google Play Console** — create app, identity verification, service account JSON for CI
+
+### IAP — one-time Pro purchase, no subscription
+
+- [ ] **Decision locked**: native Play Billing (Android) + StoreKit (iOS). **No RevenueCat, no subscription tier.**
+- [ ] Single product: `sumi_pro` — one-time purchase, suggested ~$3.99
+- [ ] Wire Play Billing in `androidMain` (BillingClient v8+)
+- [ ] Wire StoreKit 2 in `iosMain` (`Product.purchase()`)
+- [ ] Replace `DebugProRepository` with a `BillingProRepository` that reads real entitlement state
+- [ ] Update `PaywallScreen.kt` copy: remove subscription pricing tiers, show single "Unlock Sumi Pro · $3.99" CTA
+- [ ] Add to App Privacy → Identifiers → Purchase History
+
+### Legal URLs
+
+- [ ] Host privacy policy + support page (GitHub Pages on a `sumi.app` or `ksharma-xyz.github.io/sumi-site` URL)
+- [ ] Update `PaywallScreen.kt:53–54` placeholder URLs
+
+### Pro feature roadmap (defer to v1.1+)
+
+- [x] Export PDF puzzle books — Android done; iOS done (via `IosPuzzleBookExporter`)
+- [ ] **The Salon** (weekly global leaderboard) — requires backend server, post-launch
+- [ ] **Gold / Indigo / Edo themes** — theme tokens exist, UI selection pending
+- [ ] **Full 600-quote library** — currently 13 free + 20 Pro; content work needed
+- [ ] **iCloud / Google Drive sync** — explicitly out of v1.0 scope
+
+### iOS setup
+
+- [x] `BasicAds.Initialize()` wired in `App()`
+- [x] AdMob iOS App ID + SKAdNetwork in `Info.plist`
+- [x] `NSUserTrackingUsageDescription` (ATT) in `Info.plist`
+- [ ] `PrivacyInfo.xcprivacy` (iOS 17+ Privacy Manifest) — add to `iosApp/iosApp/`
+- [ ] Verify ATT prompt appears on first launch (real device test)
+
+### Final pre-submission
+
+- [ ] Final accessibility pass (Dynamic Type, VoiceOver, contrast)
+- [ ] App Store screenshots — 5–7 × iPhone 17 Pro Max + iPad if shipping iPad (see `app-release-playbooks/ios/SCREENSHOTS_SPEC.md`)
+- [ ] Play Store listing assets — 512×512 icon, 1024×500 feature graphic, 5+ phone screenshots
+- [ ] All TODOs in this file resolved or moved to v1.1
+
+---
+
+## Done / superseded
+
+- ~~RevenueCat integration~~ — superseded; native Play Billing + StoreKit only
+- ~~Annual + monthly subscription tiers~~ — superseded; one-time purchase only
+- ~~iOS PDF export blocked~~ — `IosPuzzleBookExporter` shipped commit `603a541`
+- ~~Koin not initialized on iOS crash~~ — fixed commit `353b328`
+- ~~Mistakes ending the game~~ — removed; mistakes are tracked but no longer end play
+- ~~`BuildConfig.DEBUG` only on Android~~ — replaced with `BuildKonfig.IS_DEBUG` cross-platform

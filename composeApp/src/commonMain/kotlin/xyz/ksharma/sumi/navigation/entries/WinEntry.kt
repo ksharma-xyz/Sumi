@@ -51,7 +51,7 @@ fun EntryProviderScope<NavKey>.WinEntry(navigator: SumiNavigator) {
 
         LaunchedEffect(Unit) {
             if (hapticsEnabled) haptic.win()
-            vm.onPuzzleCompleted()
+            vm.onPuzzleCompleted(difficulty = key.difficulty, elapsedMs = key.elapsedMs)
         }
 
         @OptIn(ExperimentalTime::class)

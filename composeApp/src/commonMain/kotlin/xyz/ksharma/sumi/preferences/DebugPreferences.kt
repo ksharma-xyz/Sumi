@@ -12,4 +12,11 @@ interface DebugPreferences {
 
     fun observeAdsEnabled(): Flow<Boolean>
     suspend fun setAdsEnabled(enabled: Boolean)
+
+    /**
+     * Pre-fills streak / total / last-N-days as if the player had been solving for
+     * that many consecutive days. Lets us QA Stats + Win + Daily without grinding
+     * through real puzzles.
+     */
+    suspend fun seedSolveData(streakDays: Int, totalPuzzles: Int)
 }

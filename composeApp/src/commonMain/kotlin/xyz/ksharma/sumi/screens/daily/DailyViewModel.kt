@@ -2,24 +2,30 @@ package xyz.ksharma.sumi.screens.daily
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.stateIn
 import xyz.ksharma.sumi.preferences.SumiPreferences
 
-class DailyViewModel(private val prefs: SumiPreferences) : ViewModel() {
+/**
+ * Reactive Daily — observes the same DataStore `recordSolve` writes to, so the calendar
+ * grid updates immediately after the player wins.
+ */
+class DailyViewModel(prefs: SumiPreferences) : ViewModel() {
 
-    private val _solveDays = MutableStateFlow<Set<Long>>(emptySet())
-    val solveDays: StateFlow<Set<Long>> = _solveDays.asStateFlow()
+    val solveDays: StateFlow<Set<Long>> = prefs.observeSolveDays().stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(STATE_TIMEOUT_MS),
+        initialValue = emptySet(),
+    )
 
-    private val _streak = MutableStateFlow(0)
-    val streak: StateFlow<Int> = _streak.asStateFlow()
+    val streak: StateFlow<Int> = prefs.observeStreak().stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(STATE_TIMEOUT_MS),
+        initialValue = 0,
+    )
 
-    init {
-        viewModelScope.launch {
-            _solveDays.value = prefs.getSolveDays()
-            _streak.value = prefs.getStreak()
-        }
+    private companion object {
+        const val STATE_TIMEOUT_MS = 5_000L
     }
 }

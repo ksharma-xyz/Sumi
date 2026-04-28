@@ -41,6 +41,11 @@ class SettingsViewModel(
 
     fun clearAll() = viewModelScope.launch { debug.clearAll() }
 
+    /** Seeds 5-day streak + 20 total solves so Stats / Daily / Win can be QA'd. */
+    fun seedSampleStreak() = viewModelScope.launch {
+        debug.seedSolveData(streakDays = 5, totalPuzzles = 20)
+    }
+
     fun toggleSimulatePro() = viewModelScope.launch {
         debug.setSimulatePro(!isSimulatingPro.value)
     }

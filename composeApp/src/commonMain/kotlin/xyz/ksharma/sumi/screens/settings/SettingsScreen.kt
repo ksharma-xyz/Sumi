@@ -173,6 +173,20 @@ private fun DebugSection(callbacks: DebugCallbacks) {
         }
         Spacer(Modifier.height(Sumi.Space.s4))
         DebugItem(
+            label = "Seed: 5-day streak",
+            description = "Marks the last 5 days as solved + 20 total puzzles. For QA of Stats / Daily / Win.",
+            buttonText = "Seed",
+            onClick = callbacks.onSeedSampleStreak,
+        )
+        Spacer(Modifier.height(Sumi.Space.s4))
+        DebugItem(
+            label = "Open Win screen",
+            description = "Jumps to a sample Win result page so the screen can be QA'd without solving.",
+            buttonText = "Open",
+            onClick = callbacks.onOpenSampleWin,
+        )
+        Spacer(Modifier.height(Sumi.Space.s4))
+        DebugItem(
             label = "Reset Onboarding",
             description = "Shows intro slides on next launch.",
             buttonText = "Reset",

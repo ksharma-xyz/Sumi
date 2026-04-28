@@ -22,9 +22,9 @@ class WinViewModel(
     private val _showInterstitial = MutableStateFlow(false)
     val showInterstitial: StateFlow<Boolean> = _showInterstitial.asStateFlow()
 
-    fun onPuzzleCompleted() {
+    fun onPuzzleCompleted(difficulty: String, elapsedMs: Long) {
         viewModelScope.launch {
-            _streak.value = prefs.recordSolve()
+            _streak.value = prefs.recordSolve(difficulty = difficulty, elapsedMs = elapsedMs)
             val total = prefs.getTotalPuzzlesSolved()
             val nthSolve = (total % INTERSTITIAL_EVERY_N_SOLVES == 0)
             // Frequency cap is the orchestrator's job — never two interstitials within 90s,

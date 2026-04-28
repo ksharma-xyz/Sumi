@@ -15,6 +15,13 @@ data class SeasonPalette(
     val accentDeep: androidx.compose.ui.graphics.Color,
 )
 
+/**
+ * Per-mode opacity ramp for the ink-bleed bullseye — three concentric circles, outer to inner.
+ * Used by [xyz.ksharma.sumi.design.components.InkBleed] so the same component reads as
+ * "bleed at the same visual density" on both cream paper and ink-night paper.
+ */
+data class InkBleedAlphas(val outer: Float, val middle: Float, val inner: Float)
+
 object SumiTokens {
 
     object Color {
@@ -51,6 +58,16 @@ object SumiTokens {
             val mid = androidx.compose.ui.graphics.Color(0xFFE8A3B3)
             val deep = androidx.compose.ui.graphics.Color(0xFFC97A8E)
             val glow = androidx.compose.ui.graphics.Color(0xFFFBF6ED)
+        }
+
+        // Ink-bleed tokens — opacity ramps for the [InkBleed] bullseye primitive.
+        // Dark-mode ramp is brighter so the bleed reads at the same visual density on
+        // ink-night paper (which absorbs more of the alpha).
+        object InkBleed {
+            val Light = InkBleedAlphas(outer = 0.12f, middle = 0.20f, inner = 0.28f)
+            val Dark = InkBleedAlphas(outer = 0.18f, middle = 0.28f, inner = 0.38f)
+            val SoftnessLight = 8.dp     // blur radius — subtle bloom on cream paper
+            val SoftnessDark = 12.dp     // slightly more diffuse on dark paper
         }
 
         // Seasonal palettes — paper tints and accent colours per season

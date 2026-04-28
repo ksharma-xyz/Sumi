@@ -10,6 +10,7 @@ import org.koin.compose.viewmodel.koinViewModel
 import xyz.ksharma.sumi.navigation.LicensesRoute
 import xyz.ksharma.sumi.navigation.SettingsRoute
 import xyz.ksharma.sumi.navigation.SumiNavigator
+import xyz.ksharma.sumi.navigation.WinRoute
 import xyz.ksharma.sumi.preferences.ThemePreferences
 import xyz.ksharma.sumi.screens.settings.DebugCallbacks
 import xyz.ksharma.sumi.screens.settings.SettingsScreen
@@ -43,6 +44,19 @@ fun EntryProviderScope<NavKey>.SettingsEntry(navigator: SumiNavigator) {
                     onToggleSimulatePro = { vm.toggleSimulatePro() },
                     isAdsEnabled = isAdsEnabled,
                     onToggleAdsEnabled = { vm.toggleAdsEnabled() },
+                    onSeedSampleStreak = { vm.seedSampleStreak() },
+                    onOpenSampleWin = {
+                        // Navigates to a sample Win screen with realistic stats so
+                        // designers / reviewers can see the result page on demand.
+                        navigator.goTo(
+                            WinRoute(
+                                elapsedMs = 7L * 60_000L + 12L * 1_000L,  // 7:12
+                                mistakeCount = 2,
+                                moveCount = 41,
+                                difficulty = "Medium",
+                            ),
+                        )
+                    },
                 )
             } else null,
         )
