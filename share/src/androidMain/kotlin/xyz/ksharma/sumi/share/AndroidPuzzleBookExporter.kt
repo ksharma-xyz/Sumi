@@ -13,6 +13,7 @@ import android.graphics.RectF
 import android.graphics.Typeface
 import android.graphics.pdf.PdfDocument
 import androidx.core.content.FileProvider
+import androidx.core.graphics.PathParser
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
@@ -119,34 +120,16 @@ class AndroidPuzzleBookExporter(private val context: Context) : PuzzleBookExport
         }
         val cx = PAGE_W / 2f
         val cy = PAGE_H * 0.38f
-        val r = 50f
-        // Brush-like enso: two stacked arcs with varying thickness mimic ink-loaded sumi strokes.
-        val ensoOuter = Paint().apply {
-            color = c.ink
-            style = Paint.Style.STROKE
-            strokeWidth = 5.5f
-            strokeCap = Paint.Cap.ROUND
-            isAntiAlias = true
-            alpha = 220
-        }
-        val ensoInner = Paint().apply {
-            color = c.ink
-            style = Paint.Style.STROKE
-            strokeWidth = 2.4f
-            strokeCap = Paint.Cap.ROUND
-            isAntiAlias = true
-        }
-        // Outer fat stroke fades from heavy to light.
-        canvas.drawArc(RectF(cx - r, cy - r, cx + r, cy + r), 35f, 285f, false, ensoOuter)
-        // Inner thin stroke continues a bit further for the tapered tail.
-        canvas.drawArc(RectF(cx - r, cy - r, cx + r, cy + r), 30f, 305f, false, ensoInner)
+        val logoSize = 110f
+        drawSumiLogo(canvas, cx, cy, size = logoSize, color = c.ink)
+        val logoBottom = cy + logoSize / 2f
         val titlePaint = textPaint(c.ink, 28f, italic = true, align = Paint.Align.CENTER)
         val titleFm = titlePaint.fontMetrics
-        canvas.drawText("Sumi", cx, cy + r + 28f - (titleFm.ascent + titleFm.descent) / 2f, titlePaint)
+        canvas.drawText("Sumi", cx, logoBottom + 24f - (titleFm.ascent + titleFm.descent) / 2f, titlePaint)
         canvas.drawText(
             "Puzzle Book",
             cx,
-            cy + r + 56f,
+            logoBottom + 52f,
             textPaint(c.inkSoft, 12f, align = Paint.Align.CENTER, letterSpacing = 0.15f),
         )
         val ruleY = PAGE_H - MARGIN - 24f
@@ -157,6 +140,42 @@ class AndroidPuzzleBookExporter(private val context: Context) : PuzzleBookExport
             ruleY + 14f,
             textPaint(c.inkSoft, 8f, align = Paint.Align.CENTER, letterSpacing = 0.1f),
         )
+    }
+
+    /**
+     * Renders the actual Sumi enso brand mark on the PDF — the same path data that
+     * lives in [logo_enso.xml] (used on the splash screen). The vector is parsed via
+     * [PathParser] and tinted with the theme ink colour so it adapts to Light/Dark
+     * paper.
+     *
+     * The XML viewport is 120×120; we scale to [size] and centre on (cx, cy).
+     */
+    private fun drawSumiLogo(canvas: Canvas, cx: Float, cy: Float, size: Float, color: Int) {
+        val scale = size / LOGO_VIEWPORT
+        canvas.save()
+        canvas.translate(cx - size / 2f, cy - size / 2f)
+        canvas.scale(scale, scale)
+        val brush = PathParser.createPathFromPathData("M 95,30 A 42,42 0 1,0 82,92 Q 72,94 60,92")
+        val brushPaint = Paint().apply {
+            this.color = color
+            style = Paint.Style.STROKE
+            strokeWidth = LOGO_STROKE_WIDTH
+            strokeCap = Paint.Cap.ROUND
+            isAntiAlias = true
+        }
+        canvas.drawPath(brush, brushPaint)
+        val dotBig = PathParser.createPathFromPathData("M 63,94 A 3,3 0 1,0 57,94 A 3,3 0 1,0 63,94 Z")
+        val dotSmall = PathParser.createPathFromPathData("M 67.5,99 A 1.5,1.5 0 1,0 64.5,99 A 1.5,1.5 0 1,0 67.5,99 Z")
+        val dotPaint = Paint().apply {
+            this.color = color
+            style = Paint.Style.FILL
+            isAntiAlias = true
+        }
+        dotPaint.alpha = 178 // 70% — matches fillAlpha="0.7" on the big dot
+        canvas.drawPath(dotBig, dotPaint)
+        dotPaint.alpha = 128 // 50% — matches fillAlpha="0.5" on the small dot
+        canvas.drawPath(dotSmall, dotPaint)
+        canvas.restore()
     }
 
     private fun drawWatermark(canvas: Canvas, c: PdfColors) {
@@ -339,6 +358,8 @@ class AndroidPuzzleBookExporter(private val context: Context) : PuzzleBookExport
         const val CELL_SIZE = 40f
         const val GRID_SIZE = CELL_SIZE * 9  // 360pt
         const val FOOTER_GAP = 14f
+        const val LOGO_VIEWPORT = 120f      // matches viewportWidth/Height in logo_enso.xml
+        const val LOGO_STROKE_WIDTH = 11f   // matches android:strokeWidth in logo_enso.xml
     }
 }
 

@@ -63,6 +63,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontStyle
@@ -812,34 +813,44 @@ private fun IdlePreviewContent(state: BookDesignerState) {
 
 @Composable
 private fun ResultCenter(genState: BookGenState) {
+    // Always-mounted column keeps the layout stable; only opacity + Y-offset animate
+    // from Generating into Ready, so the Sumi mark eases into its anchored slot
+    // instead of popping in the moment state flips.
     val ensoProgress = remember { Animatable(0f) }
     val titleAlpha = remember { Animatable(0f) }
+    val titleOffsetPx = with(LocalDensity.current) { 12.dp.toPx() }
+    val titleOffset = remember { Animatable(titleOffsetPx) }
     LaunchedEffect(genState) {
         if (genState is BookGenState.Ready) {
             launch { ensoProgress.animateTo(1f, tween(900, easing = Sumi.Ease.brush)) }
-            delay(700L)
-            titleAlpha.animateTo(1f, tween(500, easing = Sumi.Ease.paper))
+            delay(450L)
+            launch { titleOffset.animateTo(0f, tween(600, easing = Sumi.Ease.paper)) }
+            titleAlpha.animateTo(1f, tween(520, easing = Sumi.Ease.paper))
         }
     }
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        if (genState is BookGenState.Ready || ensoProgress.value > 0f) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                LogoEnso(size = 88.dp, color = SumiTheme.colors.ink, progress = ensoProgress.value)
-                Spacer(Modifier.height(Sumi.Space.s5))
-                Text(
-                    text = "Sumi",
-                    style = SumiTheme.typography.h1,
-                    color = SumiTheme.colors.ink,
-                    modifier = Modifier.graphicsLayer { alpha = titleAlpha.value },
-                )
-                Spacer(Modifier.height(Sumi.Space.s2))
-                Text(
-                    text = "Your book is ready.",
-                    style = SumiTheme.typography.subhead.copy(fontStyle = FontStyle.Italic),
-                    color = SumiTheme.colors.inkSoft,
-                    modifier = Modifier.graphicsLayer { alpha = titleAlpha.value },
-                )
-            }
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            LogoEnso(size = 88.dp, color = SumiTheme.colors.ink, progress = ensoProgress.value)
+            Spacer(Modifier.height(Sumi.Space.s5))
+            Text(
+                text = "Sumi",
+                style = SumiTheme.typography.h1,
+                color = SumiTheme.colors.ink,
+                modifier = Modifier.graphicsLayer {
+                    alpha = titleAlpha.value
+                    translationY = titleOffset.value
+                },
+            )
+            Spacer(Modifier.height(Sumi.Space.s2))
+            Text(
+                text = "Your book is ready.",
+                style = SumiTheme.typography.subhead.copy(fontStyle = FontStyle.Italic),
+                color = SumiTheme.colors.inkSoft,
+                modifier = Modifier.graphicsLayer {
+                    alpha = titleAlpha.value
+                    translationY = titleOffset.value
+                },
+            )
         }
     }
 }
