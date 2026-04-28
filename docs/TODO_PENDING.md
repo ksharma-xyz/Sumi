@@ -5,6 +5,48 @@
 
 ---
 
+## ☀️ When you wake up — start here
+
+Last overnight pass shipped (commits `5b9498e` + `65bb5d1`):
+
+- ✅ Stats / Daily "0 puzzles solved" bug **fixed** (Flow-based prefs observation)
+- ✅ Daily screen rebuilt per handoff (calendar grid + Today card + previous months)
+- ✅ Stats screen rebuilt per handoff (hero + 2×2 THIS WEEK + Improvement chart + Personal Bests + Locked state)
+- ✅ Per-difficulty best-time tracking + recent-solve-times rolling list (drives the chart)
+- ✅ Win share image now includes the **completed Sudoku grid** + uses the real **logo_chop** stamp
+- ✅ Debug tools: "Seed: 5-day streak" and "Open Win screen" buttons in Settings → Debug
+- ✅ InkBleed component (weather + dark-mode aware) replaces static PNG bleed accents on Daily/Stats
+- ✅ All compiles clean on iOS + Android, detekt green
+
+**What you need to do tomorrow morning before shipping** — these need a human / device / store account, can't be done from code:
+
+1. **Sanity-test on a real device** (Android + iOS): solve a puzzle → check Stats counter increments,
+   Daily calendar fills in today's cell, Win share image shows the grid + red chop seal
+2. **Tap Settings → Debug → Seed: 5-day streak**, then open Stats — confirm Personal Bests + Improvement
+   chart populate. Confirm Locked state is visible if Simulate Pro is **off**.
+3. **Tap Settings → Debug → Open Win screen** — verify the result page renders end-to-end
+4. **Real AdMob unit IDs** — register Sumi in https://apps.admob.com, generate Banner /
+   Interstitial / Rewarded units per platform, replace the test IDs in
+   `composeApp/build.gradle.kts` `defaultConfigs("release")` block + `androidApp/build.gradle.kts`
+   `manifestPlaceholders["admobAppId"]` for release + `iosApp/Info.plist`
+   `GADApplicationIdentifier` for release builds
+5. **Privacy policy URL** — host the template at `app-release-playbooks/shared/PRIVACY_POLICY_TEMPLATE.md`
+   on GitHub Pages or similar (5 min)
+6. **App Store Connect record** — see `docs/SUBMISSION.md`. Likely needs
+   `Sumi: Zen Sudoku` since plain `Sumi` is taken.
+7. **Google Play Console record** — register the app, complete identity verification (1–3 days, do this NOW)
+8. **Real device ATT prompt verification on iOS** — install via TestFlight, confirm the prompt fires once
+9. **Android banner ad debug** — `adb logcat | grep -i ads` while running the app to see why the banner
+   isn't showing yet. Likely a slot-height issue (see Phase 5 below).
+10. **Decide IAP for v1.0**: ship with the "Simulate Pro" debug toggle only, or wire real Play Billing +
+    StoreKit (~half-day per platform). I'd recommend deferring to v1.1 and shipping the ad-supported
+    free tier first.
+
+The detailed checklists below cover each of these in depth — links into `app-release-playbooks/`
+for canonical steps.
+
+---
+
 ## Phase 1 — Bug fixes + debug tooling (in progress)
 
 - [x] Identify root cause: `StatsViewModel` and `DailyViewModel` read prefs **once at init** via suspend functions; never refresh after a solve. Confirmed in code: `getTotalPuzzlesSolved()` is a one-shot `store.data.first()` read.
