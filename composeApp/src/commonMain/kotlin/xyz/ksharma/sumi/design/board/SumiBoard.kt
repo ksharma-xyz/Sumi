@@ -372,21 +372,29 @@ private fun sharesUnit(r: Int, c: Int, sel: Pair<Int, Int>): Boolean =
 
 private fun DrawScope.drawGridLines(px: Float, ink: Color) {
     val boardPx = px * 9
+    // dp-based widths so the lines render at the same visual thickness on every density.
+    // Raw float pixels (1.5f / 0.5f) underdraw on hi-density devices.
+    val boxStroke = 1.5.dp.toPx()
+    val thinStroke = 0.5.dp.toPx()
+
     for (i in 0..9) {
-        val pos = i * px
         val isBox = i % 3 == 0
-        val strokeWidth = if (isBox) 1.5f else 0.5f
-        val alpha = if (isBox) 0.85f else 0.25f
-        val color = ink.copy(alpha = alpha)
+        val strokeWidth = if (isBox) boxStroke else thinStroke
+        val color = ink.copy(alpha = if (isBox) 0.85f else 0.25f)
+        // Perimeter lines (i = 0 and i = 9) get inset by half their stroke width so the
+        // full thickness sits INSIDE the canvas — without this, half of a 4.5px box
+        // stroke gets clipped, making the perimeter look thinner than interior dividers.
+        val pos = when (i) {
+            0 -> strokeWidth / 2f
+            9 -> boardPx - strokeWidth / 2f
+            else -> i * px
+        }
         drawLine(color, Offset(pos, 0f), Offset(pos, boardPx), strokeWidth)
         drawLine(color, Offset(0f, pos), Offset(boardPx, pos), strokeWidth)
     }
-    drawRect(
-        color = ink,
-        topLeft = Offset.Zero,
-        size = Size(boardPx, boardPx),
-        style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.dp.toPx()),
-    )
+    // No outer drawRect stroke — i=0 and i=9 lines above already form the perimeter,
+    // and stacking a second stroke on top was producing the perimeter-vs-interior
+    // thickness mismatch.
 }
 
 @Composable
