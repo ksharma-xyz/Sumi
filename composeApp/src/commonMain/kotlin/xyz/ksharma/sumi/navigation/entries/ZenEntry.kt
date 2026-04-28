@@ -6,9 +6,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
+import xyz.ksharma.sumi.coroutines.ext.launchWithExceptionHandler
 import xyz.ksharma.sumi.navigation.SplashRoute
 import xyz.ksharma.sumi.navigation.SumiNavigator
 import xyz.ksharma.sumi.navigation.ZenRoute
@@ -54,7 +55,11 @@ fun EntryProviderScope<NavKey>.ZenEntry(navigator: SumiNavigator) {
                     onShare = { vm.shareBook() },
                 ),
                 onPageChange = { vm.setQuoteIndex(it) },
-                onRestorePurchase = { scope.launch { proRepo.restorePurchases() } },
+                onRestorePurchase = {
+                    scope.launchWithExceptionHandler<ProRepository>(Dispatchers.Default) {
+                        proRepo.restorePurchases()
+                    }
+                },
                 onDesignerVisibilityChange = { navigator.setDesignerOpen(it) },
             )
         } else {

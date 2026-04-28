@@ -36,8 +36,12 @@ interface ProRepository {
     suspend fun purchase(productId: String): Result<Unit>
 }
 
-/** Stable product identifiers used across stores. Real product IDs are configured per-store. */
+/**
+ * Stable product identifier used across stores. Sumi ships as a single
+ * one-time purchase (or free with ads) — no subscription tiers, no monthly
+ * option. Configure this exact ID in App Store Connect + Play Console as a
+ * non-consumable IAP.
+ */
 object ProProducts {
-    const val YEARLY = "sumi_pro_yearly"
-    const val MONTHLY = "sumi_pro_monthly"
+    const val LIFETIME = "sumi_pro_lifetime"
 }

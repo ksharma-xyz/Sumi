@@ -404,15 +404,21 @@ private fun RestKanji() {
 @Composable
 private fun LogoGridDots(size: androidx.compose.ui.unit.Dp) {
     val ink = SumiTheme.colors.ink
+    // Bottom-centre dot uses the gold accent — premium signature touch,
+    // always visible against any season's paper / dark mode.
+    val accent = SumiTheme.colors.gold
     androidx.compose.foundation.Canvas(modifier = Modifier.size(size)) {
-        // Match the original logo_grid.xml geometry: 120-unit viewBox, dots at (30, 60, 90)
-        // each axis with radius 9.
         val unit = this.size.minDimension / 120f
         for (row in 0..2) {
             for (col in 0..2) {
+                val isAccentDot = row == 2 && col == 1
                 val cx = (30f + col * 30f) * unit
                 val cy = (30f + row * 30f) * unit
-                drawCircle(color = ink, radius = 9f * unit, center = androidx.compose.ui.geometry.Offset(cx, cy))
+                drawCircle(
+                    color = if (isAccentDot) accent else ink,
+                    radius = 9f * unit,
+                    center = androidx.compose.ui.geometry.Offset(cx, cy),
+                )
             }
         }
     }

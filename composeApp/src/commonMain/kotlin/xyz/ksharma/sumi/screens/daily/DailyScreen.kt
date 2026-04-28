@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
@@ -266,11 +267,14 @@ private fun TodayCard(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .height(88.dp)
+            // heightIn (not fixed height) so the card grows when system font
+            // scale is large — fixed 88dp was clipping the Play CTA at
+            // accessibility text sizes.
+            .heightIn(min = 88.dp)
             .border(width = 1.dp, color = SumiTheme.colors.ink.copy(alpha = 0.08f))
             .clickable(interactionSource = src, indication = null, onClick = onClick)
             .padding(horizontal = Sumi.Space.s5, vertical = Sumi.Space.s4),
-        verticalArrangement = Arrangement.SpaceBetween,
+        verticalArrangement = Arrangement.spacedBy(Sumi.Space.s3),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(

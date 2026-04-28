@@ -23,9 +23,6 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.FlowRowScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -39,7 +36,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -95,6 +91,15 @@ import xyz.ksharma.sumi.theme.SumiTokens as Sumi
 private val STEP_LABELS = listOf("DIFFICULTY", "THEME", "OPTIONS", "PREVIEW")
 private const val DESIGNER_PAGE_COUNT = 4
 private const val CRAFTING_EXIT_MS = 420L // matches CraftingTopMessage's fade-out (400ms) + a 20ms buffer
+
+// Hard caps to keep generation under the ANR threshold even on low-end devices.
+// Per-difficulty cap protects the Edo solver (slowest); total cap protects PDF render.
+private const val MAX_PER_DIFFICULTY = 15
+private const val MAX_TOTAL_PUZZLES = 50
+
+// Share button waits for ResultCenter (enso 900ms + title 520ms + subtitle 460ms ≈ 1900ms)
+// to finish blooming, then reveals — so the hero lands first and the action arrives second.
+private const val SHARE_BUTTON_REVEAL_DELAY_MS = 2_000L
 
 private val SAMPLE_CLUES = listOf(
     5, 3, 0, 0, 7, 0, 0, 0, 0,
@@ -172,8 +177,11 @@ fun ProZenScreen(
     AnimatedContent(
         targetState = showDesigner,
         transitionSpec = {
-            val dir = if (targetState) 1 else -1
-            slideInHorizontally(tween(360)) { dir * it } togetherWith slideOutHorizontally(tween(360)) { -dir * it }
+            // Simple crossfade — the previous full-width horizontal slide felt
+            // jittery on Android because both layers had to draw simultaneously
+            // for 360ms. A pure fade is calmer and reads as a paper change.
+            fadeIn(tween(280, easing = Sumi.Ease.paper)) togetherWith
+                fadeOut(tween(220, easing = Sumi.Ease.paper))
         },
         label = "designer",
         modifier = modifier.fillMaxSize(),
@@ -238,7 +246,7 @@ private fun ZenLanding(
                 QuoteStage(quotes = quotes, quoteIndex = quoteIndex, onPageChange = onPageChange)
             }
             Spacer(Modifier.height(Sumi.Space.s8))
-            ZenSectionLabel(text = "Puzzle Book")
+            ZenSectionLabel(text = "Zen Sudoku")
             Spacer(Modifier.height(Sumi.Space.s4))
             PuzzleBookCard(onClick = onOpenDesigner)
             Spacer(Modifier.height(Sumi.Space.s8))
@@ -357,7 +365,14 @@ private fun QuoteCard(quote: Quote, pageOffset: Float) {
             Spacer(Modifier.height(Sumi.Space.s3))
             Text(
                 text = quote.text,
-                style = SumiTheme.typography.quote.copy(fontSize = 18.sp, fontStyle = FontStyle.Italic),
+                // Tighten lineHeight relative to fontSize — the base quote style's
+                // 32sp lineHeight + our 18sp size gives a ~1.78 ratio which reads
+                // as too airy. ~1.35 sits closer to the type's natural body.
+                style = SumiTheme.typography.quote.copy(
+                    fontSize = 18.sp,
+                    lineHeight = 24.sp,
+                    fontStyle = FontStyle.Italic,
+                ),
                 color = SumiTheme.colors.ink,
                 textAlign = TextAlign.Center,
             )
@@ -486,7 +501,7 @@ private fun PuzzleBookCard(onClick: () -> Unit) {
             }
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Design a puzzle book",
+                    text = "Design Zen Sudoku",
                     style = SumiTheme.typography.h3,
                     color = SumiTheme.colors.ink,
                 )
@@ -610,7 +625,7 @@ private fun CraftingTopMessage(visible: Boolean) {
     ) {
         Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
-                text = "Crafting your\npuzzle book…",
+                text = "Crafting your\nZen Sudoku…",
                 style = SumiTheme.typography.h2,
                 color = SumiTheme.colors.ink,
                 textAlign = TextAlign.Center,
@@ -710,27 +725,48 @@ private fun DesignerHeader(
 
 @Composable
 private fun DifficultyMixPage(mix: DifficultyMix, onSetMix: (DifficultyMix) -> Unit) {
+    val atTotalCap = mix.total >= MAX_TOTAL_PUZZLES
+    val statusLabel = when {
+        mix.total == 0 -> "Add at least 1 puzzle to continue"
+        atTotalCap -> "Maximum $MAX_TOTAL_PUZZLES puzzles per book"
+        else -> "${mix.total} puzzles total"
+    }
+    val statusColor = when {
+        mix.total == 0 -> SumiTheme.colors.red
+        atTotalCap -> SumiTheme.colors.gold
+        else -> SumiTheme.colors.inkFaint
+    }
     Column(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = Sumi.Space.s4),
     ) {
         Text(text = "How many of each?", style = SumiTheme.typography.h2, color = SumiTheme.colors.ink)
         Spacer(Modifier.height(Sumi.Space.s1))
         Text(
-            text = if (mix.total == 0) "Add at least 1 puzzle to continue" else "${mix.total} puzzles total",
+            text = statusLabel,
             style = SumiTheme.typography.uiLabel.copy(fontSize = 14.sp),
-            color = if (mix.total == 0) SumiTheme.colors.red else SumiTheme.colors.inkFaint,
+            color = statusColor,
         )
         Spacer(Modifier.height(Sumi.Space.s5))
-        DifficultyMixRow("Easy", "~3 min", mix.easy) { onSetMix(mix.copy(easy = it.coerceAtLeast(0))) }
-        DifficultyMixRow("Medium", "~6 min", mix.medium) { onSetMix(mix.copy(medium = it.coerceAtLeast(0))) }
-        DifficultyMixRow("Hard", "~12 min", mix.hard) { onSetMix(mix.copy(hard = it.coerceAtLeast(0))) }
-        DifficultyMixRow("Master", "~25 min", mix.master) { onSetMix(mix.copy(master = it.coerceAtLeast(0))) }
-        DifficultyMixRow("Edo", "~45 min", mix.edo) { onSetMix(mix.copy(edo = it.coerceAtLeast(0))) }
+        DifficultyMixRow("Easy", "~3 min", mix.easy, mix.total) {
+            onSetMix(mix.copy(easy = it.coerceIn(0, MAX_PER_DIFFICULTY)))
+        }
+        DifficultyMixRow("Medium", "~6 min", mix.medium, mix.total) {
+            onSetMix(mix.copy(medium = it.coerceIn(0, MAX_PER_DIFFICULTY)))
+        }
+        DifficultyMixRow("Hard", "~12 min", mix.hard, mix.total) {
+            onSetMix(mix.copy(hard = it.coerceIn(0, MAX_PER_DIFFICULTY)))
+        }
+        DifficultyMixRow("Master", "~25 min", mix.master, mix.total) {
+            onSetMix(mix.copy(master = it.coerceIn(0, MAX_PER_DIFFICULTY)))
+        }
+        DifficultyMixRow("Edo", "~45 min", mix.edo, mix.total) {
+            onSetMix(mix.copy(edo = it.coerceIn(0, MAX_PER_DIFFICULTY)))
+        }
     }
 }
 
 @Composable
-private fun DifficultyMixRow(name: String, hint: String, count: Int, onCountChange: (Int) -> Unit) {
+private fun DifficultyMixRow(name: String, hint: String, count: Int, currentTotal: Int, onCountChange: (Int) -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -749,12 +785,14 @@ private fun DifficultyMixRow(name: String, hint: String, count: Int, onCountChan
                 color = SumiTheme.colors.inkFaint,
             )
         }
-        CountStepper(count = count, onCountChange = onCountChange)
+        // The "+" is gated by both per-difficulty cap and the total-puzzles cap.
+        val canIncrement = count < MAX_PER_DIFFICULTY && currentTotal < MAX_TOTAL_PUZZLES
+        CountStepper(count = count, canIncrement = canIncrement, onCountChange = onCountChange)
     }
 }
 
 @Composable
-private fun CountStepper(count: Int, onCountChange: (Int) -> Unit) {
+private fun CountStepper(count: Int, canIncrement: Boolean, onCountChange: (Int) -> Unit) {
     val minusSrc = remember { MutableInteractionSource() }
     val plusSrc = remember { MutableInteractionSource() }
     Row(
@@ -786,16 +824,21 @@ private fun CountStepper(count: Int, onCountChange: (Int) -> Unit) {
         Box(
             modifier = Modifier
                 .size(36.dp)
-                .border(1.dp, SumiTheme.colors.ink)
-                .clickable(interactionSource = plusSrc, indication = null) { onCountChange(count + 1) },
+                .border(1.dp, if (canIncrement) SumiTheme.colors.ink else SumiTheme.colors.paperEdge)
+                .clickable(interactionSource = plusSrc, indication = null, enabled = canIncrement) {
+                    onCountChange(count + 1)
+                },
             contentAlignment = Alignment.Center,
         ) {
-            Text(text = "+", style = SumiTheme.typography.h3.copy(fontSize = 20.sp), color = SumiTheme.colors.ink)
+            Text(
+                text = "+",
+                style = SumiTheme.typography.h3.copy(fontSize = 20.sp),
+                color = if (canIncrement) SumiTheme.colors.ink else SumiTheme.colors.inkFaint,
+            )
         }
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ThemeDesignerPage(
     theme: BookTheme,
@@ -804,57 +847,196 @@ private fun ThemeDesignerPage(
 ) {
     Column(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = Sumi.Space.s4),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text(text = "Paper & ink", style = SumiTheme.typography.h2, color = SumiTheme.colors.ink)
-        Spacer(Modifier.height(Sumi.Space.s5))
-        SwatchSection(label = "PAPER") {
+        // Hero — the live PDF preview leads. The paper / ink controls below
+        // are about adjusting THIS artifact, so it gets prime visual real-estate.
+        PdfPagePreview(
+            theme = theme,
+            difficulty = "Easy",
+            modifier = Modifier.fillMaxWidth(0.65f),
+        )
+        Spacer(Modifier.height(Sumi.Space.s7))
+
+        // PAPER — two big side-by-side cards. Each tile is wrapped in an outer
+        // frame using the screen's paperGlow so the swatch stays visible even
+        // when (a) the user picks Dark paper and (b) the app theme is also dark
+        // — the frame contrast carries the legibility regardless.
+        SectionRule(label = "PAPER")
+        Spacer(Modifier.height(Sumi.Space.s3))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(Sumi.Space.s3),
+        ) {
             BookPaper.entries.forEach { paper ->
-                ThemeSwatch(
-                    label = paper.name,
-                    bgColor = paper.swatchColor(),
-                    textColor = BookInk.Sumi.color(paper),
+                PaperTile(
+                    paper = paper,
+                    inkOnPaper = theme.ink.color(paper),
                     selected = paper == theme.paper,
                     onClick = { onSetPaper(paper) },
+                    modifier = Modifier.weight(1f),
                 )
             }
         }
-        Spacer(Modifier.height(Sumi.Space.s5))
-        SwatchSection(label = "INK") {
+
+        Spacer(Modifier.height(Sumi.Space.s7))
+
+        // INK — horizontal row of "ink wells". Pure colour dots, label below.
+        SectionRule(label = "INK")
+        Spacer(Modifier.height(Sumi.Space.s3))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.Top,
+        ) {
             BookInk.entries.forEach { ink ->
-                ThemeSwatch(
+                InkWell(
                     label = ink.name,
-                    bgColor = theme.paper.swatchColor(),
-                    textColor = ink.color(theme.paper),
+                    inkColor = ink.color(theme.paper),
                     selected = ink == theme.ink,
                     onClick = { onSetInk(ink) },
                 )
             }
         }
-        Spacer(Modifier.height(Sumi.Space.s5))
-        PdfPagePreview(
-            theme = theme,
-            difficulty = "Easy",
-            modifier = Modifier.fillMaxWidth(0.55f).align(Alignment.CenterHorizontally),
-        )
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
+/** Thin horizontal rule with an inline label — replaces the boxy section header. */
 @Composable
-private fun SwatchSection(label: String, content: @Composable FlowRowScope.() -> Unit) {
-    Column(modifier = Modifier.fillMaxWidth()) {
+private fun SectionRule(label: String) {
+    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .height(0.5.dp)
+                .background(SumiTheme.colors.paperEdge),
+        )
         Text(
             text = label,
             style = SumiTheme.typography.uiLabel,
             color = SumiTheme.colors.inkFaint,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.padding(horizontal = Sumi.Space.s3),
         )
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .height(0.5.dp)
+                .background(SumiTheme.colors.paperEdge),
+        )
+    }
+}
+
+/**
+ * Large paper swatch tile — the actual book paper colour fills the inner block,
+ * with a sample of ink-on-paper text rendered in the matching ink colour so the
+ * combo reads at a glance. An always-visible outer frame solves the
+ * dark-mode-on-dark visibility issue.
+ */
+@Composable
+private fun PaperTile(
+    paper: BookPaper,
+    inkOnPaper: Color,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val src = remember { MutableInteractionSource() }
+    val frameColor = if (selected) SumiTheme.colors.gold else SumiTheme.colors.paperEdge
+    val frameWidth = if (selected) 1.5.dp else 1.dp
+    Column(
+        modifier = modifier
+            .border(frameWidth, frameColor)
+            .background(SumiTheme.colors.paperGlow)
+            .clickable(interactionSource = src, indication = null, onClick = onClick),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        // The inner swatch — actual book paper colour. Tall enough to read as a
+        // page sample, not a button. Two lines of ink-on-paper text preview the
+        // final combination.
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(Sumi.Space.s2)
+                .background(paper.swatchColor())
+                .padding(vertical = Sumi.Space.s5, horizontal = Sumi.Space.s4),
+            contentAlignment = Alignment.Center,
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = "墨",
+                    style = SumiTheme.typography.cjk.copy(fontSize = 28.sp),
+                    color = inkOnPaper,
+                )
+                Spacer(Modifier.height(Sumi.Space.s1))
+                Text(
+                    text = "Aa 123",
+                    style = SumiTheme.typography.numeral.copy(fontSize = 12.sp),
+                    color = inkOnPaper.copy(alpha = 0.85f),
+                )
+            }
+        }
         Spacer(Modifier.height(Sumi.Space.s2))
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(Sumi.Space.s2),
-            verticalArrangement = Arrangement.spacedBy(Sumi.Space.s2),
-            modifier = Modifier.fillMaxWidth(),
-            content = content,
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = Sumi.Space.s3, vertical = Sumi.Space.s2),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = paper.name.uppercase(),
+                style = SumiTheme.typography.uiLabel.copy(fontSize = 11.sp),
+                color = SumiTheme.colors.ink,
+            )
+            if (selected) {
+                // Tiny gold dot — confirms selection without a heavy checkmark
+                Box(
+                    modifier = Modifier
+                        .size(8.dp)
+                        .background(SumiTheme.colors.gold),
+                )
+            }
+        }
+    }
+}
+
+/** Single ink well — a circular swatch with the ink colour, label below. */
+@Composable
+private fun InkWell(
+    label: String,
+    inkColor: Color,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    val src = remember { MutableInteractionSource() }
+    Column(
+        modifier = Modifier
+            .clickable(interactionSource = src, indication = null, onClick = onClick)
+            .padding(Sumi.Space.s2),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        // Outer ring shows selection — always rendered (transparent when not
+        // selected) so layout doesn't shift when picking. Padding inside the
+        // ring gives the ink-well its breathing room.
+        Box(
+            modifier = Modifier
+                .size(48.dp)
+                .border(
+                    width = if (selected) 1.5.dp else 1.dp,
+                    color = if (selected) SumiTheme.colors.gold else SumiTheme.colors.paperEdge,
+                    shape = CircleShape,
+                ),
+            contentAlignment = Alignment.Center,
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(34.dp)
+                    .background(inkColor, CircleShape),
+            )
+        }
+        Spacer(Modifier.height(Sumi.Space.s2))
+        Text(
+            text = label.uppercase(),
+            style = SumiTheme.typography.uiMeta.copy(fontSize = 10.sp),
+            color = if (selected) SumiTheme.colors.ink else SumiTheme.colors.inkFaint,
         )
     }
 }
@@ -1078,28 +1260,44 @@ private fun reservedSlotHeights(isProcessing: Boolean): Pair<Dp, Dp> {
 @Composable
 private fun ReadyBottom(onShare: () -> Unit, onDone: () -> Unit) {
     val shareSrc = remember { MutableInteractionSource() }
+    // Hold the share button until after the result-center (enso → title → subtitle)
+    // has finished its bloom — premium pacing: hero first, action last.
+    val shareAlpha = remember { Animatable(0f) }
+    val doneAlpha = remember { Animatable(0f) }
+    LaunchedEffect(Unit) {
+        delay(SHARE_BUTTON_REVEAL_DELAY_MS)
+        shareAlpha.animateTo(1f, tween(420, easing = Sumi.Ease.paper))
+        delay(120L)
+        doneAlpha.animateTo(1f, tween(360, easing = Sumi.Ease.paper))
+    }
     Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
             modifier = Modifier
                 .size(72.dp)
                 .clip(CircleShape)
                 .border(1.5.dp, SumiTheme.colors.ink, CircleShape)
+                .graphicsLayer { alpha = shareAlpha.value }
                 .clickable(interactionSource = shareSrc, indication = null, onClick = onShare),
             contentAlignment = Alignment.Center,
         ) {
             SumiIcon(
                 icon = SumiIcons.Share,
-                contentDescription = "Share puzzle book",
+                contentDescription = "Share Zen Sudoku",
                 tint = SumiTheme.colors.ink,
                 size = 26.dp,
             )
         }
         Spacer(Modifier.height(Sumi.Space.s2))
-        Text(text = "tap to share", style = SumiTheme.typography.uiMeta, color = SumiTheme.colors.inkFaint)
+        Text(
+            text = "tap to share",
+            style = SumiTheme.typography.uiMeta,
+            color = SumiTheme.colors.inkFaint,
+            modifier = Modifier.graphicsLayer { alpha = shareAlpha.value },
+        )
         Spacer(Modifier.height(Sumi.Space.s4))
         SumiButton(
             onClick = onDone,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().graphicsLayer { alpha = doneAlpha.value },
             variant = SumiButtonVariant.Ghost,
             size = SumiButtonSize.Md,
         ) {
@@ -1209,40 +1407,5 @@ private fun SudokuMiniGrid(gridColor: Color, boxColor: Color, digitColor: Color,
                 drawText(result, topLeft = Offset(x, y))
             }
         }
-    }
-}
-
-// ── Shared small components ────────────────────────────────────────────────────
-
-@Composable
-private fun ThemeSwatch(
-    label: String,
-    bgColor: Color,
-    textColor: Color,
-    selected: Boolean,
-    onClick: () -> Unit,
-) {
-    val src = remember { MutableInteractionSource() }
-    Column(
-        modifier = Modifier
-            .widthIn(min = 84.dp)
-            .border(1.dp, if (selected) SumiTheme.colors.ink else SumiTheme.colors.paperEdge)
-            .background(bgColor)
-            .clickable(interactionSource = src, indication = null, onClick = onClick)
-            .padding(horizontal = Sumi.Space.s4, vertical = Sumi.Space.s4),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        SumiIcon(
-            icon = SumiIcons.Check,
-            contentDescription = null,
-            tint = if (selected) textColor else Color.Transparent,
-            size = 14.dp,
-        )
-        Spacer(Modifier.height(Sumi.Space.s1))
-        Text(
-            text = label,
-            style = SumiTheme.typography.uiMeta.copy(fontSize = 13.sp),
-            color = textColor,
-        )
     }
 }

@@ -37,13 +37,14 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.koinInject
+import xyz.ksharma.sumi.coroutines.ext.launchWithExceptionHandler
 import xyz.ksharma.sumi.design.components.LogoEnso
 import xyz.ksharma.sumi.design.components.QuoteRule
-import xyz.ksharma.sumi.design.components.SumiButtonVariant
 import xyz.ksharma.sumi.design.components.SumiIcon
 import xyz.ksharma.sumi.design.components.SumiTextButton
 import xyz.ksharma.sumi.design.components.WashiBG
@@ -67,7 +68,7 @@ private val PRO_FEATURES = listOf(
     "The Salon, weekly global register",
     "Practice log with stats and streaks",
     "Gold, Indigo, Edo themes",
-    "Export PDF puzzle books",
+    "Export PDF Zen Sudoku books",
 )
 
 // Stagger constants
@@ -85,8 +86,7 @@ fun PaywallScreen(
 ) {
     val proRepo = koinInject<ProRepository>()
     val scope = rememberCoroutineScope()
-    val yearlyPrice by proRepo.observePrice(ProProducts.YEARLY).collectAsState(initial = null)
-    val monthlyPrice by proRepo.observePrice(ProProducts.MONTHLY).collectAsState(initial = null)
+    val lifetimePrice by proRepo.observePrice(ProProducts.LIFETIME).collectAsState(initial = null)
 
     val rowAlphas = remember { List(PRO_FEATURES.size) { Animatable(0f) } }
     val rowOffsets = remember { List(PRO_FEATURES.size) { Animatable(24f) } }
@@ -116,11 +116,17 @@ fun PaywallScreen(
             rowOffsets = rowOffsets.map { it.value },
             pricingAlpha = pricingAlpha.value,
             pricingOffset = pricingOffset.value,
-            yearlyPrice = yearlyPrice,
-            monthlyPrice = monthlyPrice,
-            onPurchaseYearly = { scope.launch { proRepo.purchase(ProProducts.YEARLY) } },
-            onPurchaseMonthly = { scope.launch { proRepo.purchase(ProProducts.MONTHLY) } },
-            onRestore = { scope.launch { proRepo.restorePurchases() } },
+            lifetimePrice = lifetimePrice,
+            onPurchase = {
+                scope.launchWithExceptionHandler<ProRepository>(Dispatchers.Default) {
+                    proRepo.purchase(ProProducts.LIFETIME)
+                }
+            },
+            onRestore = {
+                scope.launchWithExceptionHandler<ProRepository>(Dispatchers.Default) {
+                    proRepo.restorePurchases()
+                }
+            },
             onDismiss = onBack,
         )
     }
@@ -135,10 +141,8 @@ private fun PaywallContent(
     rowOffsets: List<Float>,
     pricingAlpha: Float,
     pricingOffset: Float,
-    yearlyPrice: String?,
-    monthlyPrice: String?,
-    onPurchaseYearly: () -> Unit,
-    onPurchaseMonthly: () -> Unit,
+    lifetimePrice: String?,
+    onPurchase: () -> Unit,
     onRestore: () -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -163,10 +167,8 @@ private fun PaywallContent(
         PaywallPricing(
             alpha = pricingAlpha,
             offsetDp = pricingOffset,
-            yearlyPrice = yearlyPrice,
-            monthlyPrice = monthlyPrice,
-            onPurchaseYearly = onPurchaseYearly,
-            onPurchaseMonthly = onPurchaseMonthly,
+            lifetimePrice = lifetimePrice,
+            onPurchase = onPurchase,
             onRestore = onRestore,
             onDismiss = onDismiss,
         )
@@ -261,18 +263,17 @@ private fun PaywallFeatures(rowAlphas: List<Float>, rowOffsets: List<Float>) {
 private fun PaywallPricing(
     alpha: Float,
     offsetDp: Float,
-    yearlyPrice: String?,
-    monthlyPrice: String?,
-    onPurchaseYearly: () -> Unit,
-    onPurchaseMonthly: () -> Unit,
+    lifetimePrice: String?,
+    onPurchase: () -> Unit,
     onRestore: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     val density = LocalDensity.current
     val offsetPx = with(density) { offsetDp.dp.toPx() }
-    val yearlyLabel = yearlyPrice?.let { "$it / year" } ?: "Yearly subscription"
-    val monthlyLabel = monthlyPrice?.let { "$it / month" } ?: "Monthly subscription"
-    val pricesLoading = yearlyPrice == null && monthlyPrice == null
+    // Single one-time purchase — no monthly/yearly tiers. Label resolves to
+    // store-supplied price; placeholder while the flow is still null.
+    val lifetimeLabel = lifetimePrice?.let { "Unlock Sumi Pro — $it" } ?: "Unlock Sumi Pro"
+    val pricesLoading = lifetimePrice == null
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.fillMaxWidth().graphicsLayer {
@@ -282,22 +283,21 @@ private fun PaywallPricing(
     ) {
         QuoteRule(color = SumiTheme.colors.paperEdge, ornament = "墓")
         Spacer(Modifier.height(Sumi.Space.s5))
-        // Prices come from the store (Play Billing / StoreKit) via [ProRepository.observePrice].
-        // While the flow returns null we show the placeholder labels above; never hardcode currency
-        // or amount — both Apple and Google reject paywalls with mismatched / hardcoded prices.
+        // Price comes from the store (Play Billing / StoreKit) via observePrice.
+        // While the flow returns null we show "Unlock Sumi Pro" alone; never
+        // hardcode currency or amount — both Apple and Google reject paywalls
+        // with mismatched / hardcoded prices.
         SumiTextButton(
-            text = yearlyLabel,
-            onClick = onPurchaseYearly,
+            text = lifetimeLabel,
+            onClick = onPurchase,
             modifier = Modifier.fillMaxWidth(),
             enabled = !pricesLoading,
         )
         Spacer(Modifier.height(Sumi.Space.s2))
-        SumiTextButton(
-            text = monthlyLabel,
-            onClick = onPurchaseMonthly,
-            variant = SumiButtonVariant.Ghost,
-            modifier = Modifier.fillMaxWidth(),
-            enabled = !pricesLoading,
+        Text(
+            text = "One-time purchase. No subscriptions.",
+            style = SumiTheme.typography.uiMeta,
+            color = SumiTheme.colors.inkFaint,
         )
         Spacer(Modifier.height(Sumi.Space.s4))
         PaywallFooterLinks(onRestore = onRestore, onDismiss = onDismiss)
