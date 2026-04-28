@@ -66,7 +66,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontStyle
@@ -813,19 +812,22 @@ private fun IdlePreviewContent(state: BookDesignerState) {
 
 @Composable
 private fun ResultCenter(genState: BookGenState) {
-    // Always-mounted column keeps the layout stable; only opacity + Y-offset animate
-    // from Generating into Ready, so the Sumi mark eases into its anchored slot
-    // instead of popping in the moment state flips.
+    // Always-mounted column keeps the layout slot reserved. The reveal is sequential:
+    // the enso draws first, then the wordmark inks in (alpha + a tiny "ink-settling"
+    // scale-down from 1.04 → 1.0), then the subtitle fades in. No Y-translation —
+    // anchoring nothing to "below the line" prevents the elements reading as if they
+    // slid up from somewhere; they bloom into place where they belong.
     val ensoProgress = remember { Animatable(0f) }
     val titleAlpha = remember { Animatable(0f) }
-    val titleOffsetPx = with(LocalDensity.current) { 12.dp.toPx() }
-    val titleOffset = remember { Animatable(titleOffsetPx) }
+    val titleScale = remember { Animatable(1.04f) }
+    val subtitleAlpha = remember { Animatable(0f) }
     LaunchedEffect(genState) {
         if (genState is BookGenState.Ready) {
-            launch { ensoProgress.animateTo(1f, tween(900, easing = Sumi.Ease.brush)) }
-            delay(450L)
-            launch { titleOffset.animateTo(0f, tween(600, easing = Sumi.Ease.paper)) }
+            ensoProgress.animateTo(1f, tween(900, easing = Sumi.Ease.brush))
+            launch { titleScale.animateTo(1f, tween(700, easing = Sumi.Ease.brush)) }
             titleAlpha.animateTo(1f, tween(520, easing = Sumi.Ease.paper))
+            delay(160L)
+            subtitleAlpha.animateTo(1f, tween(460, easing = Sumi.Ease.paper))
         }
     }
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -838,7 +840,8 @@ private fun ResultCenter(genState: BookGenState) {
                 color = SumiTheme.colors.ink,
                 modifier = Modifier.graphicsLayer {
                     alpha = titleAlpha.value
-                    translationY = titleOffset.value
+                    scaleX = titleScale.value
+                    scaleY = titleScale.value
                 },
             )
             Spacer(Modifier.height(Sumi.Space.s2))
@@ -846,10 +849,7 @@ private fun ResultCenter(genState: BookGenState) {
                 text = "Your book is ready.",
                 style = SumiTheme.typography.subhead.copy(fontStyle = FontStyle.Italic),
                 color = SumiTheme.colors.inkSoft,
-                modifier = Modifier.graphicsLayer {
-                    alpha = titleAlpha.value
-                    translationY = titleOffset.value
-                },
+                modifier = Modifier.graphicsLayer { alpha = subtitleAlpha.value },
             )
         }
     }
