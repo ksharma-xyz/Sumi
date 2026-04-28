@@ -3,6 +3,7 @@
 package xyz.ksharma.sumi.screens.win
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -27,15 +29,17 @@ import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.hideFromAccessibility
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import app.lexilabs.basic.ads.AdState
 import app.lexilabs.basic.ads.DependsOnGoogleMobileAds
 import app.lexilabs.basic.ads.composable.InterstitialAd
+import app.lexilabs.basic.ads.composable.rememberInterstitialAd
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import xyz.ksharma.sumi.Quote
@@ -48,10 +52,13 @@ import xyz.ksharma.sumi.design.components.WashiBG
 import xyz.ksharma.sumi.resources.Res
 import xyz.ksharma.sumi.resources.ink_bleed_02
 import xyz.ksharma.sumi.resources.ink_bleed_03
-import xyz.ksharma.sumi.resources.logo_chop
 import xyz.ksharma.sumi.theme.SumiTheme
 import xyz.ksharma.sumi.theme.SumiTokens as Sumi
 
+// Long because the screen orchestrates a share-layer card + interstitial-ad lifecycle +
+// onShare callback wiring. Helpers below split the visual sections — further extraction
+// would split the surface state and hurt traceability.
+@Suppress("LongMethod", "LambdaParameterInRestartableEffect")
 @OptIn(DependsOnGoogleMobileAds::class)
 @Composable
 fun WinScreen(
@@ -72,6 +79,17 @@ fun WinScreen(
     val shareLayer = rememberGraphicsLayer()
     val cardBackground = SumiTheme.colors.paper
     val coroutineScope = rememberCoroutineScope()
+
+    // Pre-load the post-completion interstitial as soon as the screen enters composition.
+    // basic-ads' InterstitialAd composable crashes if shown before its async load completes
+    // ("InterstitialAd not loaded yet. InterstitialAd.load() must be called first") — so we
+    // pre-load via rememberInterstitialAd and only render InterstitialAd when state == READY.
+    // Must be called unconditionally per Compose composable rules.
+    val interstitialAdState = rememberInterstitialAd(
+        adUnitId = AdUnits.Interstitial,
+        onLoad = {},
+        onFailure = { /* fall-through; the conditional render below skips when state != READY */ },
+    )
 
     Box(modifier = modifier.fillMaxSize()) {
         WashiBG(modifier = Modifier.fillMaxSize())
@@ -118,14 +136,23 @@ fun WinScreen(
                 } else null,
             )
         }
+        // Only render InterstitialAd once the pre-loaded ad reports READY.
+        // Other states (LOADING, FAILED, SHOWING, SHOWN) either skip or are
+        // self-managed by the library — see comment on rememberInterstitialAd above.
         if (showInterstitialAd) {
-            InterstitialAd(
-                adUnitId = AdUnits.Interstitial,
-                onDismissed = onInterstitialDismiss,
-                // If load/show fails (no fill, network down), behave the same as a dismissal
-                // so the user is never blocked on the Win screen waiting for an ad.
-                onFailure = { _ -> onInterstitialDismiss() },
-            )
+            when (interstitialAdState.value.state) {
+                AdState.READY -> InterstitialAd(
+                    loadedAd = interstitialAdState.value,
+                    onDismissed = onInterstitialDismiss,
+                    onFailure = { _ -> onInterstitialDismiss() },
+                )
+                AdState.SHOWING, AdState.SHOWN -> Unit // ad on screen; onDismissed will dismiss the flag
+                else -> {
+                    // Not ready (still loading / failed / no fill) — release the flag
+                    // so the user isn't blocked waiting on an ad that never appears.
+                    LaunchedEffect(showInterstitialAd) { onInterstitialDismiss() }
+                }
+            }
         }
     }
 }
@@ -158,133 +185,134 @@ private fun WinShareCard(
             .padding(vertical = Sumi.Space.s4),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        WinHeroSection()
+        // 1. Brand mark — pure Compose primitives so the share PNG always renders it.
+        ChopSeal(size = 88.dp)
         Spacer(Modifier.height(Sumi.Space.s5))
         // The actual completed grid — proof of the solve. Renders inside the share layer
         // so the exported PNG includes the puzzle, not just the stats.
+        // 2. Filled puzzle — proof of the solve.
         if (solution.length == 81) {
-            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                SudokuThumbnail(cells = solution, sizeDp = 220.dp)
-            }
-            Spacer(Modifier.height(Sumi.Space.s5))
+            SudokuThumbnail(cells = solution, sizeDp = 220.dp)
+            Spacer(Modifier.height(Sumi.Space.s6))
         }
-        WinStatsRow(
-            timeDisplay = formatTime(elapsedMs),
-            mistakeCount = mistakeCount,
-            moveCount = moveCount,
-            difficulty = difficulty,
-        )
-        Spacer(Modifier.height(Sumi.Space.s5))
-        Text(
-            text = "\u201C${quote.text}\u201D",
-            style = SumiTheme.typography.quote.copy(fontSize = 14.sp),
-            color = SumiTheme.colors.inkSoft,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = Sumi.Space.s4),
-        )
-    }
-}
 
-@Composable
-private fun WinHeroSection() {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Row(
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.semantics(mergeDescendants = true) { contentDescription = "Complete" },
-        ) {
-            Text(
-                text = "完",
-                style = SumiTheme.typography.cjk.copy(fontSize = 28.sp),
-                color = SumiTheme.colors.red,
-                modifier = Modifier.semantics { hideFromAccessibility() },
-            )
-            Text(
-                text = "  ",
-                style = SumiTheme.typography.body.copy(fontSize = 14.sp),
-                color = SumiTheme.colors.inkSoft,
-                modifier = Modifier.semantics { hideFromAccessibility() },
-            )
-            Text(
-                text = "COMPLETE",
-                style = SumiTheme.typography.uiLabel,
-                color = SumiTheme.colors.inkSoft,
-            )
-        }
+        // 3. Time as the headline number.
+        Text(
+            text = "TIME",
+            style = SumiTheme.typography.uiLabel.copy(letterSpacing = 2.sp),
+            color = SumiTheme.colors.inkFaint,
+        )
         Spacer(Modifier.height(Sumi.Space.s1))
         Text(
-            text = "Sumi",
-            style = SumiTheme.typography.quote.copy(
-                fontSize = 18.sp,
+            text = formatTime(elapsedMs),
+            style = SumiTheme.typography.numeral.copy(
+                fontSize = 56.sp,
                 fontStyle = FontStyle.Italic,
                 letterSpacing = (-0.02f).em,
             ),
             color = SumiTheme.colors.ink,
         )
-        Spacer(Modifier.height(Sumi.Space.s6))
-        Image(
-            painter = painterResource(Res.drawable.logo_chop),
-            contentDescription = "Sumi seal",
-            modifier = Modifier.size(120.dp),
+        Spacer(Modifier.height(Sumi.Space.s5))
+
+        // 4. Secondary stats inline — single row, separators between, no wrap risk.
+        InlineSecondaryStats(
+            mistakeCount = mistakeCount,
+            moveCount = moveCount,
+            difficulty = difficulty,
+        )
+        if (quote.text.isNotBlank()) {
+            QuoteFooter(text = quote.text, attribution = quote.attribution)
+        }
+    }
+}
+
+@Composable
+private fun ChopSeal(size: Dp = 88.dp) {
+    val cream = SumiTheme.colors.paper
+    val red = SumiTheme.colors.red
+    val shape = androidx.compose.foundation.shape.RoundedCornerShape(size * 0.07f)
+    Box(
+        modifier = Modifier
+            .size(size)
+            .background(color = red, shape = shape)
+            .border(width = 2.dp, color = cream.copy(alpha = 0.9f), shape = shape)
+            .semantics { contentDescription = "Sumi" },
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = "\u5B8C",
+            style = SumiTheme.typography.cjk.copy(
+                fontSize = (size.value * 0.55f).sp,
+                color = cream,
+            ),
         )
     }
 }
 
 @Composable
-private fun WinStatsRow(
-    timeDisplay: String,
-    mistakeCount: Int,
-    moveCount: Int,
-    difficulty: String,
-) {
+private fun InlineSecondaryStats(mistakeCount: Int, moveCount: Int, difficulty: String) {
     val levelKanji = difficultyKanji(difficulty)
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .border(width = 1.dp, color = SumiTheme.colors.paperEdge),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center,
+        modifier = Modifier.semantics(mergeDescendants = true) {
+            contentDescription = "$mistakeCount mistakes, $moveCount moves, level $difficulty"
+        },
     ) {
-        val numericStats = listOf(
-            "TIME" to timeDisplay,
-            "MISTAKES" to mistakeCount.toString(),
-            "MOVES" to moveCount.toString(),
+        StatChip(value = mistakeCount.toString(), label = "mistakes")
+        StatSeparator()
+        StatChip(value = moveCount.toString(), label = "moves")
+        StatSeparator()
+        StatChip(value = levelKanji, label = difficulty.lowercase(), isKanji = true)
+    }
+}
+
+@Composable
+private fun StatChip(value: String, label: String, isKanji: Boolean = false) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            text = value,
+            style = if (isKanji) SumiTheme.typography.cjk.copy(fontSize = 22.sp)
+            else SumiTheme.typography.numeral.copy(fontSize = 22.sp, fontStyle = FontStyle.Italic),
+            color = SumiTheme.colors.ink,
         )
-        numericStats.forEachIndexed { i, (label, value) ->
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .then(if (i > 0) Modifier.border(1.dp, SumiTheme.colors.paperEdge) else Modifier)
-                    .padding(vertical = Sumi.Space.s4, horizontal = Sumi.Space.s2)
-                    .semantics(mergeDescendants = true) {},
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Text(
-                    text = label,
-                    style = SumiTheme.typography.uiLabel,
-                    color = SumiTheme.colors.inkFaint,
-                )
-                Spacer(Modifier.height(Sumi.Space.s1))
-                Text(
-                    text = value,
-                    style = SumiTheme.typography.numeral.copy(fontSize = 24.sp, fontStyle = FontStyle.Italic),
-                    color = SumiTheme.colors.ink,
-                )
-            }
-        }
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .border(1.dp, SumiTheme.colors.paperEdge)
-                .padding(vertical = Sumi.Space.s4, horizontal = Sumi.Space.s2)
-                .semantics(mergeDescendants = true) {},
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Text(text = "LEVEL", style = SumiTheme.typography.uiLabel, color = SumiTheme.colors.inkFaint)
+        Spacer(Modifier.size(Sumi.Space.s1))
+        Text(
+            text = label,
+            style = SumiTheme.typography.uiMeta.copy(fontSize = 12.sp),
+            color = SumiTheme.colors.inkSoft,
+        )
+    }
+}
+
+@Composable
+private fun StatSeparator() {
+    Text(
+        text = "/",
+        style = SumiTheme.typography.uiMeta.copy(fontSize = 14.sp),
+        color = SumiTheme.colors.paperEdge,
+        modifier = Modifier.padding(horizontal = Sumi.Space.s2),
+    )
+}
+
+@Composable
+private fun QuoteFooter(text: String, attribution: String) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.padding(horizontal = Sumi.Space.s4),
+    ) {
+        Text(
+            text = "\u201C$text\u201D",
+            style = SumiTheme.typography.quote.copy(fontSize = 14.sp, fontStyle = FontStyle.Italic),
+            color = SumiTheme.colors.inkSoft,
+            textAlign = TextAlign.Center,
+        )
+        if (attribution.isNotBlank()) {
             Spacer(Modifier.height(Sumi.Space.s1))
             Text(
-                text = levelKanji,
-                style = SumiTheme.typography.cjk.copy(fontSize = 28.sp),
-                color = SumiTheme.colors.ink,
-                modifier = Modifier.semantics { contentDescription = difficulty },
+                text = "\u2014 $attribution",
+                style = SumiTheme.typography.uiMeta.copy(fontSize = 11.sp),
+                color = SumiTheme.colors.inkFaint,
             )
         }
     }

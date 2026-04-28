@@ -16,11 +16,15 @@ android {
     }
 
     buildTypes {
+        // Real Sumi AdMob Android App ID. Same value for both build types so the SDK
+        // initializes correctly in development too — the unit IDs themselves diverge
+        // (debug uses Google's test units to comply with AdMob's "always test with
+        // test ads" policy; release uses real Sumi units).
+        val admobAndroidAppId = "ca-app-pub-1771675816656791~9270948994"
         debug {
             applicationIdSuffix = ".debug"
             isDebuggable = true
-            // Google's public test AdMob App ID — safe to commit, won't generate real revenue
-            manifestPlaceholders["admobAppId"] = "ca-app-pub-3940256099942544~3347511713"
+            manifestPlaceholders["admobAppId"] = admobAndroidAppId
         }
         release {
             isMinifyEnabled = true
@@ -29,8 +33,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
-            // Replace with real Android AdMob App ID from AdMob console before shipping
-            manifestPlaceholders["admobAppId"] = "ca-app-pub-XXXXXXXXXXXXXXXX~XXXXXXXXXX"
+            manifestPlaceholders["admobAppId"] = admobAndroidAppId
         }
     }
 

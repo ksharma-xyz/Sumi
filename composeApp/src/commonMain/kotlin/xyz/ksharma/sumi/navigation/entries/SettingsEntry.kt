@@ -46,14 +46,26 @@ fun EntryProviderScope<NavKey>.SettingsEntry(navigator: SumiNavigator) {
                     onToggleAdsEnabled = { vm.toggleAdsEnabled() },
                     onSeedSampleStreak = { vm.seedSampleStreak() },
                     onOpenSampleWin = {
-                        // Navigates to a sample Win screen with realistic stats so
-                        // designers / reviewers can see the result page on demand.
+                        // Navigates to a sample Win screen with realistic stats + a real
+                        // solved puzzle so designers / reviewers can preview the result
+                        // page (and especially the share-image grid) on demand.
                         navigator.goTo(
                             WinRoute(
                                 elapsedMs = 7L * 60_000L + 12L * 1_000L, // 7:12
                                 mistakeCount = 2,
                                 moveCount = 41,
                                 difficulty = "Medium",
+                                // A known-valid 9×9 solution, row-major. Lets the
+                                // SudokuThumbnail render in the debug share preview.
+                                solution = "534678912" +
+                                    "672195348" +
+                                    "198342567" +
+                                    "859761423" +
+                                    "426853791" +
+                                    "713924856" +
+                                    "961537284" +
+                                    "287419635" +
+                                    "345286179",
                             ),
                         )
                     },

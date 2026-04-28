@@ -5,12 +5,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.platform.LocalDensity
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.koin.compose.koinInject
@@ -27,8 +24,6 @@ import xyz.ksharma.sumi.preferences.ThemePreferences
 import xyz.ksharma.sumi.screens.win.WinScreen
 import xyz.ksharma.sumi.screens.win.WinViewModel
 import xyz.ksharma.sumi.share.ShareManager
-import xyz.ksharma.sumi.share.withBrandingHeader
-import xyz.ksharma.sumi.theme.SumiTheme
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
@@ -43,7 +38,6 @@ fun EntryProviderScope<NavKey>.WinEntry(navigator: SumiNavigator) {
         val proRepo = koinInject<ProRepository>()
         val debugPrefs = koinInject<DebugPreferences>()
         val coroutineScope = rememberCoroutineScope()
-        val density = LocalDensity.current.density
         val hapticsEnabled by themePrefs.observeHapticsEnabled().collectAsState(initial = true)
         val isPro by proRepo.isPro().collectAsState(initial = false)
         val isAdsEnabled by debugPrefs.observeAdsEnabled().collectAsState(initial = true)
@@ -57,9 +51,6 @@ fun EntryProviderScope<NavKey>.WinEntry(navigator: SumiNavigator) {
         @OptIn(ExperimentalTime::class)
         val dayOfYear = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).dayOfYear
         val quote = FREE_QUOTES[dayOfYear % FREE_QUOTES.size]
-
-        val paperColor = SumiTheme.colors.paper
-        val inkColor = SumiTheme.colors.ink
 
         WinScreen(
             elapsedMs = key.elapsedMs,
@@ -76,17 +67,9 @@ fun EntryProviderScope<NavKey>.WinEntry(navigator: SumiNavigator) {
                 navigator.goTo(GameRoute(difficulty = key.difficulty))
             },
             onShare = { cardBitmap: ImageBitmap ->
-                coroutineScope.launch {
-                    // withBrandingHeader is CPU-heavy (Canvas/Skia) — run off Main.
-                    val branded = withContext(Dispatchers.Default) {
-                        cardBitmap.withBrandingHeader(
-                            backgroundColor = paperColor,
-                            textColor = inkColor,
-                            density = density,
-                        )
-                    }
-                    shareManager.shareImage(branded)
-                }
+                // The card itself now carries the brand mark (the in-card ChopSeal),
+                // so we share it as-is — no Roboto-Bold "Sumi" header strip on top.
+                coroutineScope.launch { shareManager.shareImage(cardBitmap) }
             },
             showInterstitialAd = showInterstitial && !isPro && isAdsEnabled,
             onInterstitialDismiss = vm::onInterstitialDone,

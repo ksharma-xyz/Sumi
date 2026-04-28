@@ -5,10 +5,9 @@
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 
-	<!-- AdMob iOS App ID — replace with real ID from AdMob console before release -->
-	<!-- Test App ID (safe for dev): ca-app-pub-3940256099942544~1458002511 -->
+	<!-- Real Sumi iOS AdMob App ID — publisher 1771675816656791. -->
 	<key>GADApplicationIdentifier</key>
-	<string>ca-app-pub-3940256099942544~1458002511</string>
+	<string>ca-app-pub-1771675816656791~3220231339</string>
 
 	<!-- ATT prompt — App Store rejects iOS 14+ AdMob apps without this string. -->
 	<key>NSUserTrackingUsageDescription</key>

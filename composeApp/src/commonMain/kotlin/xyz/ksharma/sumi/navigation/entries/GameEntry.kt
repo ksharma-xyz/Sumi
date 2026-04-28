@@ -9,10 +9,12 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
+import app.lexilabs.basic.ads.AdState
 import app.lexilabs.basic.ads.DependsOnGoogleMobileAds
 import app.lexilabs.basic.ads.composable.BannerAd
 import app.lexilabs.basic.ads.composable.InterstitialAd
 import app.lexilabs.basic.ads.composable.RewardedAd
+import app.lexilabs.basic.ads.composable.rememberInterstitialAd
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import xyz.ksharma.sumi.ads.AdUnits
@@ -42,7 +44,7 @@ private class HapticContext(private val engine: HapticEngine, private val enable
 private class GameContext(val haptic: HapticContext, val analytics: SumiAnalytics)
 
 // Entry composables glue many flows + ads — splitting hurts traceability.
-@Suppress("ComposableNaming", "LongMethod")
+@Suppress("ComposableNaming", "LongMethod", "CyclomaticComplexMethod")
 @OptIn(DependsOnGoogleMobileAds::class)
 @Composable
 fun EntryProviderScope<NavKey>.GameEntry(navigator: SumiNavigator) {
@@ -70,6 +72,16 @@ fun EntryProviderScope<NavKey>.GameEntry(navigator: SumiNavigator) {
         val showRewardedHintAd by vm.showRewardedHintAd.collectAsState()
         val hapticsEnabled by themePrefs.observeHapticsEnabled().collectAsState(initial = true)
         val ctx = GameContext(HapticContext(haptic, hapticsEnabled), analytics)
+
+        // Pre-load idle interstitial — see WinScreen comment for the rationale (basic-ads
+        // crashes if InterstitialAd is composed before async load completes). Always called
+        // (composable rules) but only rendered when the orchestrator decides the moment + the
+        // pre-load reports READY.
+        val idleAdState = rememberInterstitialAd(
+            adUnitId = AdUnits.Interstitial,
+            onLoad = {},
+            onFailure = {},
+        )
 
         LaunchedEffect(state.isComplete) {
             if (state.isComplete) {
@@ -129,14 +141,19 @@ fun EntryProviderScope<NavKey>.GameEntry(navigator: SumiNavigator) {
             rewardedHintAvailable = !isPro && isAdsEnabled,
         )
 
-        // Idle interstitial — gated by !isPro && isAdsEnabled. Composing the InterstitialAd
-        // triggers basic-ads to load + present; we resume the game when it dismisses or fails.
+        // Idle interstitial — gated by !isPro && isAdsEnabled. Only show when the pre-load
+        // (declared above) reports READY; otherwise release the flag so the player isn't
+        // stuck waiting on an ad that never appears.
         if (showIdleInterstitial && !isPro && isAdsEnabled) {
-            InterstitialAd(
-                adUnitId = AdUnits.Interstitial,
-                onDismissed = vm::onIdleInterstitialDone,
-                onFailure = { _ -> vm.onIdleInterstitialDone() },
-            )
+            when (idleAdState.value.state) {
+                AdState.READY -> InterstitialAd(
+                    loadedAd = idleAdState.value,
+                    onDismissed = vm::onIdleInterstitialDone,
+                    onFailure = { _ -> vm.onIdleInterstitialDone() },
+                )
+                AdState.SHOWING, AdState.SHOWN -> Unit
+                else -> LaunchedEffect(showIdleInterstitial) { vm.onIdleInterstitialDone() }
+            }
         }
 
         // Rewarded ad → +1 hint. The user opted into this by tapping Hint at zero count,

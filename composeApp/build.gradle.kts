@@ -128,16 +128,16 @@ buildkonfig {
     }
 
     // Activate with: ./gradlew ... -Pbuildkonfig.flavor=release
-    // TODO(launch): replace AD_* with real Sumi unit IDs from the AdMob console before shipping.
+    // Real Sumi unit IDs (publisher 1771675816656791) for both Android + iOS.
     defaultConfigs("release") {
         buildConfigField(BOOLEAN, "IS_DEBUG", "false")
         buildConfigField(STRING, "BUILD_TYPE", "\"release\"")
 
-        buildConfigField(STRING, "AD_BANNER_ANDROID",       "\"ca-app-pub-3940256099942544/6300978111\"")
-        buildConfigField(STRING, "AD_BANNER_IOS",           "\"ca-app-pub-3940256099942544/2934735716\"")
-        buildConfigField(STRING, "AD_INTERSTITIAL_ANDROID", "\"ca-app-pub-3940256099942544/1033173712\"")
-        buildConfigField(STRING, "AD_INTERSTITIAL_IOS",     "\"ca-app-pub-3940256099942544/4411468910\"")
-        buildConfigField(STRING, "AD_REWARDED_ANDROID",     "\"ca-app-pub-3940256099942544/5224354917\"")
-        buildConfigField(STRING, "AD_REWARDED_IOS",         "\"ca-app-pub-3940256099942544/1712485313\"")
+        buildConfigField(STRING, "AD_BANNER_ANDROID",       "\"ca-app-pub-1771675816656791/4801131656\"")
+        buildConfigField(STRING, "AD_BANNER_IOS",           "\"ca-app-pub-1771675816656791/8716325930\"")
+        buildConfigField(STRING, "AD_INTERSTITIAL_ANDROID", "\"ca-app-pub-1771675816656791/6038280998\"")
+        buildConfigField(STRING, "AD_INTERSTITIAL_IOS",     "\"ca-app-pub-1771675816656791/9083766250\"")
+        buildConfigField(STRING, "AD_REWARDED_ANDROID",     "\"ca-app-pub-1771675816656791/9638525361\"")
+        buildConfigField(STRING, "AD_REWARDED_IOS",         "\"ca-app-pub-1771675816656791/9877973172\"")
     }
 }

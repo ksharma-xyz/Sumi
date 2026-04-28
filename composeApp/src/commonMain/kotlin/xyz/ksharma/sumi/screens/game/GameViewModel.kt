@@ -14,7 +14,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
-import xyz.ksharma.sumi.BuildKonfig
 import xyz.ksharma.sumi.ads.AdOrchestrator
 import xyz.ksharma.sumi.game.manager.BoardManager
 import xyz.ksharma.sumi.game.manager.RealBoardManager
@@ -169,13 +168,6 @@ class GameViewModel(
     /** Called by the Game entry when the user taps Hint while hintsRemaining == 0. */
     fun requestRewardedHintAd() {
         if (_state.value.hintsRemaining > 0) return // already has a hint, no ad needed
-        // Debug-build shield — basic-ads' RewardedAd composable runs into "Cannot determine
-        // request type" + crash loops when no real AdMob app is wired. In debug we instead
-        // grant the hint instantly so the rest of the rewarded UX flow can be QA'd.
-        if (BuildKonfig.IS_DEBUG) {
-            grantHintsFromAd(count = 1)
-            return
-        }
         _showRewardedHintAd.value = true
     }
 
@@ -230,13 +222,7 @@ class GameViewModel(
                 // — game in progress, not paused, no ad currently showing.
                 if (!paused && !_showIdleInterstitial.value) {
                     idleMs += TIMER_TICK_MS
-                    // Debug-build shield: basic-ads crashes when InterstitialAd is composed
-                    // before AdMob has pre-loaded an ad. Skip in debug until a real AdMob
-                    // app ID is wired for the package.
-                    if (idleMs >= IDLE_INTERSTITIAL_MS &&
-                        !BuildKonfig.IS_DEBUG &&
-                        adOrchestrator.mayShowInterstitial()
-                    ) {
+                    if (idleMs >= IDLE_INTERSTITIAL_MS && adOrchestrator.mayShowInterstitial()) {
                         idleMs = 0L
                         _showIdleInterstitial.value = true
                     }
