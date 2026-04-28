@@ -4,7 +4,9 @@ package xyz.ksharma.sumi.screens.zen
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -32,6 +34,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -69,6 +72,7 @@ import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
@@ -399,20 +403,15 @@ private fun BookDesignerScreen(state: BookDesignerState, callbacks: BookDesigner
     val currentCallbacks by rememberUpdatedState(callbacks)
     val isProcessing = state.genState is BookGenState.Generating || state.genState is BookGenState.Ready
     val onNext: () -> Unit = { if (currentStep < DESIGNER_PAGE_COUNT - 1) currentStep++ }
+    val onDone: () -> Unit = { currentCallbacks.onClearError().also { onBack() } }
     val goBack: () -> Unit = {
         when {
-            state.genState is BookGenState.Ready -> {
-                currentCallbacks.onClearError()
-                onBack()
-            }
+            state.genState is BookGenState.Ready -> onDone()
             currentStep > 0 -> currentStep--
             else -> onBack()
         }
     }
-    val onDone: () -> Unit = {
-        currentCallbacks.onClearError()
-        onBack()
-    }
+    val (topReservedHeight, bottomReservedHeight) = reservedSlotHeights(isProcessing)
     TabBackHandler(enabled = true, onBack = goBack)
     Box(modifier = Modifier.fillMaxSize().background(SumiTheme.colors.paper)) {
         WashiBG(modifier = Modifier.fillMaxSize())
@@ -433,7 +432,9 @@ private fun BookDesignerScreen(state: BookDesignerState, callbacks: BookDesigner
                 onDismiss = onBack,
             )
             Spacer(Modifier.height(Sumi.Space.s6))
-            CraftingTopMessage(visible = state.genState is BookGenState.Generating)
+            Box(modifier = Modifier.fillMaxWidth().heightIn(min = topReservedHeight)) {
+                CraftingTopMessage(visible = state.genState is BookGenState.Generating)
+            }
             Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
                 DesignerStepHost(currentStep, isProcessing, state, currentCallbacks)
             }
@@ -441,11 +442,10 @@ private fun BookDesignerScreen(state: BookDesignerState, callbacks: BookDesigner
             BookDesignerBottomBar(
                 currentStep = currentStep,
                 state = state,
+                callbacks = currentCallbacks,
+                minHeight = bottomReservedHeight,
                 onNext = onNext,
-                onGenerate = currentCallbacks.onGenerate,
-                onShare = currentCallbacks.onShare,
                 onDone = onDone,
-                onClearError = currentCallbacks.onClearError,
             )
         }
     }
@@ -861,11 +861,10 @@ private fun ResultCenter(genState: BookGenState) {
 private fun BookDesignerBottomBar(
     currentStep: Int,
     state: BookDesignerState,
+    callbacks: BookDesignerCallbacks,
+    minHeight: Dp,
     onNext: () -> Unit,
-    onGenerate: () -> Unit,
-    onShare: () -> Unit,
     onDone: () -> Unit,
-    onClearError: () -> Unit,
 ) {
     val target = when {
         state.genState is BookGenState.Error -> "error"
@@ -876,16 +875,29 @@ private fun BookDesignerBottomBar(
     }
     AnimatedContent(
         targetState = target,
-        transitionSpec = { fadeIn(tween(280)) togetherWith fadeOut(tween(180)) },
+        transitionSpec = {
+            (fadeIn(tween(320)) togetherWith fadeOut(tween(220)))
+                .using(SizeTransform(clip = false) { _, _ -> tween(0) })
+        },
         label = "bottombar",
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().heightIn(min = minHeight),
+        contentAlignment = Alignment.BottomCenter,
     ) { phase ->
         when (phase) {
-            "ready" -> ReadyBottom(onShare = onShare, onDone = onDone)
-            "generating" -> GeneratingIndicator()
+            "ready" -> ReadyBottom(onShare = callbacks.onShare, onDone = onDone)
+            "generating" -> Box(
+                modifier = Modifier.fillMaxWidth().padding(vertical = Sumi.Space.s4),
+                contentAlignment = Alignment.Center,
+            ) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(28.dp),
+                    color = SumiTheme.colors.inkSoft,
+                    strokeWidth = 2.dp,
+                )
+            }
             "error" -> ErrorRow(
                 message = (state.genState as? BookGenState.Error)?.message ?: "Export failed",
-                onDismiss = onClearError,
+                onDismiss = callbacks.onClearError,
             )
             "next" -> SumiButton(
                 onClick = onNext,
@@ -894,7 +906,7 @@ private fun BookDesignerBottomBar(
                 enabled = currentStep != 0 || state.difficultyMix.total > 0,
             ) { Text(text = "Next", style = SumiTheme.typography.uiButton) }
             else -> SumiButton(
-                onClick = onGenerate,
+                onClick = callbacks.onGenerate,
                 modifier = Modifier.fillMaxWidth(),
                 size = SumiButtonSize.Lg,
             ) {
@@ -906,18 +918,20 @@ private fun BookDesignerBottomBar(
     }
 }
 
+/** Animated reserved slot heights for the top message + bottom action area. */
 @Composable
-private fun GeneratingIndicator() {
-    Box(
-        modifier = Modifier.fillMaxWidth().padding(vertical = Sumi.Space.s4),
-        contentAlignment = Alignment.Center,
-    ) {
-        CircularProgressIndicator(
-            modifier = Modifier.size(28.dp),
-            color = SumiTheme.colors.inkSoft,
-            strokeWidth = 2.dp,
-        )
-    }
+private fun reservedSlotHeights(isProcessing: Boolean): Pair<Dp, Dp> {
+    val top by animateDpAsState(
+        targetValue = if (isProcessing) 72.dp else 0.dp,
+        animationSpec = tween(500),
+        label = "topReserved",
+    )
+    val bottom by animateDpAsState(
+        targetValue = if (isProcessing) 196.dp else 56.dp,
+        animationSpec = tween(500),
+        label = "bottomReserved",
+    )
+    return top to bottom
 }
 
 @Composable
