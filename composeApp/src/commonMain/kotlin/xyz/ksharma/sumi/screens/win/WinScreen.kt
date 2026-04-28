@@ -168,14 +168,6 @@ private fun WinShareCard(
             }
             Spacer(Modifier.height(Sumi.Space.s5))
         }
-        Text(
-            text = "The grid is quiet again.",
-            style = SumiTheme.typography.quote.copy(fontSize = 24.sp, lineHeight = 32.sp),
-            color = SumiTheme.colors.ink,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth(),
-        )
-        Spacer(Modifier.height(Sumi.Space.s5))
         WinStatsRow(
             timeDisplay = formatTime(elapsedMs),
             mistakeCount = mistakeCount,

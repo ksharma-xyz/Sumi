@@ -56,6 +56,9 @@ fun SumiBoard(
     val teal = colors.teal
     val red = colors.red
     val tone = if (SumiTheme.isDark) AuroraTone.Night else AuroraTone.Paper
+    // Mode-aware selection-wash alphas — dark paper needs hotter values to read.
+    val selectionAlphas = if (SumiTheme.isDark) Sumi.Color.BoardSelection.Dark
+    else Sumi.Color.BoardSelection.Light
     val selected = state.selected
     val errorCells = state.errorCells
 
@@ -76,7 +79,7 @@ fun SumiBoard(
                 },
         ) {
             val px = cellSize.toPx()
-            drawCellBackgrounds(state, selected, errorCells, px, CellColors(ink, teal, red))
+            drawCellBackgrounds(state, selected, errorCells, px, CellColors(ink, teal, red), selectionAlphas)
             drawGridLines(px, ink)
         }
 
@@ -245,9 +248,13 @@ private fun CellDigitLayout(
             Text(
                 text = cell.value.toString(),
                 style = if (cell.given) {
-                    SumiTheme.typography.numeral.copy(color = textColor.copy(alpha = alpha))
+                    // Override the role's 22sp default to fit the bigger 42dp cell.
+                    SumiTheme.typography.numeral.copy(
+                        color = textColor.copy(alpha = alpha),
+                        fontSize = 26.sp,
+                    )
                 } else {
-                    SumiTheme.typography.hand.copy(color = textColor, fontSize = 24.sp)
+                    SumiTheme.typography.hand.copy(color = textColor, fontSize = 28.sp)
                 },
                 modifier = if (!cell.given) {
                     Modifier.graphicsLayer {
@@ -315,17 +322,19 @@ private fun NoteGrid(
 
 private data class CellColors(val ink: Color, val teal: Color, val red: Color)
 
+@Suppress("LongParameterList")
 private fun DrawScope.drawCellBackgrounds(
     state: BoardState,
     selected: Pair<Int, Int>?,
     errorCells: Set<Pair<Int, Int>>,
     px: Float,
     colors: CellColors,
+    alphas: xyz.ksharma.sumi.theme.BoardSelectionAlphas,
 ) {
     val selectedValue = selected?.let { (r, c) -> state.cells[r][c].value }
     for (r in 0..8) {
         for (c in 0..8) {
-            val bg = cellBg(state.cells[r][c], r, c, selected, errorCells, selectedValue, colors)
+            val bg = cellBg(state.cells[r][c], r, c, selected, errorCells, selectedValue, colors, alphas)
             if (bg != Color.Transparent) {
                 drawRect(color = bg, topLeft = Offset(c * px, r * px), size = Size(px, px))
             }
@@ -333,6 +342,7 @@ private fun DrawScope.drawCellBackgrounds(
     }
 }
 
+@Suppress("LongParameterList")
 private fun cellBg(
     cell: xyz.ksharma.sumi.game.model.Cell,
     r: Int,
@@ -341,6 +351,7 @@ private fun cellBg(
     errorCells: Set<Pair<Int, Int>>,
     selectedValue: Int?,
     colors: CellColors,
+    alphas: xyz.ksharma.sumi.theme.BoardSelectionAlphas,
 ): Color {
     val isSelected = selected?.first == r && selected.second == c
     val isError = (r to c) in errorCells
@@ -348,10 +359,10 @@ private fun cellBg(
     val isSameDigit = selectedValue != null && selectedValue != 0 &&
         cell.value == selectedValue && !isSelected
     return when {
-        isError -> colors.red.copy(alpha = 0.10f)
-        isSelected -> colors.red.copy(alpha = 0.08f)
-        isSameDigit -> colors.teal.copy(alpha = 0.08f)
-        isInUnit -> colors.ink.copy(alpha = 0.03f)
+        isError -> colors.red.copy(alpha = alphas.error)
+        isSelected -> colors.red.copy(alpha = alphas.selected)
+        isSameDigit -> colors.teal.copy(alpha = alphas.sameDigit)
+        isInUnit -> colors.ink.copy(alpha = alphas.inUnit)
         else -> Color.Transparent
     }
 }

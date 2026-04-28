@@ -22,6 +22,24 @@ data class SeasonPalette(
  */
 data class InkBleedAlphas(val outer: Float, val middle: Float, val inner: Float)
 
+/**
+ * Per-mode opacity ramp for Sudoku board cell highlights. Dark paper absorbs more of the
+ * alpha than cream paper, so the same wash reads dimmer on dark — ramp the alphas up to
+ * keep the *visual density* consistent on both modes.
+ *
+ * Used by `SumiBoard.cellBg` for selection / same-digit / row-col-box-shared / error states.
+ */
+data class BoardSelectionAlphas(
+    /** Background under the currently-selected cell. */
+    val selected: Float,
+    /** Background under all other cells holding the same digit as the selected cell. */
+    val sameDigit: Float,
+    /** Background under cells in the same row, column, or 3×3 box as the selected cell. */
+    val inUnit: Float,
+    /** Background under cells with a wrong-digit error. */
+    val error: Float,
+)
+
 object SumiTokens {
 
     object Color {
@@ -58,6 +76,25 @@ object SumiTokens {
             val mid = androidx.compose.ui.graphics.Color(0xFFE8A3B3)
             val deep = androidx.compose.ui.graphics.Color(0xFFC97A8E)
             val glow = androidx.compose.ui.graphics.Color(0xFFFBF6ED)
+        }
+
+        // Board selection-wash opacity ramps. Bumped substantially over the original
+        // (0.03–0.10) values which were too subtle to read at a glance — the selected
+        // cell is the player's pointer and needs to be obvious. Dark mode is ~50%
+        // hotter than light because dark paper absorbs more of the wash.
+        object BoardSelection {
+            val Light = BoardSelectionAlphas(
+                selected = 0.20f,
+                sameDigit = 0.14f,
+                inUnit = 0.06f,
+                error = 0.18f,
+            )
+            val Dark = BoardSelectionAlphas(
+                selected = 0.32f,
+                sameDigit = 0.22f,
+                inUnit = 0.10f,
+                error = 0.30f,
+            )
         }
 
         // Ink-bleed tokens — opacity ramps for the [InkBleed] bullseye primitive.
@@ -204,7 +241,9 @@ object SumiTokens {
     object Layout {
         val screenPadX = 24.dp
         val screenPadY = 28.dp
-        val cellSize = 38.dp
+        // Bumped from 38 → 42dp (+10%) so the digits inside have enough headroom at
+        // the larger 26/28sp sizes the player + given typography roles render at.
+        val cellSize = 42.dp
         val minTap = 44.dp
     }
 }
