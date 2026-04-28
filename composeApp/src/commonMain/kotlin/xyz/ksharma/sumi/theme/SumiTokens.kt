@@ -241,7 +241,7 @@ object SumiTokens {
     object Layout {
         val screenPadX = 24.dp
         val screenPadY = 28.dp
-        val cellSize = 38.dp
+        val cellSize = 41.dp
         val minTap = 44.dp
     }
 }

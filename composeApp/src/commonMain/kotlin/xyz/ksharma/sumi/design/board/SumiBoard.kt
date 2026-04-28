@@ -247,10 +247,14 @@ private fun CellDigitLayout(
         content = {
             Text(
                 text = cell.value.toString(),
+                // Both given and player digits use the same numeral typeface so 1 and 7
+                // are unambiguous (the previous handwriting font for player entries had
+                // near-identical 1/7 glyphs). The teal vs ink colour set by textColor is
+                // the affordance that still tells the user which cells they entered.
                 style = if (cell.given) {
                     SumiTheme.typography.numeral.copy(color = textColor.copy(alpha = alpha))
                 } else {
-                    SumiTheme.typography.hand.copy(color = textColor, fontSize = 24.sp)
+                    SumiTheme.typography.numeral.copy(color = textColor)
                 },
                 modifier = if (!cell.given) {
                     Modifier.graphicsLayer {

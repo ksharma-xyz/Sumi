@@ -47,6 +47,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import xyz.ksharma.sumi.design.board.SumiBoard
+import xyz.ksharma.sumi.design.components.PetalBurstConfig
 import xyz.ksharma.sumi.design.components.SumiIcon
 import xyz.ksharma.sumi.design.components.SumiPetalBurst
 import xyz.ksharma.sumi.design.components.WashiBG
@@ -65,11 +66,27 @@ private val DIFFICULTY_KANJI = mapOf(
     Difficulty.Edo to "五",
 )
 
+private val LINE_BURST = PetalBurstConfig(
+    count = 8,
+    sizeMultiplier = 0.85f,
+    durationMs = 1_600,
+    swayScale = 0.6f,
+)
+
+private val GRID_BURST = PetalBurstConfig(
+    count = 48,
+    sizeMultiplier = 2.4f,
+    durationMs = 3_400,
+    swayScale = 1.2f,
+)
+
+@Suppress("LongParameterList")
 @Composable
 fun GameScreen(
     state: BoardState,
     elapsedMs: Long,
     celebrationCount: Int,
+    gridCelebrationCount: Int,
     paused: Boolean,
     difficulty: Difficulty,
     callbacks: GameCallbacks,
@@ -91,7 +108,21 @@ fun GameScreen(
                 rewardedHintAvailable = rewardedHintAvailable,
             )
         }
-        SumiPetalBurst(trigger = celebrationCount, modifier = Modifier.fillMaxSize())
+        // Subtle, sparse petals for row / column / 3x3 completions — they should
+        // feel like a wink, not a parade. The big shower is reserved for the
+        // full grid (below) so the "you finished!" moment lands distinctly.
+        SumiPetalBurst(
+            trigger = celebrationCount,
+            modifier = Modifier.fillMaxSize(),
+            config = LINE_BURST,
+        )
+        // Full-grid completion shower — held for ~3s before the Win navigation
+        // fires (see GameEntry's WIN_CELEBRATION_DWELL_MS). Premium pacing.
+        SumiPetalBurst(
+            trigger = gridCelebrationCount,
+            modifier = Modifier.fillMaxSize(),
+            config = GRID_BURST,
+        )
         GameAnnouncer(state = state)
         if (bottomBanner != null) {
             Box(

@@ -34,6 +34,9 @@ import xyz.ksharma.sumi.screens.game.GameCallbacks
 import xyz.ksharma.sumi.screens.game.GameScreen
 import xyz.ksharma.sumi.screens.game.GameViewModel
 
+private const val MIN_VALID_SOLVE_MS = 1_000L
+private const val WIN_CELEBRATION_DWELL_MS = 3_500L
+
 private class HapticContext(private val engine: HapticEngine, private val enabled: Boolean) {
     fun tick() { if (enabled) engine.tick() }
     fun confirm() { if (enabled) engine.confirm() }
@@ -68,6 +71,7 @@ fun EntryProviderScope<NavKey>.GameEntry(navigator: SumiNavigator) {
         val state by vm.state.collectAsState()
         val elapsedMs by vm.elapsedMs.collectAsState()
         val celebrationCount by vm.celebrationCount.collectAsState()
+        val gridCelebrationCount by vm.gridCelebrationCount.collectAsState()
         val showIdleInterstitial by vm.showIdleInterstitial.collectAsState()
         val showRewardedHintAd by vm.showRewardedHintAd.collectAsState()
         val hapticsEnabled by themePrefs.observeHapticsEnabled().collectAsState(initial = true)
@@ -84,8 +88,16 @@ fun EntryProviderScope<NavKey>.GameEntry(navigator: SumiNavigator) {
         )
 
         LaunchedEffect(state.isComplete) {
-            if (state.isComplete) {
+            // Guard: never trigger Win for elapsedMs == 0. We've seen a race after
+            // "Next Practice" where state briefly satisfies isComplete before the
+            // timer has ticked, recording a 0-min solve and corrupting Stats.
+            // The puzzle takes seconds to solve at minimum; a sub-second "win" is
+            // never legitimate.
+            if (state.isComplete && elapsedMs >= MIN_VALID_SOLVE_MS) {
+                // Hold on the board for a beat so the celebration shower can play
+                // out before we cut to Win — premium pacing, not abrupt.
                 ctx.haptic.win()
+                kotlinx.coroutines.delay(WIN_CELEBRATION_DWELL_MS)
                 ctx.analytics.logGameCompleted(
                     difficulty = key.difficulty,
                     elapsedSeconds = elapsedMs / 1000L,
@@ -113,6 +125,7 @@ fun EntryProviderScope<NavKey>.GameEntry(navigator: SumiNavigator) {
             state = state,
             elapsedMs = elapsedMs,
             celebrationCount = celebrationCount,
+            gridCelebrationCount = gridCelebrationCount,
             paused = paused,
             difficulty = diff,
             callbacks = buildGameCallbacks(

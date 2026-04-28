@@ -5,6 +5,7 @@ package xyz.ksharma.sumi.screens.game
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,6 +16,7 @@ import kotlinx.coroutines.launch
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import xyz.ksharma.sumi.ads.AdOrchestrator
+import xyz.ksharma.sumi.coroutines.ext.launchWithExceptionHandler
 import xyz.ksharma.sumi.game.manager.BoardManager
 import xyz.ksharma.sumi.game.manager.RealBoardManager
 import xyz.ksharma.sumi.game.model.BoardState
@@ -40,6 +42,14 @@ class GameViewModel(
 
     private val _celebrationCount = MutableStateFlow(0)
     val celebrationCount: StateFlow<Int> = _celebrationCount.asStateFlow()
+
+    /**
+     * Bumps when the *whole* grid is solved (separate from per-row / per-box
+     * cell-completion ticks above). The Game screen reads this to fire a
+     * larger, longer petal shower than the subtle line-completion bursts.
+     */
+    private val _gridCelebrationCount = MutableStateFlow(0)
+    val gridCelebrationCount: StateFlow<Int> = _gridCelebrationCount.asStateFlow()
 
     /**
      * Fires `true` when the player has been idle for [IDLE_INTERSTITIAL_MS] while the puzzle
@@ -76,15 +86,23 @@ class GameViewModel(
         currentDifficulty = difficulty
         _elapsedMs.value = 0L
         _celebrationCount.value = 0
+        _gridCelebrationCount.value = 0
         idleMs = 0L
         _showIdleInterstitial.value = false
         _showRewardedHintAd.value = false
 
-        viewModelScope.launch {
+        // launchWithExceptionHandler so any failure in the generator / save IO
+        // doesn't crash the app. Heavy work (puzzle generation — backtracking
+        // sudoku solver — and DataStore IO) runs on Dispatchers.Default to keep
+        // the main thread free for the loading-state UI.
+        viewModelScope.launchWithExceptionHandler<GameViewModel>(dispatcher = Dispatchers.Default) {
             if (fresh) saveRepository.clearSave(difficulty)
 
             val freshPuzzle: BoardState
             val save: GameSave?
+            // We're already on Dispatchers.Default thanks to the outer
+            // launchWithExceptionHandler, so the generator + DataStore calls
+            // below run off-main without further withContext gymnastics.
             if (fresh) {
                 // Random seed so "New Puzzle" always gives different clues from the daily puzzle.
                 currentSeed = Clock.System.now().toEpochMilliseconds()
@@ -122,6 +140,12 @@ class GameViewModel(
             }
 
             _state.value = boardManager.state.value
+            // Persist the seed immediately when starting a fresh puzzle, even with
+            // zero user moves. Without this, "New Puzzle" → navigate away → return
+            // would re-open the daily puzzle (no save existed yet) instead of the
+            // freshly-rolled one. startSync's auto-save only fires once the user
+            // makes a move, so we seed the save up front.
+            if (fresh) saveRepository.writeSave(currentDifficulty, buildSave(_state.value))
             startSync()
             startTimer()
         }
@@ -190,13 +214,20 @@ class GameViewModel(
     private fun startSync() {
         syncJob = viewModelScope.launch {
             var prevCompleted = completionKey(_state.value)
+            var prevIsComplete = _state.value.isComplete
             boardManager.state.collect { newState ->
                 _state.value = newState
                 val newCompleted = completionKey(newState)
-                if ((newCompleted - prevCompleted).isNotEmpty()) {
+                val justCompletedGrid = !prevIsComplete && newState.isComplete
+                val newLineEvents = (newCompleted - prevCompleted).filterNot { it == "grid" }
+                if (newLineEvents.isNotEmpty() && !justCompletedGrid) {
                     _celebrationCount.update { it + 1 }
                 }
+                if (justCompletedGrid) {
+                    _gridCelebrationCount.update { it + 1 }
+                }
                 prevCompleted = newCompleted
+                prevIsComplete = newState.isComplete
 
                 when {
                     newState.isComplete ->
