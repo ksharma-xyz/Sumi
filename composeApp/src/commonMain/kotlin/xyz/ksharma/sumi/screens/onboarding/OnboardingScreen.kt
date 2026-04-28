@@ -69,7 +69,6 @@ import xyz.ksharma.sumi.resources.Res
 import xyz.ksharma.sumi.resources.ink_bleed_01
 import xyz.ksharma.sumi.resources.ink_bleed_02
 import xyz.ksharma.sumi.resources.ink_bleed_03
-import xyz.ksharma.sumi.resources.logo_grid
 import xyz.ksharma.sumi.theme.SumiSeason
 import xyz.ksharma.sumi.theme.SumiTheme
 import xyz.ksharma.sumi.theme.SumiTokens
@@ -203,12 +202,7 @@ private fun SlidePage(page: Int) {
         Box(modifier = Modifier.size(200.dp), contentAlignment = Alignment.Center) {
             when (page) {
                 0 -> LogoEnso(size = 200.dp, color = SumiTheme.colors.ink)
-                1 -> Image(
-                    painter = painterResource(Res.drawable.logo_grid),
-                    contentDescription = null,
-                    modifier = Modifier.size(180.dp),
-                    contentScale = ContentScale.Fit,
-                )
+                1 -> LogoGridDots(size = 180.dp)
                 2 -> RestKanji()
             }
         }
@@ -398,6 +392,30 @@ private fun RestKanji() {
         style = SumiTheme.typography.cjk.copy(fontSize = 120.sp),
         color = SumiTheme.colors.red,
     )
+}
+
+/**
+ * 3×3 grid of ink dots used on the "Every mark is yours" onboarding slide.
+ *
+ * Drawn with Compose Canvas using [SumiTheme.colors.ink] so the dots flip cream-coloured
+ * on dark paper — the previous static vector drawable hardcoded a dark-ink fill and
+ * vanished against the night-paper background in dark mode.
+ */
+@Composable
+private fun LogoGridDots(size: androidx.compose.ui.unit.Dp) {
+    val ink = SumiTheme.colors.ink
+    androidx.compose.foundation.Canvas(modifier = Modifier.size(size)) {
+        // Match the original logo_grid.xml geometry: 120-unit viewBox, dots at (30, 60, 90)
+        // each axis with radius 9.
+        val unit = this.size.minDimension / 120f
+        for (row in 0..2) {
+            for (col in 0..2) {
+                val cx = (30f + col * 30f) * unit
+                val cy = (30f + row * 30f) * unit
+                drawCircle(color = ink, radius = 9f * unit, center = androidx.compose.ui.geometry.Offset(cx, cy))
+            }
+        }
+    }
 }
 
 private fun slideHeadline(page: Int) = when (page) {
