@@ -248,13 +248,9 @@ private fun CellDigitLayout(
             Text(
                 text = cell.value.toString(),
                 style = if (cell.given) {
-                    // Override the role's 22sp default to fit the bigger 42dp cell.
-                    SumiTheme.typography.numeral.copy(
-                        color = textColor.copy(alpha = alpha),
-                        fontSize = 26.sp,
-                    )
+                    SumiTheme.typography.numeral.copy(color = textColor.copy(alpha = alpha))
                 } else {
-                    SumiTheme.typography.hand.copy(color = textColor, fontSize = 28.sp)
+                    SumiTheme.typography.hand.copy(color = textColor, fontSize = 24.sp)
                 },
                 modifier = if (!cell.given) {
                     Modifier.graphicsLayer {

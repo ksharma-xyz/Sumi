@@ -21,6 +21,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
@@ -121,6 +123,8 @@ private fun GameBody(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState()) // Lets landscape + small phones scroll the
+            // board + tools + number-pad stack instead of clipping the bottom.
             .windowInsetsPadding(WindowInsets.statusBars)
             .padding(horizontal = Sumi.Space.s6)
             .padding(bottom = bottomReservedHeight),

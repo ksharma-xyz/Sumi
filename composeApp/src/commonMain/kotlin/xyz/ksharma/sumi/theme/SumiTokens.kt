@@ -241,9 +241,7 @@ object SumiTokens {
     object Layout {
         val screenPadX = 24.dp
         val screenPadY = 28.dp
-        // Bumped from 38 → 42dp (+10%) so the digits inside have enough headroom at
-        // the larger 26/28sp sizes the player + given typography roles render at.
-        val cellSize = 42.dp
+        val cellSize = 38.dp
         val minTap = 44.dp
     }
 }
