@@ -127,7 +127,7 @@ class AndroidPuzzleBookExporter(private val context: Context) : PuzzleBookExport
         val titleFm = titlePaint.fontMetrics
         canvas.drawText("Sumi", cx, logoBottom + 24f - (titleFm.ascent + titleFm.descent) / 2f, titlePaint)
         canvas.drawText(
-            "Puzzle Book",
+            "Zen Sudoku",
             cx,
             logoBottom + 52f,
             textPaint(c.inkSoft, 12f, align = Paint.Align.CENTER, letterSpacing = 0.15f),
@@ -212,11 +212,13 @@ class AndroidPuzzleBookExporter(private val context: Context) : PuzzleBookExport
         val markCx = MARGIN + markSize / 2f
         val markCy = MARGIN + markSize / 2f
         drawSumiLogo(canvas, markCx, markCy, size = markSize, color = c.ink)
-        // Vertically centre the wordmark on the mark
-        val wordmarkPaint = textPaint(c.ink, 11f, bold = false, letterSpacing = 0.18f)
+        // Wordmark uses the SAME italic serif face as the cover "Sumi" — just
+        // smaller. The previous all-caps default-typeface variant looked
+        // generic on every puzzle page; this matches the brand identity.
+        val wordmarkPaint = textPaint(c.ink, 14f, italic = true)
         val wordmarkY = markCy - (wordmarkPaint.fontMetrics.ascent + wordmarkPaint.fontMetrics.descent) / 2f
         canvas.drawText(
-            appName.uppercase(),
+            appName,
             markCx + markSize / 2f + 6f,
             wordmarkY,
             wordmarkPaint,

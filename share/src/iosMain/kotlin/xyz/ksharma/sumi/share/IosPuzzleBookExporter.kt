@@ -177,9 +177,9 @@ class IosPuzzleBookExporter : PuzzleBookExporter {
             (titleFont.ascender + titleFont.descender) / 2.0
         drawText("Sumi", cx, titleBaselineY, titleFont, c.ink, TextAlign.CENTER)
 
-        // "Puzzle Book" subtitle — 12pt, kerning 0.15em
+        // "Zen Sudoku" subtitle — 12pt, kerning 0.15em
         drawText(
-            "Puzzle Book",
+            "Zen Sudoku",
             cx,
             logoBottom + 52.0,
             sansSerifFont(12.0),
@@ -228,17 +228,17 @@ class IosPuzzleBookExporter : PuzzleBookExporter {
         val markCy = MARGIN + markSize / 2.0
         drawSumiLogo(markCx, markCy, size = markSize, color = c.ink)
 
-        val wordmarkFont = sansSerifFont(11.0)
-        // Vertically centre the wordmark on the mark
+        // Italic serif "Sumi" — same face as the cover wordmark, just smaller.
+        // The previous all-caps sans variant looked generic on every page.
+        val wordmarkFont = serifFont(14.0, italic = true)
         val wordmarkBaseY = markCy + (wordmarkFont.ascender + wordmarkFont.descender) / 2.0
         drawText(
-            appName.uppercase(),
+            appName,
             markCx + markSize / 2.0 + 6.0,
             wordmarkBaseY,
             wordmarkFont,
             c.ink,
             TextAlign.LEFT,
-            letterSpacingEm = 0.18,
         )
 
         drawText(

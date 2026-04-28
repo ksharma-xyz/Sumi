@@ -3,11 +3,11 @@
 package xyz.ksharma.sumi.screens.win
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -24,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.graphics.rememberGraphicsLayer
@@ -52,6 +55,7 @@ import xyz.ksharma.sumi.design.components.WashiBG
 import xyz.ksharma.sumi.resources.Res
 import xyz.ksharma.sumi.resources.ink_bleed_02
 import xyz.ksharma.sumi.resources.ink_bleed_03
+import xyz.ksharma.sumi.resources.logo_chop
 import xyz.ksharma.sumi.theme.SumiTheme
 import xyz.ksharma.sumi.theme.SumiTokens as Sumi
 
@@ -67,7 +71,6 @@ fun WinScreen(
     moveCount: Int,
     difficulty: String,
     quote: Quote,
-    onHome: () -> Unit,
     modifier: Modifier = Modifier,
     onNextPuzzle: (() -> Unit)? = null,
     onShare: ((ImageBitmap) -> Unit)? = null,
@@ -93,27 +96,30 @@ fun WinScreen(
 
     Box(modifier = modifier.fillMaxSize()) {
         WashiBG(modifier = Modifier.fillMaxSize())
+        // Heavier ink-bleed wash than before (0.08 → 0.18) so the result reads
+        // more like a sumi-e print and less like a flat status sheet.
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.TopStart) {
             Image(
                 painter = painterResource(Res.drawable.ink_bleed_02),
                 contentDescription = null,
-                modifier = Modifier.size(280.dp),
+                modifier = Modifier.size(360.dp),
                 contentScale = ContentScale.Fit,
-                alpha = 0.08f,
+                alpha = 0.18f,
             )
         }
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomEnd) {
             Image(
                 painter = painterResource(Res.drawable.ink_bleed_03),
                 contentDescription = null,
-                modifier = Modifier.size(220.dp),
+                modifier = Modifier.size(300.dp),
                 contentScale = ContentScale.Fit,
-                alpha = 0.10f,
+                alpha = 0.20f,
             )
         }
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .verticalScroll(rememberScrollState())
                 .padding(horizontal = Sumi.Space.s6)
                 .padding(top = Sumi.Space.s9, bottom = Sumi.Space.s7),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -127,10 +133,9 @@ fun WinScreen(
                 solution = solution,
                 surface = ShareCardSurface(layer = shareLayer, background = cardBackground),
             )
-            Spacer(Modifier.weight(1f))
+            Spacer(Modifier.height(Sumi.Space.s7))
             WinActions(
                 onNextPuzzle = onNextPuzzle,
-                onHome = onHome,
                 onShare = if (onShare != null) {
                     { coroutineScope.launch { onShare(shareLayer.toImageBitmap()) } }
                 } else null,
@@ -221,43 +226,50 @@ private fun WinShareCard(
             difficulty = difficulty,
         )
         if (quote.text.isNotBlank()) {
+            // Generous gap between the stats line and the closing quote — they're
+            // semantically distinct sections (your run vs an offering for reflection)
+            // and the previous tight spacing made them read as one block.
+            Spacer(Modifier.height(Sumi.Space.s7))
             QuoteFooter(text = quote.text, attribution = quote.attribution)
         }
     }
 }
 
+/**
+ * The real Sumi chop-seal vector, tilted -12\u00B0 so it reads as a stamp pressed
+ * onto the paper. Using the resource (instead of a Compose-primitive box) means
+ * the design system stays the source of truth \u2014 and the share-card capture
+ * still works because painterResource of an XML vector renders fine inside
+ * graphicsLayer (verified earlier when capturing this card to a bitmap).
+ */
 @Composable
 private fun ChopSeal(size: Dp = 88.dp) {
-    val cream = SumiTheme.colors.paper
-    val red = SumiTheme.colors.red
-    val shape = androidx.compose.foundation.shape.RoundedCornerShape(size * 0.07f)
-    Box(
+    Image(
+        painter = painterResource(Res.drawable.logo_chop),
+        contentDescription = "Sumi",
         modifier = Modifier
             .size(size)
-            .background(color = red, shape = shape)
-            .border(width = 2.dp, color = cream.copy(alpha = 0.9f), shape = shape)
+            .graphicsLayer { rotationZ = -12f }
             .semantics { contentDescription = "Sumi" },
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = "\u5B8C",
-            style = SumiTheme.typography.cjk.copy(
-                fontSize = (size.value * 0.55f).sp,
-                color = cream,
-            ),
-        )
-    }
+    )
 }
 
+/**
+ * FlowRow so chips wrap onto the next line when they don't fit horizontally —
+ * "Easy" was getting squished out of the row on narrower screens.
+ */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun InlineSecondaryStats(mistakeCount: Int, moveCount: Int, difficulty: String) {
     val levelKanji = difficultyKanji(difficulty)
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
+    FlowRow(
         horizontalArrangement = Arrangement.Center,
-        modifier = Modifier.semantics(mergeDescendants = true) {
-            contentDescription = "$mistakeCount mistakes, $moveCount moves, level $difficulty"
-        },
+        verticalArrangement = Arrangement.Center,
+        modifier = Modifier
+            .fillMaxWidth()
+            .semantics(mergeDescendants = true) {
+                contentDescription = "$mistakeCount mistakes, $moveCount moves, level $difficulty"
+            },
     ) {
         StatChip(value = mistakeCount.toString(), label = "mistakes")
         StatSeparator()
@@ -329,37 +341,32 @@ private fun difficultyKanji(difficulty: String): String = when (difficulty.lower
 
 @Composable
 private fun WinActions(
-    onHome: () -> Unit,
     onNextPuzzle: (() -> Unit)?,
     onShare: (() -> Unit)?,
 ) {
+    // Two-button hierarchy: Share is the primary (high-contrast) action — most
+    // users want to celebrate the run; Next Practice is the secondary ghost.
+    // System back from Win returns Home, so a dedicated "Return Home" button
+    // is redundant and was removed.
     Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Sumi.Space.s2)) {
-        if (onNextPuzzle != null) {
-            SumiButton(
-                onClick = onNextPuzzle,
-                modifier = Modifier.fillMaxWidth(),
-                size = SumiButtonSize.Lg,
-            ) {
-                Text(text = "Next Practice →", style = SumiTheme.typography.uiButton)
-            }
-        }
         if (onShare != null) {
             SumiButton(
                 onClick = onShare,
                 modifier = Modifier.fillMaxWidth(),
-                variant = SumiButtonVariant.Ghost,
-                size = SumiButtonSize.Md,
+                size = SumiButtonSize.Lg,
             ) {
                 Text(text = "Share Result", style = SumiTheme.typography.uiButton)
             }
         }
-        SumiButton(
-            onClick = onHome,
-            modifier = Modifier.fillMaxWidth(),
-            variant = SumiButtonVariant.Ghost,
-            size = SumiButtonSize.Md,
-        ) {
-            Text(text = "Return Home", style = SumiTheme.typography.uiButton)
+        if (onNextPuzzle != null) {
+            SumiButton(
+                onClick = onNextPuzzle,
+                modifier = Modifier.fillMaxWidth(),
+                variant = SumiButtonVariant.Ghost,
+                size = SumiButtonSize.Md,
+            ) {
+                Text(text = "Next Practice →", style = SumiTheme.typography.uiButton)
+            }
         }
     }
 }
