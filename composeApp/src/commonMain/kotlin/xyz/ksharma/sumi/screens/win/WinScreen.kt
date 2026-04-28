@@ -245,7 +245,7 @@ private fun WinStatsRow(
     ) {
         val numericStats = listOf(
             "TIME" to timeDisplay,
-            "MARKS" to mistakeCount.toString(),
+            "MISTAKES" to mistakeCount.toString(),
             "MOVES" to moveCount.toString(),
         )
         numericStats.forEachIndexed { i, (label, value) ->

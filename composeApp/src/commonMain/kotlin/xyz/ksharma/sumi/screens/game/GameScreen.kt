@@ -221,7 +221,7 @@ private fun MarksHintsRow(
     ) {
         Text(
             text = buildAnnotatedString {
-                withStyle(SpanStyle(color = SumiTheme.colors.inkSoft)) { append("MARKS ") }
+                withStyle(SpanStyle(color = SumiTheme.colors.inkSoft)) { append("MISTAKES ") }
                 withStyle(SpanStyle(color = SumiTheme.colors.red, fontWeight = FontWeight.Bold)) {
                     append("$mistakeCount")
                 }
