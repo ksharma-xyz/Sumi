@@ -42,6 +42,15 @@ import xyz.ksharma.sumi.game.model.Cell
 import xyz.ksharma.sumi.theme.SumiTheme
 import xyz.ksharma.sumi.theme.SumiTokens as Sumi
 
+// Grid stroke widths derived from cellSize so the board scales cleanly when
+// cellSize changes (was hardcoded to 1.5dp / 0.5dp tied to the original 38dp
+// cell). At cellSize = 41dp these resolve to ~1.4dp / ~0.5dp, matching the
+// previous look; at larger cells they grow proportionally.
+private const val BOX_STROKE_RATIO = 0.035f
+private const val THIN_STROKE_RATIO = 0.012f
+private val BOX_STROKE_MIN = 1.dp
+private val THIN_STROKE_MIN = 0.5.dp
+
 @Composable
 fun SumiBoard(
     state: BoardState,
@@ -372,29 +381,27 @@ private fun sharesUnit(r: Int, c: Int, sel: Pair<Int, Int>): Boolean =
 
 private fun DrawScope.drawGridLines(px: Float, ink: Color) {
     val boardPx = px * 9
-    // dp-based widths so the lines render at the same visual thickness on every density.
-    // Raw float pixels (1.5f / 0.5f) underdraw on hi-density devices.
-    val boxStroke = 1.5.dp.toPx()
-    val thinStroke = 0.5.dp.toPx()
+    // Stroke widths scale with cell size so the grid stays visually balanced
+    // when cellSize is bumped (was: hard-coded 1.5dp / 0.5dp tied to one
+    // specific cellSize). Coerce to dp minimums so the lines never disappear
+    // on tiny embed sizes.
+    val cellDp = px.toDp().value
+    val boxStroke = (cellDp * BOX_STROKE_RATIO).dp.toPx().coerceAtLeast(BOX_STROKE_MIN.toPx())
+    val thinStroke = (cellDp * THIN_STROKE_RATIO).dp.toPx().coerceAtLeast(THIN_STROKE_MIN.toPx())
 
-    for (i in 0..9) {
+    // Interior lines only (i = 1..8). The perimeter is owned by whatever
+    // container wraps SumiBoard — drawing it again here would produce a
+    // double-border (e.g. GameScreen's outer Modifier.border + this canvas's
+    // perimeter sitting one padding-step apart, visible most on the right
+    // edge). Self-contained: SumiBoard renders cells + interior dividers.
+    for (i in 1..8) {
         val isBox = i % 3 == 0
         val strokeWidth = if (isBox) boxStroke else thinStroke
         val color = ink.copy(alpha = if (isBox) 0.85f else 0.25f)
-        // Perimeter lines (i = 0 and i = 9) get inset by half their stroke width so the
-        // full thickness sits INSIDE the canvas — without this, half of a 4.5px box
-        // stroke gets clipped, making the perimeter look thinner than interior dividers.
-        val pos = when (i) {
-            0 -> strokeWidth / 2f
-            9 -> boardPx - strokeWidth / 2f
-            else -> i * px
-        }
+        val pos = i * px
         drawLine(color, Offset(pos, 0f), Offset(pos, boardPx), strokeWidth)
         drawLine(color, Offset(0f, pos), Offset(boardPx, pos), strokeWidth)
     }
-    // No outer drawRect stroke — i=0 and i=9 lines above already form the perimeter,
-    // and stacking a second stroke on top was producing the perimeter-vs-interior
-    // thickness mismatch.
 }
 
 @Composable
