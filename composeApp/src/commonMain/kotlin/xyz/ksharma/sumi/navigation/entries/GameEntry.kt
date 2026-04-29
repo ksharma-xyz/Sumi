@@ -72,6 +72,7 @@ fun EntryProviderScope<NavKey>.GameEntry(navigator: SumiNavigator) {
         val elapsedMs by vm.elapsedMs.collectAsState()
         val celebrationCount by vm.celebrationCount.collectAsState()
         val gridCelebrationCount by vm.gridCelebrationCount.collectAsState()
+        val isInitializing by vm.isInitializing.collectAsState()
         val showIdleInterstitial by vm.showIdleInterstitial.collectAsState()
         val showRewardedHintAd by vm.showRewardedHintAd.collectAsState()
         val hapticsEnabled by themePrefs.observeHapticsEnabled().collectAsState(initial = true)
@@ -126,6 +127,7 @@ fun EntryProviderScope<NavKey>.GameEntry(navigator: SumiNavigator) {
             elapsedMs = elapsedMs,
             celebrationCount = celebrationCount,
             gridCelebrationCount = gridCelebrationCount,
+            isInitializing = isInitializing,
             paused = paused,
             difficulty = diff,
             callbacks = buildGameCallbacks(

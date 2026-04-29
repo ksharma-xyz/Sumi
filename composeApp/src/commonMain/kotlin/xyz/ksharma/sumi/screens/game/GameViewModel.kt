@@ -52,6 +52,16 @@ class GameViewModel(
     val gridCelebrationCount: StateFlow<Int> = _gridCelebrationCount.asStateFlow()
 
     /**
+     * True while [init] is still loading / generating the puzzle. The Game
+     * screen reads this to render a premium loading overlay (the puzzle gen
+     * for Edo can take several seconds on lower-end devices). Resumes are
+     * fast — the overlay only appears after a 200ms delay so it doesn't
+     * flash on quick loads.
+     */
+    private val _isInitializing = MutableStateFlow(true)
+    val isInitializing: StateFlow<Boolean> = _isInitializing.asStateFlow()
+
+    /**
      * Fires `true` when the player has been idle for [IDLE_INTERSTITIAL_MS] while the puzzle
      * is unsolved and unpaused, AND the [AdOrchestrator] permits another interstitial.
      * The Game entry observes this and renders the basic-ads InterstitialAd composable;
@@ -87,6 +97,7 @@ class GameViewModel(
         _elapsedMs.value = 0L
         _celebrationCount.value = 0
         _gridCelebrationCount.value = 0
+        _isInitializing.value = true
         idleMs = 0L
         _showIdleInterstitial.value = false
         _showRewardedHintAd.value = false
@@ -148,6 +159,7 @@ class GameViewModel(
             if (fresh) saveRepository.writeSave(currentDifficulty, buildSave(_state.value))
             startSync()
             startTimer()
+            _isInitializing.value = false
         }
     }
 

@@ -21,4 +21,13 @@ interface ShareManager {
         title: String = "Sumi",
         text: String? = null,
     ): Result<Unit>
+
+    /**
+     * Share a plain text message via the OS share sheet — used for the Home
+     * "invite a friend" affordance.
+     *
+     * @param text  Body of the message (can include URLs).
+     * @param title Chooser title (Android) or subject (iOS mail / message).
+     */
+    suspend fun shareText(text: String, title: String = "Sumi"): Result<Unit>
 }

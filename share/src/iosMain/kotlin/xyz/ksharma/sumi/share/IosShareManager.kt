@@ -62,6 +62,22 @@ class IosShareManager : ShareManager {
             }
         }
 
+    override suspend fun shareText(text: String, title: String): Result<Unit> = runCatching {
+        withContext(Dispatchers.Main) {
+            val activityVC = UIActivityViewController(
+                activityItems = listOf(text),
+                applicationActivities = null,
+            )
+            activityVC.setValue(title, forKey = "subject")
+            val topVC = checkNotNull(topmostViewController()) {
+                "No UIViewController to present the share sheet from"
+            }
+            activityVC.popoverPresentationController?.sourceView = topVC.view
+            activityVC.popoverPresentationController?.sourceRect = topVC.view.bounds
+            topVC.presentViewController(activityVC, animated = true, completion = null)
+        }
+    }
+
     private fun topmostViewController(): UIViewController? {
         // keyWindow is deprecated in iOS 13+ — walk connectedScenes instead.
         val keyWindow: UIWindow? = UIApplication.sharedApplication

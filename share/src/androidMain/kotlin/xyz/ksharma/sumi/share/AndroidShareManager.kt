@@ -32,6 +32,21 @@ class AndroidShareManager(private val context: Context) : ShareManager {
             }
         }
 
+    override suspend fun shareText(text: String, title: String): Result<Unit> = runCatching {
+        withContext(Dispatchers.Main) {
+            val intent = Intent(Intent.ACTION_SEND).apply {
+                type = "text/plain"
+                putExtra(Intent.EXTRA_SUBJECT, title)
+                putExtra(Intent.EXTRA_TEXT, text)
+            }
+            context.startActivity(
+                Intent.createChooser(intent, title).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                },
+            )
+        }
+    }
+
     private fun saveBitmapToCache(bitmap: Bitmap): Uri {
         val cacheDir = File(context.cacheDir, "share").also { it.mkdirs() }
         val file = File(cacheDir, "sumi_${System.currentTimeMillis()}.png")
