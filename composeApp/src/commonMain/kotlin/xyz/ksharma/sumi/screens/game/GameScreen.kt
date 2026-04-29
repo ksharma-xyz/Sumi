@@ -17,7 +17,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -90,6 +90,9 @@ private val GRID_BURST = PetalBurstConfig(
     swayScale = 1.2f,
 )
 
+/** Cap board width on tablets so the grid scales up without dominating wide screens. */
+private val MAX_BOARD_WIDTH = 560.dp
+
 @Suppress("LongParameterList")
 @Composable
 fun GameScreen(
@@ -104,6 +107,7 @@ fun GameScreen(
     modifier: Modifier = Modifier,
     bottomBanner: (@Composable () -> Unit)? = null,
     rewardedHintAvailable: Boolean = false,
+    showMistakes: Boolean = true,
 ) {
     Box(modifier = modifier.fillMaxSize()) {
         // Game content — blurred when paused so the scrim reads as frosted glass
@@ -117,6 +121,7 @@ fun GameScreen(
                 callbacks = callbacks,
                 bottomReservedHeight = if (bottomBanner != null) 64.dp else 0.dp,
                 rewardedHintAvailable = rewardedHintAvailable,
+                showMistakes = showMistakes,
             )
         }
         // Loading overlay for slow generations (Master / Edo first-time can take
@@ -157,6 +162,7 @@ fun GameScreen(
     }
 }
 
+@Suppress("LongParameterList")
 @Composable
 private fun GameBody(
     state: BoardState,
@@ -165,6 +171,7 @@ private fun GameBody(
     callbacks: GameCallbacks,
     bottomReservedHeight: androidx.compose.ui.unit.Dp = 0.dp,
     rewardedHintAvailable: Boolean = false,
+    showMistakes: Boolean = true,
 ) {
     Column(
         modifier = Modifier
@@ -182,16 +189,24 @@ private fun GameBody(
         MarksHintsRow(
             mistakeCount = state.mistakeCount,
             hintsRemaining = state.hintsRemaining,
+            showMistakes = showMistakes,
             rewardedHintAvailable = rewardedHintAvailable,
         )
         Spacer(Modifier.height(Sumi.Space.s3))
-        Box(
-            modifier = Modifier
-                .border(1.dp, SumiTheme.colors.ink)
-                .background(SumiTheme.colors.paperGlow)
-                .padding(2.dp),
+        // BoxWithConstraints lets the board scale to fill the available width —
+        // up to MAX_BOARD_WIDTH (560dp) so it grows properly on tablets but
+        // doesn't dominate a 12-inch display. SumiBoard owns its own perimeter
+        // so no wrapping border / padding is needed (would have caused the
+        // interior lines to overhang the perimeter).
+        androidx.compose.foundation.layout.BoxWithConstraints(
+            contentAlignment = Alignment.Center,
         ) {
-            SumiBoard(state = state, onCellTap = { r, c -> callbacks.onSelect(r, c) })
+            val resolvedCellSize = minOf(maxWidth, MAX_BOARD_WIDTH) / 9
+            SumiBoard(
+                state = state,
+                cellSize = resolvedCellSize,
+                onCellTap = { r, c -> callbacks.onSelect(r, c) },
+            )
         }
         Spacer(Modifier.height(Sumi.Space.s4))
         ToolsRow(
@@ -262,22 +277,25 @@ private fun GameTopBar(difficulty: Difficulty, elapsedMs: Long, onBack: () -> Un
 private fun MarksHintsRow(
     mistakeCount: Int,
     hintsRemaining: Int,
+    showMistakes: Boolean,
     rewardedHintAvailable: Boolean = false,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
+        horizontalArrangement = if (showMistakes) Arrangement.SpaceBetween else Arrangement.End,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            text = buildAnnotatedString {
-                withStyle(SpanStyle(color = SumiTheme.colors.inkSoft)) { append("MISTAKES ") }
-                withStyle(SpanStyle(color = SumiTheme.colors.red, fontWeight = FontWeight.Bold)) {
-                    append("$mistakeCount")
-                }
-            },
-            style = SumiTheme.typography.uiMeta.copy(letterSpacing = 1.5.sp),
-        )
+        if (showMistakes) {
+            Text(
+                text = buildAnnotatedString {
+                    withStyle(SpanStyle(color = SumiTheme.colors.inkSoft)) { append("MISTAKES ") }
+                    withStyle(SpanStyle(color = SumiTheme.colors.red, fontWeight = FontWeight.Bold)) {
+                        append("$mistakeCount")
+                    }
+                },
+                style = SumiTheme.typography.uiMeta.copy(letterSpacing = 1.5.sp),
+            )
+        }
         Text(
             text = buildAnnotatedString {
                 withStyle(SpanStyle(color = SumiTheme.colors.inkSoft)) { append("HINTS ") }
@@ -354,9 +372,15 @@ private fun ToolsRow(
 
 @Composable
 private fun NumberPad(state: BoardState, onDigit: (Int) -> Unit) {
+    // Row uses IntrinsicSize.Min so the dividers stretch to whatever the
+    // tallest number cell needs. Cells use intrinsic height (no aspectRatio
+    // square constraint) so the remaining-count badge below the digit can
+    // grow at large system font scales without getting clipped — that was
+    // the bug where the count got cut off.
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .height(androidx.compose.foundation.layout.IntrinsicSize.Min)
             .border(width = 1.dp, color = SumiTheme.colors.paperEdge)
             .padding(vertical = Sumi.Space.s2),
     ) {
@@ -367,15 +391,15 @@ private fun NumberPad(state: BoardState, onDigit: (Int) -> Unit) {
                 Box(
                     modifier = Modifier
                         .width(1.dp)
-                        .height(40.dp)
+                        .fillMaxHeight()
                         .background(SumiTheme.colors.paperEdge),
                 )
             }
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .aspectRatio(1f)
                     .minimumInteractiveComponentSize()
+                    .padding(vertical = Sumi.Space.s2)
                     .clickable(interactionSource = src, indication = null, enabled = remaining > 0) { onDigit(n) },
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center,
@@ -387,7 +411,7 @@ private fun NumberPad(state: BoardState, onDigit: (Int) -> Unit) {
                 )
                 Text(
                     text = if (remaining > 0) remaining.toString() else "",
-                    style = SumiTheme.typography.uiMeta.copy(fontSize = 9.sp),
+                    style = SumiTheme.typography.uiMeta.copy(fontSize = 11.sp),
                     color = SumiTheme.colors.inkFaint,
                 )
             }

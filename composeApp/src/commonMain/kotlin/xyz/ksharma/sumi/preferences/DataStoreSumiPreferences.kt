@@ -23,6 +23,7 @@ import kotlin.time.ExperimentalTime
 private val KEY_SEEN_ONBOARDING = booleanPreferencesKey("seen_onboarding")
 private val KEY_SEASON = stringPreferencesKey("season")
 private val KEY_HAPTICS = booleanPreferencesKey("haptics_enabled")
+private val KEY_SHOW_MISTAKES = booleanPreferencesKey("show_mistakes")
 private val KEY_STREAK = intPreferencesKey("streak_count")
 private val KEY_BEST_STREAK = intPreferencesKey("best_streak")
 private val KEY_LAST_SOLVE_DAY = longPreferencesKey("last_solve_day")
@@ -202,6 +203,13 @@ class DataStoreSumiPreferences(
 
     override suspend fun setHapticsEnabled(enabled: Boolean) {
         store.edit { it[KEY_HAPTICS] = enabled }
+    }
+
+    override fun observeShowMistakes(): Flow<Boolean> =
+        store.data.map { it[KEY_SHOW_MISTAKES] ?: true }
+
+    override suspend fun setShowMistakes(enabled: Boolean) {
+        store.edit { it[KEY_SHOW_MISTAKES] = enabled }
     }
 }
 

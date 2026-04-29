@@ -165,7 +165,6 @@ fun ProZenScreen(
     designerState: BookDesignerState,
     designerCallbacks: BookDesignerCallbacks,
     onPageChange: (Int) -> Unit,
-    onRestorePurchase: () -> Unit,
     modifier: Modifier = Modifier,
     onDesignerVisibilityChange: (Boolean) -> Unit = {},
 ) {
@@ -198,7 +197,6 @@ fun ProZenScreen(
                 quoteIndex = quoteIndex,
                 onPageChange = onPageChange,
                 onOpenDesigner = { showDesigner = true },
-                onRestorePurchase = onRestorePurchase,
             )
         }
     }
@@ -210,7 +208,6 @@ private fun ZenLanding(
     quoteIndex: Int,
     onPageChange: (Int) -> Unit,
     onOpenDesigner: () -> Unit,
-    onRestorePurchase: () -> Unit,
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
         WashiBG(modifier = Modifier.fillMaxSize())
@@ -249,8 +246,9 @@ private fun ZenLanding(
             ZenSectionLabel(text = "Zen Sudoku")
             Spacer(Modifier.height(Sumi.Space.s4))
             PuzzleBookCard(onClick = onOpenDesigner)
-            Spacer(Modifier.height(Sumi.Space.s8))
-            ZenFooter(onRestorePurchase = onRestorePurchase)
+            // No restore-purchase footer here — Zen tab is only reachable when
+            // the user is already Pro, so restore is unnecessary on this surface.
+            // (It still lives on PaywallScreen where it actually matters.)
         }
     }
 }
@@ -521,19 +519,6 @@ private fun PuzzleBookCard(onClick: () -> Unit) {
             )
         }
     }
-}
-
-@Composable
-private fun ZenFooter(onRestorePurchase: () -> Unit) {
-    val src = remember { MutableInteractionSource() }
-    Text(
-        text = "Restore purchase",
-        style = SumiTheme.typography.uiMeta,
-        color = SumiTheme.colors.inkFaint,
-        modifier = Modifier
-            .clickable(interactionSource = src, indication = null, onClick = onRestorePurchase)
-            .padding(Sumi.Space.s2),
-    )
 }
 
 @Composable

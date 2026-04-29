@@ -1,9 +1,14 @@
 package xyz.ksharma.sumi.navigation.entries
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
 import app.lexilabs.basic.ads.DependsOnGoogleMobileAds
@@ -13,6 +18,7 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
+import xyz.ksharma.sumi.AppLinks
 import xyz.ksharma.sumi.FREE_QUOTES
 import xyz.ksharma.sumi.ads.AdUnits
 import xyz.ksharma.sumi.coroutines.ext.launchWithExceptionHandler
@@ -31,11 +37,17 @@ import kotlin.time.ExperimentalTime
 
 private val PRO_DIFFICULTIES = setOf("Hard", "Master", "Edo")
 
-// TODO: replace with the real App Store / Play Store listing URLs once the app
-// is published. Until then we share a stand-in landing page.
-private const val INVITE_TEXT =
-    "I've been finding quiet in this Sudoku app — Sumi. " +
-        "Daily puzzles, no noise. https://sumi.app"
+/**
+ * Body of the "Pass Sumi along" share. Includes both store links so the
+ * recipient lands on the correct one. URLs are sourced from [AppLinks] —
+ * placeholders for now, real listing URLs once published.
+ */
+private val INVITE_TEXT = buildString {
+    append("I've been finding quiet in this Sudoku app — Sumi.\n")
+    append("Daily puzzles, no noise.\n\n")
+    append("iOS: ").append(AppLinks.APP_STORE_URL).append('\n')
+    append("Android: ").append(AppLinks.PLAY_STORE_URL)
+}
 
 @Suppress("ComposableNaming")
 @OptIn(DependsOnGoogleMobileAds::class)
@@ -72,7 +84,13 @@ fun EntryProviderScope<NavKey>.HomeEntry(navigator: SumiNavigator) {
             },
             lockedDifficulties = if (isPro) emptySet() else PRO_DIFFICULTIES,
             bottomBanner = if (showBanner) {
-                @Composable { BannerAd(adUnitId = AdUnits.Banner) }
+                @Composable {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(50.dp),
+                    ) { BannerAd(adUnitId = AdUnits.Banner) }
+                }
             } else null,
         )
     }

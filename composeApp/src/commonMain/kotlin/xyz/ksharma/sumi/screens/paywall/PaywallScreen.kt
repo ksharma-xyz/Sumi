@@ -42,6 +42,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.koinInject
+import xyz.ksharma.sumi.AppLinks
 import xyz.ksharma.sumi.coroutines.ext.launchWithExceptionHandler
 import xyz.ksharma.sumi.design.components.LogoEnso
 import xyz.ksharma.sumi.design.components.QuoteRule
@@ -56,9 +57,8 @@ import xyz.ksharma.sumi.resources.ink_bleed_01
 import xyz.ksharma.sumi.theme.SumiTheme
 import xyz.ksharma.sumi.theme.SumiTokens as Sumi
 
-// TODO: Replace dummy URLs with real privacy policy and terms of service before release
-private const val URL_PRIVACY = "https://example.com/privacy"
-private const val URL_TERMS = "https://example.com/terms"
+// Privacy + Terms URLs sourced from AppLinks. Update there once real legal
+// pages are hosted (placeholders point to example.org until then).
 
 private val PRO_FEATURES = listOf(
     "Remove all ads. Forever quiet.",
@@ -344,7 +344,7 @@ private fun PaywallFooterLinks(onRestore: () -> Unit, onDismiss: () -> Unit) {
             modifier = Modifier.clickable(
                 interactionSource = termsSource,
                 indication = null,
-                onClick = { uriHandler.openUri(URL_TERMS) },
+                onClick = { uriHandler.openUri(AppLinks.TERMS_URL) },
             ),
         )
         Text(text = "/", style = SumiTheme.typography.uiMeta, color = SumiTheme.colors.inkFaint)
@@ -355,7 +355,7 @@ private fun PaywallFooterLinks(onRestore: () -> Unit, onDismiss: () -> Unit) {
             modifier = Modifier.clickable(
                 interactionSource = privacySource,
                 indication = null,
-                onClick = { uriHandler.openUri(URL_PRIVACY) },
+                onClick = { uriHandler.openUri(AppLinks.PRIVACY_URL) },
             ),
         )
     }

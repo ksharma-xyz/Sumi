@@ -389,16 +389,20 @@ private fun DrawScope.drawGridLines(px: Float, ink: Color) {
     val boxStroke = (cellDp * BOX_STROKE_RATIO).dp.toPx().coerceAtLeast(BOX_STROKE_MIN.toPx())
     val thinStroke = (cellDp * THIN_STROKE_RATIO).dp.toPx().coerceAtLeast(THIN_STROKE_MIN.toPx())
 
-    // Interior lines only (i = 1..8). The perimeter is owned by whatever
-    // container wraps SumiBoard — drawing it again here would produce a
-    // double-border (e.g. GameScreen's outer Modifier.border + this canvas's
-    // perimeter sitting one padding-step apart, visible most on the right
-    // edge). Self-contained: SumiBoard renders cells + interior dividers.
-    for (i in 1..8) {
+    // Full grid (i = 0..9): SumiBoard owns its own perimeter so it ships as a
+    // complete bordered unit. Wrapping containers should NOT add their own
+    // Modifier.border — the canvas's i=0 / i=9 perimeter strokes are the
+    // outer ring, inset by half their thickness so the full stroke sits
+    // inside the canvas (without inset, half a 1.4dp stroke gets clipped).
+    for (i in 0..9) {
         val isBox = i % 3 == 0
         val strokeWidth = if (isBox) boxStroke else thinStroke
         val color = ink.copy(alpha = if (isBox) 0.85f else 0.25f)
-        val pos = i * px
+        val pos = when (i) {
+            0 -> strokeWidth / 2f
+            9 -> boardPx - strokeWidth / 2f
+            else -> i * px
+        }
         drawLine(color, Offset(pos, 0f), Offset(pos, boardPx), strokeWidth)
         drawLine(color, Offset(0f, pos), Offset(boardPx, pos), strokeWidth)
     }

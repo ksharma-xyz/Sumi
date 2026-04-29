@@ -42,6 +42,7 @@ import xyz.ksharma.sumi.theme.SumiSeason
 import xyz.ksharma.sumi.theme.SumiTheme
 import xyz.ksharma.sumi.theme.SumiTokens as Sumi
 
+@Suppress("LongParameterList", "LongMethod")
 @Composable
 fun SettingsScreen(
     onBack: () -> Unit,
@@ -49,6 +50,7 @@ fun SettingsScreen(
     themeState: ThemeState,
     onSeasonSelect: (SumiSeason) -> Unit,
     onHapticsToggle: () -> Unit,
+    onShowMistakesToggle: () -> Unit,
     debugCallbacks: DebugCallbacks?,
     modifier: Modifier = Modifier,
 ) {
@@ -83,6 +85,16 @@ fun SettingsScreen(
                         description = "Vibration feedback while playing.",
                         checked = themeState.hapticsEnabled,
                         onToggle = onHapticsToggle,
+                    )
+                }
+
+                Spacer(Modifier.height(Sumi.Space.s3))
+                SettingsPanel {
+                    SettingsToggleRow(
+                        label = "Show mistake count",
+                        description = "Hide the running mistake counter on the game screen.",
+                        checked = themeState.showMistakes,
+                        onToggle = onShowMistakesToggle,
                     )
                 }
 

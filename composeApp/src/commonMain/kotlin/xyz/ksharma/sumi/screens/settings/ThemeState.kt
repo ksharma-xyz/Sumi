@@ -5,4 +5,5 @@ import xyz.ksharma.sumi.theme.SumiSeason
 data class ThemeState(
     val season: SumiSeason,
     val hapticsEnabled: Boolean,
+    val showMistakes: Boolean,
 )

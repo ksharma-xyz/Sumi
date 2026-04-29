@@ -2,8 +2,11 @@ package xyz.ksharma.sumi.screens.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import xyz.ksharma.sumi.preferences.DebugPreferences
@@ -21,17 +24,35 @@ class SettingsViewModel(
     val isHapticsEnabled: StateFlow<Boolean> = themes.observeHapticsEnabled()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), true)
 
+    val showMistakes: StateFlow<Boolean> = themes.observeShowMistakes()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), true)
+
     val isSimulatingPro: StateFlow<Boolean> = debug.observeSimulatePro()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), false)
 
     val isAdsEnabled: StateFlow<Boolean> = debug.observeAdsEnabled()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), true)
 
-    fun setSeason(season: SumiSeason) = viewModelScope.launch { themes.setSeason(season) }
+    // Per-setter SharedFlow + collectLatest — collapses rapid taps so we never
+    // launch one coroutine per click. Each setter just tryEmit's the latest
+    // value; one long-running collector below funnels them to DataStore.
+    private val seasonWriter = latestOnlyFlow<SumiSeason>()
+    private val hapticsWriter = latestOnlyFlow<Boolean>()
+    private val showMistakesWriter = latestOnlyFlow<Boolean>()
+    private val simulateProWriter = latestOnlyFlow<Boolean>()
+    private val adsEnabledWriter = latestOnlyFlow<Boolean>()
 
-    fun setHapticsEnabled(enabled: Boolean) = viewModelScope.launch {
-        themes.setHapticsEnabled(enabled)
+    init {
+        viewModelScope.launch { seasonWriter.collectLatest { themes.setSeason(it) } }
+        viewModelScope.launch { hapticsWriter.collectLatest { themes.setHapticsEnabled(it) } }
+        viewModelScope.launch { showMistakesWriter.collectLatest { themes.setShowMistakes(it) } }
+        viewModelScope.launch { simulateProWriter.collectLatest { debug.setSimulatePro(it) } }
+        viewModelScope.launch { adsEnabledWriter.collectLatest { debug.setAdsEnabled(it) } }
     }
+
+    fun setSeason(season: SumiSeason) { seasonWriter.tryEmit(season) }
+    fun setHapticsEnabled(enabled: Boolean) { hapticsWriter.tryEmit(enabled) }
+    fun setShowMistakes(enabled: Boolean) { showMistakesWriter.tryEmit(enabled) }
 
     fun resetOnboarding() = viewModelScope.launch { debug.resetOnboarding() }
 
@@ -46,11 +67,12 @@ class SettingsViewModel(
         debug.seedSolveData(streakDays = 5, totalPuzzles = 20)
     }
 
-    fun toggleSimulatePro() = viewModelScope.launch {
-        debug.setSimulatePro(!isSimulatingPro.value)
-    }
-
-    fun toggleAdsEnabled() = viewModelScope.launch {
-        debug.setAdsEnabled(!isAdsEnabled.value)
-    }
+    fun toggleSimulatePro() { simulateProWriter.tryEmit(!isSimulatingPro.value) }
+    fun toggleAdsEnabled() { adsEnabledWriter.tryEmit(!isAdsEnabled.value) }
 }
+
+/** Buffer-1 / drop-oldest SharedFlow — rapid taps collapse to the latest value. */
+private fun <T> latestOnlyFlow(): MutableSharedFlow<T> = MutableSharedFlow(
+    extraBufferCapacity = 1,
+    onBufferOverflow = BufferOverflow.DROP_OLDEST,
+)

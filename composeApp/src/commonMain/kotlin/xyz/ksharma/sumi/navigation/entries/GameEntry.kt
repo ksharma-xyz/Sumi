@@ -1,5 +1,8 @@
 package xyz.ksharma.sumi.navigation.entries
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -7,6 +10,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
 import app.lexilabs.basic.ads.AdState
@@ -47,7 +52,9 @@ private class HapticContext(private val engine: HapticEngine, private val enable
 private class GameContext(val haptic: HapticContext, val analytics: SumiAnalytics)
 
 // Entry composables glue many flows + ads — splitting hurts traceability.
-@Suppress("ComposableNaming", "LongMethod", "CyclomaticComplexMethod")
+// ModifierMissing suppressed: this is a Navigation 3 entry function, not a
+// regular UI composable — the modifier doesn't apply at this layer.
+@Suppress("ComposableNaming", "LongMethod", "CyclomaticComplexMethod", "ModifierMissing")
 @OptIn(DependsOnGoogleMobileAds::class)
 @Composable
 fun EntryProviderScope<NavKey>.GameEntry(navigator: SumiNavigator) {
@@ -76,6 +83,7 @@ fun EntryProviderScope<NavKey>.GameEntry(navigator: SumiNavigator) {
         val showIdleInterstitial by vm.showIdleInterstitial.collectAsState()
         val showRewardedHintAd by vm.showRewardedHintAd.collectAsState()
         val hapticsEnabled by themePrefs.observeHapticsEnabled().collectAsState(initial = true)
+        val showMistakes by themePrefs.observeShowMistakes().collectAsState(initial = true)
         val ctx = GameContext(HapticContext(haptic, hapticsEnabled), analytics)
 
         // Pre-load idle interstitial — see WinScreen comment for the rationale (basic-ads
@@ -130,6 +138,7 @@ fun EntryProviderScope<NavKey>.GameEntry(navigator: SumiNavigator) {
             isInitializing = isInitializing,
             paused = paused,
             difficulty = diff,
+            showMistakes = showMistakes,
             callbacks = buildGameCallbacks(
                 vm = vm,
                 ctx = ctx,
@@ -151,7 +160,13 @@ fun EntryProviderScope<NavKey>.GameEntry(navigator: SumiNavigator) {
                 rewardedHintAvailable = !isPro && isAdsEnabled,
             ),
             bottomBanner = if (showBanner) {
-                @Composable { BannerAd(adUnitId = AdUnits.Banner) }
+                @Composable {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(50.dp),
+                    ) { BannerAd(adUnitId = AdUnits.Banner) }
+                }
             } else null,
             rewardedHintAvailable = !isPro && isAdsEnabled,
         )
