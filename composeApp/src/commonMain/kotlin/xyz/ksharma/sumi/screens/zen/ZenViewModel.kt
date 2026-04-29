@@ -129,7 +129,7 @@ class ZenViewModel(
         }
     }
 
-    private fun buildPages(mix: DifficultyMix, baseSeed: Long): List<PuzzleBookPage> {
+    private suspend fun buildPages(mix: DifficultyMix, baseSeed: Long): List<PuzzleBookPage> {
         val diffEntries = listOf(
             Difficulty.Easy to mix.easy,
             Difficulty.Medium to mix.medium,

@@ -2,13 +2,13 @@
 
 package xyz.ksharma.sumi.game
 
+import kotlinx.coroutines.runBlocking
 import xyz.ksharma.sumi.game.model.Difficulty
 import xyz.ksharma.sumi.game.puzzle.RealPuzzleRepository
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
 
 class PuzzleRepositoryTest {
 
@@ -17,7 +17,7 @@ class PuzzleRepositoryTest {
     // ── daily() ───────────────────────────────────────────────────────────────
 
     @Test
-    fun dailyReturnsBoardForEachDifficulty() {
+    fun dailyReturnsBoardForEachDifficulty() = runBlocking {
         Difficulty.entries.forEach { diff ->
             val board = repo.daily(diff)
             assertNotNull(board)
@@ -26,7 +26,7 @@ class PuzzleRepositoryTest {
     }
 
     @Test
-    fun dailyIsDeterministicForSameDifficulty() {
+    fun dailyIsDeterministicForSameDifficulty() = runBlocking {
         // Two calls on the same process share the same clock day, so seeds match.
         val a = repo.daily(Difficulty.Medium)
         val b = repo.daily(Difficulty.Medium)
@@ -35,7 +35,7 @@ class PuzzleRepositoryTest {
     }
 
     @Test
-    fun dailyDiffersBetweenDifficulties() {
+    fun dailyDiffersBetweenDifficulties() = runBlocking {
         val easy = repo.daily(Difficulty.Easy)
         val hard = repo.daily(Difficulty.Hard)
         // Same seed, different difficulty → different given-counts/layouts.
@@ -46,7 +46,7 @@ class PuzzleRepositoryTest {
     }
 
     @Test
-    fun dailyBoardHasValidSolution() {
+    fun dailyBoardHasValidSolution() = runBlocking {
         val board = repo.daily(Difficulty.Easy)
         val sol = board.solution
         // Every row 1–9
@@ -61,7 +61,7 @@ class PuzzleRepositoryTest {
     }
 
     @Test
-    fun dailyBoardGivensMatchSolution() {
+    fun dailyBoardGivensMatchSolution() = runBlocking {
         val board = repo.daily(Difficulty.Hard)
         for (r in 0..8) for (c in 0..8) {
             val cell = board.cells[r][c]
@@ -72,7 +72,7 @@ class PuzzleRepositoryTest {
     // ── fromSeed() ────────────────────────────────────────────────────────────
 
     @Test
-    fun fromSeedIsDeterministic() {
+    fun fromSeedIsDeterministic() = runBlocking {
         val a = repo.fromSeed(Difficulty.Master, 9999L)
         val b = repo.fromSeed(Difficulty.Master, 9999L)
         assertEquals(a.cells, b.cells)
@@ -80,7 +80,7 @@ class PuzzleRepositoryTest {
     }
 
     @Test
-    fun fromSeedDifferentSeedsProduceDifferentBoards() {
+    fun fromSeedDifferentSeedsProduceDifferentBoards() = runBlocking {
         val a = repo.fromSeed(Difficulty.Easy, 1L)
         val b = repo.fromSeed(Difficulty.Easy, 2L)
         assertFalse(a.cells == b.cells)
@@ -89,19 +89,19 @@ class PuzzleRepositoryTest {
     // ── getOptions() ──────────────────────────────────────────────────────────
 
     @Test
-    fun getOptionsReturnsRequestedCount() {
+    fun getOptionsReturnsRequestedCount() = runBlocking {
         val options = repo.getOptions(Difficulty.Easy, count = 5)
         assertEquals(5, options.size)
     }
 
     @Test
-    fun getOptionsAllHaveCorrectDifficulty() {
+    fun getOptionsAllHaveCorrectDifficulty() = runBlocking {
         val options = repo.getOptions(Difficulty.Medium, count = 3)
         options.forEach { assertEquals(Difficulty.Medium, it.difficulty) }
     }
 
     @Test
-    fun getOptionsProducesDistinctBoards() {
+    fun getOptionsProducesDistinctBoards() = runBlocking {
         val options = repo.getOptions(Difficulty.Easy, count = 3)
         val boards = options.map { it.cells }
         val uniqueBoards = boards.toSet()

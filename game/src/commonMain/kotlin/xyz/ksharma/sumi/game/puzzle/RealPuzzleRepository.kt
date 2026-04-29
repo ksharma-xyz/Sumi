@@ -2,6 +2,8 @@
 
 package xyz.ksharma.sumi.game.puzzle
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import xyz.ksharma.sumi.game.generator.SudokuGenerator
 import xyz.ksharma.sumi.game.model.BoardState
 import xyz.ksharma.sumi.game.model.Difficulty
@@ -12,18 +14,27 @@ import kotlin.time.ExperimentalTime
 @OptIn(ExperimentalTime::class)
 class RealPuzzleRepository : PuzzleRepository {
 
-    override fun daily(difficulty: Difficulty): BoardState =
-        SudokuGenerator.generate(difficulty, derive(dailySeed(), difficulty))
+    // Each method wraps the synchronous generator in withContext(Default).
+    // Defense in depth: even if a future caller invokes from Main (despite the
+    // suspend signature), the heavy backtracking work is guaranteed off-main.
 
-    override fun getOptions(difficulty: Difficulty, count: Int): List<BoardState> {
-        val baseSeed = Clock.System.now().toEpochMilliseconds()
-        return List(count) { i ->
-            SudokuGenerator.generate(difficulty, derive(baseSeed + i * SEED_SPACING, difficulty))
+    override suspend fun daily(difficulty: Difficulty): BoardState =
+        withContext(Dispatchers.Default) {
+            SudokuGenerator.generate(difficulty, derive(dailySeed(), difficulty))
         }
-    }
 
-    override fun fromSeed(difficulty: Difficulty, seed: Long): BoardState =
-        SudokuGenerator.generate(difficulty, derive(seed, difficulty))
+    override suspend fun getOptions(difficulty: Difficulty, count: Int): List<BoardState> =
+        withContext(Dispatchers.Default) {
+            val baseSeed = Clock.System.now().toEpochMilliseconds()
+            List(count) { i ->
+                SudokuGenerator.generate(difficulty, derive(baseSeed + i * SEED_SPACING, difficulty))
+            }
+        }
+
+    override suspend fun fromSeed(difficulty: Difficulty, seed: Long): BoardState =
+        withContext(Dispatchers.Default) {
+            SudokuGenerator.generate(difficulty, derive(seed, difficulty))
+        }
 
     /**
      * Mixes [difficulty] into [seed] so the same caller-facing seed yields a
