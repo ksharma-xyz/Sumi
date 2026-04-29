@@ -241,13 +241,17 @@ class GameViewModel(
                 prevCompleted = newCompleted
                 prevIsComplete = newState.isComplete
 
-                when {
-                    newState.isComplete ->
-                        // Puzzle solved — clear the save slot so there's nothing stale to resume.
-                        launch { saveRepository.clearSave(currentDifficulty) }
-                    hasAnyUserMoves(newState) ->
-                        // Auto-save after every user move so the game survives process death.
-                        launch { saveRepository.writeSave(currentDifficulty, buildSave(newState)) }
+                if (newState.isComplete) {
+                    // Puzzle solved — clear the save slot so there's nothing stale to resume.
+                    launch { saveRepository.clearSave(currentDifficulty) }
+                } else {
+                    // Save on EVERY state change — including ones where the user has
+                    // no moves entered (undo / erase clearing the board). The previous
+                    // hasAnyUserMoves gate caused undo to leave the OLD save in place,
+                    // so re-opening the game brought back the digits the user had just
+                    // erased. Save the current state unconditionally; puzzleSeed is
+                    // preserved so resume always lands on the same puzzle.
+                    launch { saveRepository.writeSave(currentDifficulty, buildSave(newState)) }
                 }
             }
         }
@@ -288,9 +292,6 @@ class GameViewModel(
             puzzleSeed = currentSeed,
         )
     }
-
-    private fun hasAnyUserMoves(state: BoardState): Boolean =
-        state.cells.any { row -> row.any { cell -> !cell.given && cell.value != 0 } }
 
     // Reconstructs a BoardState from a fresh puzzle and a persisted save.
     // Given cells are always taken from the fresh puzzle (same seed = same puzzle).

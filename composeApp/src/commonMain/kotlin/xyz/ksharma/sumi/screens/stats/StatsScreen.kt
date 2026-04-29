@@ -13,9 +13,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.absoluteOffset
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
@@ -25,11 +27,18 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.layer.GraphicsLayer
+import androidx.compose.ui.graphics.layer.drawLayer
+import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontStyle
@@ -38,10 +47,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.launch
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import xyz.ksharma.sumi.design.components.InkBleed
+import xyz.ksharma.sumi.design.components.SumiIcon
 import xyz.ksharma.sumi.design.components.WashiBG
+import xyz.ksharma.sumi.design.icons.SumiIcons
 import xyz.ksharma.sumi.game.model.Difficulty
 import xyz.ksharma.sumi.theme.SumiTheme
 import xyz.ksharma.sumi.theme.SumiTokens as Sumi
@@ -51,8 +63,12 @@ fun StatsScreen(
     state: StatsState,
     onBack: () -> Unit,
     onUnlockPro: () -> Unit,
+    onShare: (ImageBitmap) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // Offscreen share card → captured on tap of the share icon in StatsHeader.
+    val shareLayer = rememberGraphicsLayer()
+    val coroutineScope = rememberCoroutineScope()
     WashiBG(modifier = modifier.fillMaxSize()) {
         // Ink-bleed sits behind the hero number, alpha 0.08, 200dp.
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
@@ -69,7 +85,12 @@ fun StatsScreen(
                 .padding(horizontal = Sumi.Space.s6)
                 .padding(top = Sumi.Space.s2, bottom = Sumi.Space.s7),
         ) {
-            StatsHeader(onBack = onBack)
+            StatsHeader(
+                onBack = onBack,
+                onShare = {
+                    coroutineScope.launch { onShare(shareLayer.toImageBitmap()) }
+                },
+            )
             Spacer(Modifier.height(Sumi.Space.s5))
             StatHero(total = state.totalPuzzlesSolved)
             Spacer(Modifier.height(Sumi.Space.s8))
@@ -104,14 +125,23 @@ fun StatsScreen(
                 )
             }
         }
+        // Offscreen share card — laid out + drawn into shareLayer every
+        // composition, never visible. Tap of the header share icon snapshots
+        // the layer to a bitmap and hands it to the share sheet.
+        Box(
+            modifier = Modifier.absoluteOffset(x = (-10_000).dp, y = (-10_000).dp),
+        ) {
+            StatsShareCard(state = state, layer = shareLayer)
+        }
     }
 }
 
 // ── Header ────────────────────────────────────────────────────────────────────
 
 @Composable
-private fun StatsHeader(onBack: () -> Unit) {
-    val src = remember { MutableInteractionSource() }
+private fun StatsHeader(onBack: () -> Unit, onShare: () -> Unit) {
+    val backSrc = remember { MutableInteractionSource() }
+    val shareSrc = remember { MutableInteractionSource() }
     Row(
         modifier = Modifier.fillMaxWidth().height(48.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -119,7 +149,7 @@ private fun StatsHeader(onBack: () -> Unit) {
         Box(
             modifier = Modifier
                 .size(48.dp)
-                .clickable(interactionSource = src, indication = null, onClick = onBack),
+                .clickable(interactionSource = backSrc, indication = null, onClick = onBack),
             contentAlignment = Alignment.Center,
         ) {
             Text(text = "←", style = SumiTheme.typography.h3, color = SumiTheme.colors.ink)
@@ -131,7 +161,20 @@ private fun StatsHeader(onBack: () -> Unit) {
             color = SumiTheme.colors.ink,
         )
         Spacer(Modifier.weight(1f))
-        Spacer(Modifier.size(48.dp))
+        // Share — captures the offscreen StatsShareCard and hands the bitmap up.
+        Box(
+            modifier = Modifier
+                .size(48.dp)
+                .clickable(interactionSource = shareSrc, indication = null, onClick = onShare),
+            contentAlignment = Alignment.Center,
+        ) {
+            SumiIcon(
+                icon = SumiIcons.Share,
+                contentDescription = "Share stats",
+                tint = SumiTheme.colors.ink,
+                size = 22.dp,
+            )
+        }
     }
 }
 
@@ -220,12 +263,15 @@ private fun ThisWeekCell(
 ) {
     Column(
         modifier = modifier
-            .height(96.dp)
+            // heightIn (not fixed height) so the tile grows when system font
+            // scale is large — fixed 96dp was clipping the value / label at
+            // accessibility text sizes.
+            .heightIn(min = 96.dp)
             .border(width = 1.dp, color = SumiTheme.colors.ink.copy(alpha = 0.08f))
             .padding(vertical = Sumi.Space.s4, horizontal = Sumi.Space.s3)
             .semantics(mergeDescendants = true) {},
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.SpaceBetween,
+        verticalArrangement = Arrangement.spacedBy(Sumi.Space.s2, Alignment.CenterVertically),
     ) {
         Text(
             text = value,
@@ -247,6 +293,20 @@ private fun ThisWeekCell(
 
 // ── Improvement line chart ────────────────────────────────────────────────────
 
+/**
+ * Plots the user's last N solve times (oldest → newest, left → right). The Y
+ * axis is normalised between the min and max time in the window:
+ *
+ *   y = (time - minTime) / (maxTime - minTime) * height
+ *
+ * Smaller time = faster = drawn nearer the TOP of the chart (y close to 0).
+ * Larger time = slower = drawn nearer the BOTTOM (y close to height). So an
+ * improving streak (faster solves over time) reads as a line that climbs up.
+ *
+ * Source data: [SumiPreferences.observeRecentSolveTimes], a rolling list of the
+ * most recent N elapsedMs values appended by [SumiPreferences.recordSolve].
+ * The chart is hidden until at least 2 points exist (no useful trend with 1).
+ */
 @Composable
 private fun ImprovementCard(times: List<Long>) {
     Column(
@@ -278,8 +338,10 @@ private fun ImprovementCard(times: List<Long>) {
             val path = Path()
             times.forEachIndexed { i, v ->
                 val x = stepX * i
-                // Lower time = better → invert Y so a faster trend goes UP visually.
-                val y = h - ((v - minV) / range) * h
+                // Faster (smaller v) sits NEAR THE TOP. Earlier code had this
+                // inverted — the line went down on improvement, opposite of
+                // the intent stated in the doc above.
+                val y = ((v - minV) / range) * h
                 if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
             }
             drawPath(
@@ -430,3 +492,99 @@ private fun thisEpochDay(): Long {
 }
 
 private val PRO_DIFFICULTIES = setOf(Difficulty.Hard, Difficulty.Master, Difficulty.Edo)
+
+// ── Share card (offscreen, captured to bitmap) ────────────────────────────────
+
+private val StatsShareInk = Color(0xFF2A2218)
+private val StatsShareInkSoft = Color(0xFF5A4838)
+private val StatsShareInkFaint = Color(0xFF8A7560)
+private val StatsSharePaper = Color(0xFFFBF7EC)
+private val StatsShareGold = Color(0xFF8A6B2A)
+
+/**
+ * Stats summary card rendered offscreen and captured to a bitmap on share-tap.
+ * Hardcoded cream/dark palette so the captured PNG looks identical regardless
+ * of the user's app theme. Compose primitives only — no painterResource since
+ * vector capture is unreliable across platforms.
+ */
+@Composable
+private fun StatsShareCard(state: StatsState, layer: GraphicsLayer) {
+    Column(
+        modifier = Modifier
+            .size(width = 360.dp, height = 480.dp)
+            .drawWithContent {
+                layer.record {
+                    drawRect(color = StatsSharePaper)
+                    this@drawWithContent.drawContent()
+                }
+                drawLayer(layer)
+            }
+            .padding(Sumi.Space.s7),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(Sumi.Space.s5),
+    ) {
+        // Brand line
+        Text(
+            text = "Sumi",
+            style = SumiTheme.typography.quote.copy(fontSize = 22.sp, fontStyle = FontStyle.Italic),
+            color = StatsShareInk,
+        )
+        Text(
+            text = "PRACTICE LOG",
+            style = SumiTheme.typography.uiLabel.copy(fontSize = 11.sp, letterSpacing = 2.sp),
+            color = StatsShareInkFaint,
+        )
+
+        Spacer(Modifier.height(Sumi.Space.s2))
+
+        // Hero — total solved
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                text = state.totalPuzzlesSolved.toString(),
+                style = SumiTheme.typography.h1.copy(fontSize = 80.sp, fontStyle = FontStyle.Italic),
+                color = StatsShareInk,
+            )
+            Text(
+                text = if (state.totalPuzzlesSolved == 1) "puzzle solved" else "puzzles solved",
+                style = SumiTheme.typography.subhead.copy(fontStyle = FontStyle.Italic),
+                color = StatsShareInkSoft,
+            )
+        }
+
+        // Streak + best time
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+        ) {
+            ShareStat(
+                value = state.currentStreak.toString(),
+                label = "STREAK",
+            )
+            val bestEver = state.bestTimes.values.minOrNull()
+            ShareStat(
+                value = bestEver?.let { formatTimeShort(it) } ?: "—",
+                label = "BEST",
+                accent = StatsShareGold,
+            )
+        }
+    }
+}
+
+@Composable
+private fun ShareStat(value: String, label: String, accent: Color = StatsShareInk) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            text = value,
+            style = SumiTheme.typography.numeral.copy(
+                fontSize = 32.sp,
+                fontStyle = FontStyle.Italic,
+            ),
+            color = accent,
+        )
+        Text(
+            text = label,
+            style = SumiTheme.typography.uiLabel.copy(fontSize = 10.sp, letterSpacing = 2.sp),
+            color = StatsShareInkFaint,
+        )
+    }
+}

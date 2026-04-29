@@ -3,6 +3,7 @@
 package xyz.ksharma.sumi.screens.win
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -187,9 +188,15 @@ private fun WinShareCard(
     surface: ShareCardSurface,
 ) {
     val shareLayer = surface.layer
+    // Outer hairline frame using the THEME ink color — visible only on screen
+    // (NOT inside the captured layer). In dark mode the cream-on-dark contrast
+    // of the card was washing out at the edges; this hairline gives it a clear
+    // boundary regardless of theme. The captured PNG is unaffected because the
+    // border is drawn outside the layer.record block.
     Column(
         modifier = Modifier
             .fillMaxWidth()
+            .border(1.dp, SumiTheme.colors.ink.copy(alpha = 0.18f))
             .drawWithContent {
                 shareLayer.record {
                     drawRect(color = SharePaper)

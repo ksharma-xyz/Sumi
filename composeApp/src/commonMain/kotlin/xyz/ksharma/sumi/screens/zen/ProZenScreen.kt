@@ -27,6 +27,8 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -828,6 +830,7 @@ private fun CountStepper(count: Int, canIncrement: Boolean, onCountChange: (Int)
 }
 
 @Composable
+@OptIn(ExperimentalLayoutApi::class)
 private fun ThemeDesignerPage(
     theme: BookTheme,
     onSetPaper: (BookPaper) -> Unit,
@@ -869,13 +872,14 @@ private fun ThemeDesignerPage(
 
         Spacer(Modifier.height(Sumi.Space.s7))
 
-        // INK — horizontal row of "ink wells". Pure colour dots, label below.
+        // INK — wells wrap onto a new row when there are too many to fit
+        // horizontally (FlowRow, not Row, so they don't get squished).
         SectionRule(label = "INK")
         Spacer(Modifier.height(Sumi.Space.s3))
-        Row(
+        FlowRow(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.Top,
+            horizontalArrangement = Arrangement.spacedBy(Sumi.Space.s3, Alignment.CenterHorizontally),
+            verticalArrangement = Arrangement.spacedBy(Sumi.Space.s3),
         ) {
             BookInk.entries.forEach { ink ->
                 InkWell(
