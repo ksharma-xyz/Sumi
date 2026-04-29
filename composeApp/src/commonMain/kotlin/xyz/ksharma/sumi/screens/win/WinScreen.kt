@@ -25,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.layer.GraphicsLayer
@@ -56,6 +57,7 @@ import xyz.ksharma.sumi.resources.Res
 import xyz.ksharma.sumi.resources.ink_bleed_02
 import xyz.ksharma.sumi.resources.ink_bleed_03
 import xyz.ksharma.sumi.resources.logo_chop
+import xyz.ksharma.sumi.resources.logo_enso
 import xyz.ksharma.sumi.theme.SumiTheme
 import xyz.ksharma.sumi.theme.SumiTokens as Sumi
 
@@ -165,6 +167,15 @@ fun WinScreen(
 /** Bundles share-layer plumbing so [WinShareCard]'s param list stays under detekt's threshold. */
 private data class ShareCardSurface(val layer: GraphicsLayer, val background: Color)
 
+// Hardcoded share-card palette so the captured image looks identical regardless
+// of whether the user has light or dark theme active in-app. The shared PNG is
+// always cream paper / dark ink — a portable artifact that doesn't surprise
+// the recipient with the sender's theme choice.
+private val ShareInk = Color(0xFF2A2218)
+private val ShareInkSoft = Color(0xFF5A4838)
+private val ShareInkFaint = Color(0xFF8A7560)
+private val SharePaper = Color(0xFFFBF7EC)
+
 @Composable
 private fun WinShareCard(
     elapsedMs: Long,
@@ -176,22 +187,28 @@ private fun WinShareCard(
     surface: ShareCardSurface,
 ) {
     val shareLayer = surface.layer
-    val cardBackground = surface.background
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .drawWithContent {
                 shareLayer.record {
-                    drawRect(color = cardBackground)
+                    drawRect(color = SharePaper)
                     this@drawWithContent.drawContent()
                 }
                 drawLayer(shareLayer)
             }
-            .padding(vertical = Sumi.Space.s4),
+            .padding(top = Sumi.Space.s5, bottom = Sumi.Space.s5),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        // 1. Brand mark — pure Compose primitives so the share PNG always renders it.
-        ChopSeal(size = 88.dp)
+        // 1. Brand header — Sumi mark + wordmark on the same paper bg as the
+        // rest of the card so the header is visually seamless. Compose
+        // primitives only (no painterResource for the mark, since we need
+        // bitmap-capture to render reliably across all platforms).
+        ShareHeader()
+        Spacer(Modifier.height(Sumi.Space.s5))
+        // 2. Smaller chop seal — was 88dp, now 56dp so it doesn't dominate
+        // the card alongside the new header.
+        ChopSeal(size = 56.dp)
         Spacer(Modifier.height(Sumi.Space.s5))
         // The actual completed grid — proof of the solve. Renders inside the share layer
         // so the exported PNG includes the puzzle, not just the stats.
@@ -202,10 +219,13 @@ private fun WinShareCard(
         }
 
         // 3. Time as the headline number.
+        // All text inside the share card uses the hardcoded ShareInk* palette
+        // so the captured PNG looks identical regardless of the user's app
+        // theme (light vs dark) — the image is a portable artifact.
         Text(
             text = "TIME",
             style = SumiTheme.typography.uiLabel.copy(letterSpacing = 2.sp),
-            color = SumiTheme.colors.inkFaint,
+            color = ShareInkFaint,
         )
         Spacer(Modifier.height(Sumi.Space.s1))
         Text(
@@ -215,7 +235,7 @@ private fun WinShareCard(
                 fontStyle = FontStyle.Italic,
                 letterSpacing = (-0.02f).em,
             ),
-            color = SumiTheme.colors.ink,
+            color = ShareInk,
         )
         Spacer(Modifier.height(Sumi.Space.s5))
 
@@ -286,13 +306,13 @@ private fun StatChip(value: String, label: String, isKanji: Boolean = false) {
             text = value,
             style = if (isKanji) SumiTheme.typography.cjk.copy(fontSize = 22.sp)
             else SumiTheme.typography.numeral.copy(fontSize = 22.sp, fontStyle = FontStyle.Italic),
-            color = SumiTheme.colors.ink,
+            color = ShareInk,
         )
         Spacer(Modifier.size(Sumi.Space.s1))
         Text(
             text = label,
             style = SumiTheme.typography.uiMeta.copy(fontSize = 12.sp),
-            color = SumiTheme.colors.inkSoft,
+            color = ShareInkSoft,
         )
     }
 }
@@ -302,7 +322,7 @@ private fun StatSeparator() {
     Text(
         text = "/",
         style = SumiTheme.typography.uiMeta.copy(fontSize = 14.sp),
-        color = SumiTheme.colors.paperEdge,
+        color = ShareInkFaint,
         modifier = Modifier.padding(horizontal = Sumi.Space.s2),
     )
 }
@@ -316,7 +336,7 @@ private fun QuoteFooter(text: String, attribution: String) {
         Text(
             text = "\u201C$text\u201D",
             style = SumiTheme.typography.quote.copy(fontSize = 14.sp, fontStyle = FontStyle.Italic),
-            color = SumiTheme.colors.inkSoft,
+            color = ShareInkSoft,
             textAlign = TextAlign.Center,
         )
         if (attribution.isNotBlank()) {
@@ -324,9 +344,36 @@ private fun QuoteFooter(text: String, attribution: String) {
             Text(
                 text = "\u2014 $attribution",
                 style = SumiTheme.typography.uiMeta.copy(fontSize = 11.sp),
-                color = SumiTheme.colors.inkFaint,
+                color = ShareInkFaint,
             )
         }
+    }
+}
+
+/**
+ * Sumi mark + wordmark anchored at the top of the shared card. Sized small
+ * so the headline stays the time, not the brand. Both elements use the
+ * hardcoded share palette so the header is seamless on the cream paper bg.
+ */
+@Composable
+private fun ShareHeader() {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center,
+    ) {
+        Image(
+            painter = painterResource(Res.drawable.logo_enso),
+            contentDescription = null,
+            modifier = Modifier.size(28.dp),
+            contentScale = ContentScale.Fit,
+            colorFilter = ColorFilter.tint(ShareInk),
+        )
+        Spacer(Modifier.size(Sumi.Space.s2))
+        Text(
+            text = "Sumi",
+            style = SumiTheme.typography.h3.copy(fontSize = 22.sp, fontStyle = FontStyle.Italic),
+            color = ShareInk,
+        )
     }
 }
 

@@ -77,11 +77,18 @@ fun EntryProviderScope<NavKey>.HomeEntry(navigator: SumiNavigator) {
                 else navigator.goTo(GameRoute(difficulty = difficulty))
             },
             onSettings = { navigator.goTo(SettingsRoute) },
-            onInvite = {
+            onInvite = { bitmap ->
+                // shareImage(bitmap, title, text) ships both the brand image
+                // and the body with both store URLs in a single share-sheet.
                 scope.launchWithExceptionHandler<ShareManager>(Dispatchers.Default) {
-                    shareManager.shareText(text = INVITE_TEXT, title = "Pass Sumi along")
+                    shareManager.shareImage(
+                        bitmap = bitmap,
+                        title = "Pass Sumi along",
+                        text = INVITE_TEXT,
+                    )
                 }
             },
+            isPro = isPro,
             lockedDifficulties = if (isPro) emptySet() else PRO_DIFFICULTIES,
             bottomBanner = if (showBanner) {
                 @Composable {

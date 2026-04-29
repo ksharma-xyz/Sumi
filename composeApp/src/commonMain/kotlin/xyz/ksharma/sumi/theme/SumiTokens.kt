@@ -148,7 +148,10 @@ object SumiTokens {
             val paper = androidx.compose.ui.graphics.Color(0xFF1A1410)
             val paperWarm = androidx.compose.ui.graphics.Color(0xFF241C14)
             val paperDeep = androidx.compose.ui.graphics.Color(0xFF2D241A)
-            val paperEdge = androidx.compose.ui.graphics.Color(0xFF3D3022)
+            // Lifted from 0xFF3D3022 → 0xFF6B5B47 so hairlines / tile borders
+            // actually register against the dark paper bg (the previous value
+            // was nearly indistinguishable from paper).
+            val paperEdge = androidx.compose.ui.graphics.Color(0xFF6B5B47)
             val ink = androidx.compose.ui.graphics.Color(0xFFF4ECE0)
             val inkSoft = androidx.compose.ui.graphics.Color(0xFFB3A088)
             val inkFaint = androidx.compose.ui.graphics.Color(0xFF8A7560)

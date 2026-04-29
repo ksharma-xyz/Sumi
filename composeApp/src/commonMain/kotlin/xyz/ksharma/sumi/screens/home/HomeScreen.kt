@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.absoluteOffset
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -30,11 +31,18 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.layer.GraphicsLayer
+import androidx.compose.ui.graphics.layer.drawLayer
+import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.hideFromAccessibility
 import androidx.compose.ui.semantics.semantics
@@ -43,6 +51,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import xyz.ksharma.sumi.Quote
 import xyz.ksharma.sumi.design.components.LogoWordmark
 import xyz.ksharma.sumi.design.components.PetalBurstConfig
@@ -63,18 +72,24 @@ private val DIFFICULTY_TILES = listOf(
     Triple("Edo", "五", "45 min"),
 )
 
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "LongMethod")
 @Composable
 fun HomeScreen(
     streakDays: Int,
     quote: Quote,
     onStartGame: (difficulty: String) -> Unit,
     onSettings: () -> Unit,
-    onInvite: () -> Unit,
+    onInvite: (ImageBitmap) -> Unit,
+    isPro: Boolean,
     modifier: Modifier = Modifier,
     lockedDifficulties: Set<String> = emptySet(),
     bottomBanner: (@Composable () -> Unit)? = null,
 ) {
+    // Pre-prepared graphics layer — the offscreen InviteShareCard records into
+    // it on every composition. The invite tap snapshots it to a bitmap and
+    // hands the bitmap + text to the OS share sheet via ShareManager.
+    val inviteShareLayer = rememberGraphicsLayer()
+    val coroutineScope = rememberCoroutineScope()
     // Every ~2.5 min on Home, a brief wind passes — a tiny petal gust + a soft
     // glow on the invite button. Kept very subtle: 5 petals over 2.4s, glow
     // ~600ms breath. Performant: SumiPetalBurst already pools draw calls.
@@ -112,7 +127,25 @@ fun HomeScreen(
                 Spacer(Modifier.height(Sumi.Space.s4))
                 NewPracticeGrid(onStartGame = onStartGame, lockedDifficulties = lockedDifficulties)
                 Spacer(Modifier.height(Sumi.Space.s5))
-                InviteRow(glowAlpha = inviteGlow.value, onInvite = onInvite)
+                InviteRow(
+                    glowAlpha = inviteGlow.value,
+                    onInvite = {
+                        // Snapshot the offscreen InviteShareCard, hand the
+                        // bitmap up so HomeEntry can call shareImage(bitmap, text).
+                        coroutineScope.launch {
+                            onInvite(inviteShareLayer.toImageBitmap())
+                        }
+                    },
+                )
+            }
+            // Offscreen InviteShareCard — positioned far off-screen via absoluteOffset
+            // so it lays out + draws (into inviteShareLayer) on every composition,
+            // but is never visible. toImageBitmap() above always has a fresh capture
+            // ready. Pro variant uses gold ink + "Sumi Pro"; otherwise normal Sumi.
+            Box(
+                modifier = Modifier.absoluteOffset(x = (-10_000).dp, y = (-10_000).dp),
+            ) {
+                InviteShareCard(layer = inviteShareLayer, isPro = isPro)
             }
             // Ambient gust — a wind passes ~every 2.5 min. Sparse, slow.
             SumiPetalBurst(
@@ -383,5 +416,75 @@ private fun DifficultyTile(
                     .padding(top = 4.dp, end = 6.dp),
             )
         }
+    }
+}
+
+// ── Invite share card (offscreen, captured to bitmap) ─────────────────────────
+
+// Hardcoded share-card palette — captured PNG looks identical regardless of
+// the user's app theme. Cream paper + dark ink = portable artifact.
+private val InviteShareInk = Color(0xFF2A2218)
+private val InviteShareInkSoft = Color(0xFF5A4838)
+private val InvitePaper = Color(0xFFFBF7EC)
+private val InviteGold = Color(0xFF8A6B2A)
+
+/**
+ * Square-ish share card rendered offscreen and captured to a bitmap when the
+ * user taps "Pass Sumi along". Pro variant uses the gold ink + "Sumi Pro"
+ * wordmark; otherwise the standard Sumi mark.
+ *
+ * Compose primitives only — no painterResource (vector capture into
+ * graphicsLayer is unreliable across platforms; the Box-with-character
+ * approach guarantees the captured PNG always matches the on-screen render).
+ */
+@Composable
+private fun InviteShareCard(layer: GraphicsLayer, isPro: Boolean) {
+    val accent = if (isPro) InviteGold else InviteShareInk
+    val brand = if (isPro) "Sumi Pro" else "Sumi"
+    Column(
+        modifier = Modifier
+            .size(width = 360.dp, height = 360.dp)
+            .drawWithContent {
+                layer.record {
+                    drawRect(color = InvitePaper)
+                    this@drawWithContent.drawContent()
+                }
+                drawLayer(layer)
+            }
+            .padding(Sumi.Space.s7),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.SpaceBetween,
+    ) {
+        // Top — small wordmark
+        Text(
+            text = "墨",
+            style = SumiTheme.typography.cjk.copy(fontSize = 36.sp),
+            color = accent,
+        )
+
+        // Centre — brand line
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                text = brand,
+                style = SumiTheme.typography.h1.copy(
+                    fontSize = 56.sp,
+                    fontStyle = FontStyle.Italic,
+                ),
+                color = accent,
+            )
+            Spacer(Modifier.height(Sumi.Space.s3))
+            Text(
+                text = "A quiet sudoku.",
+                style = SumiTheme.typography.subhead.copy(fontStyle = FontStyle.Italic),
+                color = InviteShareInkSoft,
+            )
+        }
+
+        // Bottom — domain hint (URL goes in the share text body, not the image)
+        Text(
+            text = "iOS / Android".uppercase(),
+            style = SumiTheme.typography.uiMeta.copy(fontSize = 11.sp, letterSpacing = 2.sp),
+            color = InviteShareInkSoft,
+        )
     }
 }

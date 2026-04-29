@@ -6,7 +6,11 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -42,7 +46,6 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -943,24 +946,23 @@ private fun PaperTile(
                 .fillMaxWidth()
                 .padding(Sumi.Space.s2)
                 .background(paper.swatchColor())
-                .padding(vertical = Sumi.Space.s5, horizontal = Sumi.Space.s4),
+                .padding(vertical = Sumi.Space.s3, horizontal = Sumi.Space.s3),
             contentAlignment = Alignment.Center,
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     text = "墨",
-                    style = SumiTheme.typography.cjk.copy(fontSize = 28.sp),
+                    style = SumiTheme.typography.cjk.copy(fontSize = 22.sp),
                     color = inkOnPaper,
                 )
                 Spacer(Modifier.height(Sumi.Space.s1))
                 Text(
                     text = "Aa 123",
-                    style = SumiTheme.typography.numeral.copy(fontSize = 12.sp),
+                    style = SumiTheme.typography.numeral.copy(fontSize = 11.sp),
                     color = inkOnPaper.copy(alpha = 0.85f),
                 )
             }
         }
-        Spacer(Modifier.height(Sumi.Space.s2))
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = Sumi.Space.s3, vertical = Sumi.Space.s2),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -992,28 +994,41 @@ private fun InkWell(
     onClick: () -> Unit,
 ) {
     val src = remember { MutableInteractionSource() }
+    // Inner dot pulses when selection becomes true — a small "ink touched the
+    // paper" beat. animateFloatAsState gives us the spring for free.
+    val dotScale by androidx.compose.animation.core.animateFloatAsState(
+        targetValue = if (selected) 1.05f else 0.92f,
+        animationSpec = androidx.compose.animation.core.spring(
+            dampingRatio = androidx.compose.animation.core.Spring.DampingRatioMediumBouncy,
+            stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow,
+        ),
+        label = "inkDotScale",
+    )
+    val ringWidth by androidx.compose.animation.core.animateDpAsState(
+        targetValue = if (selected) 1.5.dp else 1.dp,
+        animationSpec = tween(220, easing = Sumi.Ease.paper),
+        label = "inkRingWidth",
+    )
+    val ringColor = if (selected) SumiTheme.colors.gold else SumiTheme.colors.paperEdge
     Column(
         modifier = Modifier
             .clickable(interactionSource = src, indication = null, onClick = onClick)
             .padding(Sumi.Space.s2),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        // Outer ring shows selection — always rendered (transparent when not
-        // selected) so layout doesn't shift when picking. Padding inside the
-        // ring gives the ink-well its breathing room.
         Box(
             modifier = Modifier
                 .size(48.dp)
-                .border(
-                    width = if (selected) 1.5.dp else 1.dp,
-                    color = if (selected) SumiTheme.colors.gold else SumiTheme.colors.paperEdge,
-                    shape = CircleShape,
-                ),
+                .border(width = ringWidth, color = ringColor, shape = CircleShape),
             contentAlignment = Alignment.Center,
         ) {
             Box(
                 modifier = Modifier
                     .size(34.dp)
+                    .graphicsLayer {
+                        scaleX = dotScale
+                        scaleY = dotScale
+                    }
                     .background(inkColor, CircleShape),
             )
         }
@@ -1057,15 +1072,21 @@ private fun AnswerBookToggle(checked: Boolean, onToggle: (Boolean) -> Unit) {
                 color = SumiTheme.colors.inkFaint,
             )
         }
+        // Checkbox tile — bumped contrast in both states so the box reads as
+        // a checkbox even in dark mode (paperEdge alone disappeared against
+        // the night-paper bg). Filled when checked, hairline-bordered with a
+        // subtle inner tint when unchecked so it's unambiguously interactive.
+        val borderColor = if (checked) SumiTheme.colors.ink else SumiTheme.colors.inkSoft
+        val fillColor = if (checked) SumiTheme.colors.ink else SumiTheme.colors.paperGlow
+        val checkColor = if (checked) SumiTheme.colors.paper else Color.Transparent
         Box(
             modifier = Modifier
-                .size(22.dp)
-                .border(1.dp, if (checked) SumiTheme.colors.ink else SumiTheme.colors.paperEdge),
+                .size(24.dp)
+                .border(1.5.dp, borderColor)
+                .background(fillColor),
             contentAlignment = Alignment.Center,
         ) {
-            if (checked) {
-                SumiIcon(icon = SumiIcons.Check, contentDescription = null, tint = SumiTheme.colors.ink, size = 14.dp)
-            }
+            SumiIcon(icon = SumiIcons.Check, contentDescription = null, tint = checkColor, size = 16.dp)
         }
     }
 }
@@ -1197,11 +1218,11 @@ private fun BookDesignerBottomBar(
                 modifier = Modifier.fillMaxWidth().padding(vertical = Sumi.Space.s4),
                 contentAlignment = Alignment.Center,
             ) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(28.dp),
-                    color = SumiTheme.colors.inkSoft,
-                    strokeWidth = 2.dp,
-                )
+                // Custom enso-style loader sized to match ReadyBottom's 72dp
+                // share circle. AnimatedContent's crossfade between this and
+                // the share button reads as one element morphing — far more
+                // premium than a Material spinner-to-button cut.
+                EnsoLoader(size = 72.dp)
             }
             "error" -> ErrorRow(
                 message = (state.genState as? BookGenState.Error)?.message ?: "Export failed",
@@ -1291,6 +1312,53 @@ private fun ReadyBottom(onShare: () -> Unit, onDone: () -> Unit) {
     }
 }
 
+/**
+ * Enso-styled loader: a hairline ring at the share-button diameter with a
+ * sweeping arc that rotates infinitely. Sized to match ReadyBottom's share
+ * circle so the loading→ready crossfade reads as a single element morphing.
+ */
+@Composable
+private fun EnsoLoader(size: Dp = 72.dp) {
+    val transition = rememberInfiniteTransition(label = "ensoLoader")
+    val rotation: Float by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1_200, easing = LinearEasing),
+        ),
+        label = "ensoLoaderRot",
+    )
+    val ink = SumiTheme.colors.ink
+    val faint = SumiTheme.colors.paperEdge
+    Box(
+        modifier = Modifier
+            .size(size)
+            .border(1.5.dp, faint, CircleShape),
+        contentAlignment = Alignment.Center,
+    ) {
+        Canvas(modifier = Modifier.size(size).graphicsLayer { rotationZ = rotation }) {
+            val stroke = androidx.compose.ui.graphics.drawscope.Stroke(
+                width = 1.5.dp.toPx(),
+                cap = androidx.compose.ui.graphics.StrokeCap.Round,
+            )
+            // 90° arc that rotates around the ring — the calligraphic "drawing
+            // an enso" feel without the cost of an actual brush spline.
+            drawArc(
+                color = ink,
+                startAngle = -90f,
+                sweepAngle = 90f,
+                useCenter = false,
+                style = stroke,
+                topLeft = Offset(stroke.width / 2f, stroke.width / 2f),
+                size = androidx.compose.ui.geometry.Size(
+                    this.size.width - stroke.width,
+                    this.size.height - stroke.width,
+                ),
+            )
+        }
+    }
+}
+
 @Composable
 private fun ErrorRow(message: String, onDismiss: () -> Unit) {
     Column(modifier = Modifier.fillMaxWidth()) {
@@ -1318,13 +1386,20 @@ private fun PdfPagePreview(theme: BookTheme, difficulty: String, modifier: Modif
     val bgColor = theme.paper.swatchColor()
     val textColor = BookInk.Sumi.color(theme.paper)
     val accentColor = theme.ink.color(theme.paper)
-    val ruleColor = textColor.copy(alpha = 0.2f)
-    val gridColor = accentColor.copy(alpha = 0.35f)
-    val boxColor = accentColor.copy(alpha = 0.6f)
+    val ruleColor = textColor.copy(alpha = 0.3f)
+    // Bolder grid alphas so the ink colour reads cleanly inside the preview
+    // tile (was 0.35 / 0.6 — too washed out for previewing colour choices).
+    val gridColor = accentColor.copy(alpha = 0.55f)
+    val boxColor = accentColor
 
+    // Outer cream frame so a Dark-paper preview sits distinctly inside the
+    // app's dark mode bg (without it the preview tile blends into the screen
+    // and the user can't tell where the page edge is).
     Box(
         modifier = modifier
             .aspectRatio(0.707f)
+            .background(SumiTheme.colors.paperGlow)
+            .padding(2.dp)
             .border(1.dp, SumiTheme.colors.paperEdge)
             .background(bgColor)
             .padding(horizontal = 10.dp, vertical = 8.dp),
@@ -1377,7 +1452,9 @@ private fun SudokuMiniGrid(gridColor: Color, boxColor: Color, digitColor: Color,
         for (i in 0..9) {
             val isBox = i % 3 == 0
             val color = if (isBox) boxColor else gridColor
-            val sw = if (isBox) 1.5f else 0.5f
+            // Bolder strokes so the ink colour actually reads in the preview.
+            // Box separators get 2.5px (was 1.5), thin lines stay at 0.7px.
+            val sw = if (isBox) 2.5f else 0.7f
             drawLine(color, Offset(i * cellSize, yOff), Offset(i * cellSize, yOff + gridH), sw)
             drawLine(color, Offset(0f, i * cellSize + yOff), Offset(size.width, i * cellSize + yOff), sw)
         }
