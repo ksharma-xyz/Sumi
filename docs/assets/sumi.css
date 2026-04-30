@@ -81,6 +81,56 @@ body::before {
   color: var(--ink);
 }
 
+/* ── Ambient ink-bleed splotches ─────────────────────────────────────── */
+
+.ink-bleeds {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.ink-bleed {
+  position: absolute;
+  display: block;
+  mix-blend-mode: multiply;
+  user-select: none;
+  filter: contrast(1.04);
+}
+
+.ink-bleed--ne {
+  top: -64px;
+  right: -90px;
+  width: 380px;
+  height: 380px;
+  opacity: 0.20;
+}
+
+.ink-bleed--sw {
+  bottom: -90px;
+  left: -110px;
+  width: 340px;
+  height: 340px;
+  opacity: 0.16;
+  transform: rotate(8deg);
+}
+
+.ink-bleed--w {
+  top: 48vh;
+  left: -160px;
+  width: 280px;
+  height: 280px;
+  opacity: 0.09;
+  transform: rotate(-14deg);
+}
+
+@media (max-width: 820px) {
+  .ink-bleed--ne { width: 240px; height: 240px; top: -40px; right: -60px; opacity: 0.16; }
+  .ink-bleed--sw { width: 220px; height: 220px; bottom: -60px; left: -70px; opacity: 0.12; }
+  .ink-bleed--w  { display: none; }
+}
+
 /* ── Container & section rhythm ────────────────────────────────────────── */
 
 .container {
@@ -440,7 +490,10 @@ section { padding-block: 112px; position: relative; z-index: 2; }
 .season-panel[data-season="spring"] .petal-field { background: linear-gradient(180deg, #FBF6ED 0%, #F8E8E8 100%); }
 .season-panel[data-season="summer"] .petal-field { background: linear-gradient(180deg, #F4ECE0 0%, #E5EBD9 100%); }
 .season-panel[data-season="autumn"] .petal-field { background: linear-gradient(180deg, #F4ECE0 0%, #E8D8C0 100%); }
-.season-panel[data-season="winter"] .petal-field { background: linear-gradient(180deg, #F8F4EA 0%, #E0D8C8 100%); }
+/* Winter — indigo wash, mirrors the app's SumiSeason.Winter paper tints
+   (paper #EEEEF8 → paperDeep #D8DAE8) so snow against cool blue reads
+   like the in-app season. */
+.season-panel[data-season="winter"] .petal-field { background: linear-gradient(180deg, #EEEEF8 0%, #C8D0E8 100%); }
 
 .petal-field {
   position: relative;
@@ -534,8 +587,6 @@ section { padding-block: 112px; position: relative; z-index: 2; }
   border: 1px solid rgba(26, 20, 16, 0.10);
 }
 
-/* Snow petals are quieter — bring them up a touch with a subtle ink dot. */
-.season-panel[data-season="winter"] .petal svg circle:first-child { stroke: rgba(26, 20, 16, 0.25); stroke-width: 0.4; }
 
 /* ── Download CTAs ─────────────────────────────────────────────────────── */
 
@@ -566,23 +617,12 @@ section { padding-block: 112px; position: relative; z-index: 2; }
     background 260ms var(--ease-paper);
 }
 
-.cta::before {
-  content: "";
-  position: absolute;
-  inset: -1px;
-  border: 1px solid var(--ink);
-  pointer-events: none;
-  transform: translate(4px, 4px);
-  transition: transform 260ms var(--ease-paper);
-}
-
 .cta:hover {
-  transform: translate(-2px, -2px);
+  transform: translate(-3px, -3px);
   background: #000;
-}
-
-.cta:hover::before {
-  transform: translate(6px, 6px);
+  /* Solid offset shadow only appears on hover — like a stamp lifting from
+     paper. No misaligned ghost-border at rest. */
+  box-shadow: 5px 5px 0 var(--paper-edge);
 }
 
 .cta .platform {
