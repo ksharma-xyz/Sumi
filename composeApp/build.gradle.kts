@@ -50,7 +50,6 @@ kotlin {
             implementation(libs.sqldelight.android.driver)
             implementation(project.dependencies.platform(libs.firebase.bom))
             implementation(libs.admob)
-            implementation(libs.android.ump)
         }
 
         commonMain.dependencies {
