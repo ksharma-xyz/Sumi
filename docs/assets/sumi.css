@@ -209,6 +209,10 @@ section { padding-block: 112px; position: relative; z-index: 2; }
   display: block;
   width: clamp(160px, 28vw, 280px);
   height: auto;
+  /* iOS app icons ship as full-square PNGs with the squircle mask applied
+     by the OS at runtime. Clip to ~22% radius here so the marketing site
+     icon matches the launcher tile users actually see. */
+  border-radius: 22%;
 }
 
 @keyframes ink-bleed {

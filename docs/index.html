@@ -319,19 +319,63 @@
   </div>
 </footer>
 
-<!-- Petal weather. Deterministic placement from index — same algorithm as
-     the in-app petals.jsx so the marketing site and product feel like one
-     gesture. ~14 petals × 4 seasons = 56 elements; cheap on the GPU. -->
+<!-- Petal weather. Each season gets its own count / duration band / sway band
+     / spin scale / timing curve, plus a per-season hash offset so the four
+     panels never sync. Delays are distributed across the FULL duration cycle
+     of each petal, so at any frame some petals are entering, some falling,
+     some exiting — no collective empty moment. -->
 <script>
 (function () {
   var SEASONS = {
-    spring: { shape: 'sakura', colors: ['#F5CED6', '#E8A3B3', '#C97A8E', '#FBF6ED'] },
-    summer: { shape: 'leaf',   colors: ['#7BA76C', '#5A8A4A', '#3F6E2F', '#B3C9A5'] },
-    autumn: { shape: 'maple',  colors: ['#C9613A', '#A8342A', '#E8943A', '#7E2820'] },
-    winter: { shape: 'snow',   colors: ['#333E88', '#4A5CB0', '#7B89C9', '#A8B0CC'] }
+    spring: {                                            // sakura — light, dancing, plentiful
+      shape: 'sakura',
+      colors: ['#F5CED6', '#E8A3B3', '#C97A8E', '#FBF6ED'],
+      count: 18,
+      duration: [13, 24],
+      sway:     [25, 65],
+      size:     [14, 28],
+      spinScale: 0.6,
+      timing:   'cubic-bezier(0.42, 0.00, 0.58, 1.00)',
+      seed:     0
+    },
+    summer: {                                            // leaf — heavier, sparser, lazier
+      shape: 'leaf',
+      colors: ['#7BA76C', '#5A8A4A', '#3F6E2F', '#B3C9A5'],
+      count: 11,
+      duration: [10, 18],
+      sway:     [18, 42],
+      size:     [18, 32],
+      spinScale: 0.45,
+      timing:   'cubic-bezier(0.40, 0.05, 0.55, 1.00)',
+      seed:     7
+    },
+    autumn: {                                            // maple — twisting, varied speeds
+      shape: 'maple',
+      colors: ['#C9613A', '#A8342A', '#E8943A', '#7E2820'],
+      count: 13,
+      duration: [9, 20],
+      sway:     [35, 78],
+      size:     [16, 30],
+      spinScale: 1.1,
+      timing:   'cubic-bezier(0.45, 0.00, 0.50, 1.00)',
+      seed:     13
+    },
+    winter: {                                            // snow — many flakes, slow steady drift
+      shape: 'snow',
+      colors: ['#333E88', '#4A5CB0', '#7B89C9', '#A8B0CC'],
+      count: 24,
+      duration: [18, 30],
+      sway:     [8, 28],
+      size:     [12, 26],
+      spinScale: 0.18,
+      timing:   'linear',
+      seed:     19
+    }
   };
-  var COUNT = 14;
+
   var SVG_NS = 'http://www.w3.org/2000/svg';
+  var lerp = function (a, b, t) { return a + (b - a) * t; };
+  var hash01 = function (i, p, q) { return ((i * p + q) % 100) / 100; };
 
   document.querySelectorAll('.season-panel').forEach(function (panel) {
     var cfg = SEASONS[panel.dataset.season];
@@ -340,20 +384,32 @@
     if (!field) return;
     var frag = document.createDocumentFragment();
 
-    for (var i = 0; i < COUNT; i++) {
+    for (var i = 0; i < cfg.count; i++) {
+      var k = i + cfg.seed;                               // per-season offset → no cross-panel sync
+
+      // Each property uses a different prime pair so X / duration / size /
+      // sway distributions are independent — petals don't visually clump.
+      var tx     = hash01(k, 41, 19);
+      var td     = hash01(k, 67, 23);
+      var tdelay = hash01(k, 89, 11);
+      var tsize  = hash01(k, 113, 7);
+      var tsway  = hash01(k, 53, 31);
+
+      var xPos     = tx * 100;
+      var duration = lerp(cfg.duration[0], cfg.duration[1], td);
+      // delay covers a full duration cycle so each petal is at a unique
+      // phase at first paint — guarantees no collective empty moment.
+      var delay    = -(tdelay * duration);
+      var size     = lerp(cfg.size[0], cfg.size[1], tsize);
+      var swayMag  = lerp(cfg.sway[0], cfg.sway[1], tsway);
+      var sway     = (k % 2 === 0 ? 1 : -1) * swayMag;
+      var spin     = (k % 2 === 0 ? 1 : -1) * (60 + (k * 11) % 120) * cfg.spinScale;
+      var opacity  = 0.5 + ((k * 13) % 40) / 100;
+      var color    = cfg.colors[k % cfg.colors.length];
+
       var petal = document.createElement('div');
       petal.className = 'petal';
-
-      var x        = (i * 37 + 17) % 100;
-      var delay    = -((i * 2.3) % 12);            // negative — staggered at first paint
-      var duration = 14 + (i * 1.7) % 10;          // 14–24s
-      var sway     = 20 + (i * 7) % 30;            // px horizontal drift
-      var size     = 14 + (i * 3) % 18;            // 14–32px
-      var spin     = ((i % 2 === 0) ? 1 : -1) * (60 + (i * 11) % 120);
-      var opacity  = 0.5 + ((i * 13) % 40) / 100;
-      var color    = cfg.colors[i % cfg.colors.length];
-
-      petal.style.left = x + '%';
+      petal.style.left = xPos + '%';
       petal.style.width = size + 'px';
       petal.style.height = size + 'px';
       petal.style.color = color;
@@ -362,6 +418,7 @@
       petal.style.setProperty('--petal-o', opacity);
       petal.style.animationDuration = duration + 's';
       petal.style.animationDelay = delay + 's';
+      petal.style.animationTimingFunction = cfg.timing;
 
       var svg = document.createElementNS(SVG_NS, 'svg');
       svg.setAttribute('viewBox', '0 0 24 24');
