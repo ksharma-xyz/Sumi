@@ -138,6 +138,7 @@ private fun SeasonChips(current: SumiSeason, onSelect: (SumiSeason) -> Unit) {
 private fun SeasonChip(season: SumiSeason, selected: Boolean, onSelect: (SumiSeason) -> Unit) {
     val accent = Sumi.Color.Season.forSeason(season).accent
     val label = when (season) { SumiSeason.Spring -> "春 Spring"
+        SumiSeason.Summer -> "夏 Summer"
         SumiSeason.Autumn -> "秋 Autumn"
         SumiSeason.Winter -> "冬 Winter" }
     val src = remember { MutableInteractionSource() }

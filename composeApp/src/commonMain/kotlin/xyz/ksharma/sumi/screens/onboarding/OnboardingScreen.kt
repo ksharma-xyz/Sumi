@@ -375,12 +375,14 @@ private fun SeasonTile(season: SumiSeason, selected: Boolean, onSelect: (SumiSea
 
 private fun seasonKanji(season: SumiSeason) = when (season) {
     SumiSeason.Spring -> "春"
+    SumiSeason.Summer -> "夏"
     SumiSeason.Autumn -> "秋"
     SumiSeason.Winter -> "冬"
 }
 
 private fun seasonLabel(season: SumiSeason) = when (season) {
     SumiSeason.Spring -> "Spring"
+    SumiSeason.Summer -> "Summer"
     SumiSeason.Autumn -> "Autumn"
     SumiSeason.Winter -> "Winter"
 }

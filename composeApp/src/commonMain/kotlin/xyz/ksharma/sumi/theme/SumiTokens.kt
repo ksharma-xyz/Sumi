@@ -123,6 +123,17 @@ object SumiTokens {
                 accent = androidx.compose.ui.graphics.Color(0xFFB84568),
                 accentDeep = androidx.compose.ui.graphics.Color(0xFF8C2E4C),
             )
+            // Summer — leaf greens. Accents pulled from the marketing site's
+            // summer petal palette so the "site → app" feel is one gesture.
+            val Summer = SeasonPalette(
+                paper = androidx.compose.ui.graphics.Color(0xFFEEF2E4),
+                paperWarm = androidx.compose.ui.graphics.Color(0xFFE0E5D2),
+                paperDeep = androidx.compose.ui.graphics.Color(0xFFD0D9BC),
+                paperEdge = androidx.compose.ui.graphics.Color(0xFF9DAE85),
+                paperGlow = androidx.compose.ui.graphics.Color(0xFFF4F8EC),
+                accent = androidx.compose.ui.graphics.Color(0xFF5A8A4A),
+                accentDeep = androidx.compose.ui.graphics.Color(0xFF3F6E2F),
+            )
             val Autumn = SeasonPalette(
                 paper = androidx.compose.ui.graphics.Color(0xFFF4E9D8),
                 paperWarm = androidx.compose.ui.graphics.Color(0xFFEBDBC4),
@@ -144,6 +155,7 @@ object SumiTokens {
 
             fun forSeason(season: SumiSeason): SeasonPalette = when (season) {
                 SumiSeason.Spring -> Spring
+                SumiSeason.Summer -> Summer
                 SumiSeason.Autumn -> Autumn
                 SumiSeason.Winter -> Winter
             }
