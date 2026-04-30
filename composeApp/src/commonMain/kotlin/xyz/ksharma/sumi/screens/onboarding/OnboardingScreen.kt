@@ -121,10 +121,14 @@ fun OnboardingScreen(
         ) {
             OnboardingTopBar(skipSrc = skipSrc, onSkip = { onComplete(selectedSeason) })
             HorizontalPager(state = pagerState, modifier = Modifier.weight(1f)) { page ->
-                if (page == SLIDE_COUNT - 1) {
+                // Season picker is page 0 — picking the accent first means the
+                // remaining onboarding renders in the user's chosen palette.
+                // Content slides shift down one position; pass (page - 1) so
+                // their headline/body/visual lookups still index 0..n.
+                if (page == 0) {
                     SeasonPickerSlide(selected = selectedSeason, onSelect = { selectedSeason = it })
                 } else {
-                    SlidePage(page = page)
+                    SlidePage(page = page - 1)
                 }
             }
             OnboardingFooter(
@@ -267,20 +271,20 @@ private fun SeasonPickerSlide(selected: SumiSeason, onSelect: (SumiSeason) -> Un
                 modifier = Modifier.fillMaxWidth(),
             )
             Spacer(Modifier.height(48.dp))
-            // 4 tiles × 80dp + 3 × 16dp gap = 368dp, plus a little breathing
-            // room. ≥ 400dp wide → all four fit in a single row; narrower
-            // (iPhone SE / mini territory) → 2×2 grid via FlowRow's wrap.
-            // maxItemsInEachRow caps it so we never end up with an awkward
-            // 3+1 split on borderline widths.
+            // 4 tiles × 80dp + 3 × 24dp gap = 392dp, plus side padding. ≥ 420dp
+            // wide → all four fit in a single row; narrower (iPhone 14 / SE /
+            // mini territory) → 2×2 grid via FlowRow's wrap. maxItemsInEachRow
+            // caps it so we never end up with an awkward 3+1 split on
+            // borderline widths.
             BoxWithConstraints(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                 contentAlignment = Alignment.Center,
             ) {
-                val perRow = if (maxWidth >= 400.dp) SumiSeason.entries.size else 2
+                val perRow = if (maxWidth >= 420.dp) SumiSeason.entries.size else 2
                 @OptIn(ExperimentalLayoutApi::class)
                 FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
-                    verticalArrangement = Arrangement.spacedBy(20.dp),
+                    horizontalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterHorizontally),
+                    verticalArrangement = Arrangement.spacedBy(28.dp),
                     maxItemsInEachRow = perRow,
                 ) {
                     SumiSeason.entries.forEach { season ->
