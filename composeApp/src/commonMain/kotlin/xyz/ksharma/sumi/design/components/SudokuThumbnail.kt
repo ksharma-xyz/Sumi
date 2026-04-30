@@ -31,10 +31,17 @@ fun SudokuThumbnail(
     cells: String,
     modifier: Modifier = Modifier,
     sizeDp: Dp = 220.dp,
+    /**
+     * Grid + digit colour. Defaults to the current theme ink — but callers
+     * that render onto a fixed-palette surface (e.g. the Win share card,
+     * which has a hardcoded cream background regardless of app theme) must
+     * pass an explicit dark colour. Otherwise dark mode produces cream-on-
+     * cream and the grid is invisible.
+     */
+    ink: androidx.compose.ui.graphics.Color = SumiTheme.colors.ink,
 ) {
     if (cells.length < 81) return
-    val ink = SumiTheme.colors.ink
-    val thinLine = SumiTheme.colors.ink.copy(alpha = 0.18f)
+    val thinLine = ink.copy(alpha = 0.18f)
     val measurer = rememberTextMeasurer()
     val numStyle = TextStyle(
         color = ink,

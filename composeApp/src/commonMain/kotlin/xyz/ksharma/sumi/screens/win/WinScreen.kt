@@ -221,7 +221,11 @@ private fun WinShareCard(
         // so the exported PNG includes the puzzle, not just the stats.
         // 2. Filled puzzle — proof of the solve.
         if (solution.length == 81) {
-            SudokuThumbnail(cells = solution, sizeDp = 220.dp)
+            // Force the dark share-palette ink so the grid + digits read on
+            // the hardcoded cream background regardless of app theme. Without
+            // this, dark mode rendered cream lines + cream digits on cream
+            // paper — invisible.
+            SudokuThumbnail(cells = solution, sizeDp = 220.dp, ink = ShareInk)
             Spacer(Modifier.height(Sumi.Space.s6))
         }
 
