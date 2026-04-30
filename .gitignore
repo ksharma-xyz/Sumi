@@ -21,3 +21,7 @@ node_modules/
 # Firebase config — never commit; download from Firebase Console per project
 google-services.json
 GoogleService-Info.plist
+
+# mkdocs build output (deployed to gh-pages by .github/workflows/deploy-docs.yml)
+site/
+.cache/
