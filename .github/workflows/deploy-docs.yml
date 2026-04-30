@@ -40,7 +40,7 @@ jobs:
           mkdir -p _site/privacy-policy _site/assets
           cp docs/index.html _site/
           cp docs/privacy-policy/index.html _site/privacy-policy/
-          cp docs/assets/sumi.css _site/assets/
+          cp -R docs/assets/. _site/assets/
           # .nojekyll stops GitHub Pages from running its Jekyll pass — we ship
           # plain HTML/CSS so Jekyll would only slow the deploy down.
           touch _site/.nojekyll
