@@ -20,7 +20,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -264,20 +267,33 @@ private fun SeasonPickerSlide(selected: SumiSeason, onSelect: (SumiSeason) -> Un
                 modifier = Modifier.fillMaxWidth(),
             )
             Spacer(Modifier.height(48.dp))
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalAlignment = Alignment.CenterVertically,
+            // 4 tiles × 80dp + 3 × 16dp gap = 368dp, plus a little breathing
+            // room. ≥ 400dp wide → all four fit in a single row; narrower
+            // (iPhone SE / mini territory) → 2×2 grid via FlowRow's wrap.
+            // maxItemsInEachRow caps it so we never end up with an awkward
+            // 3+1 split on borderline widths.
+            BoxWithConstraints(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                contentAlignment = Alignment.Center,
             ) {
-                SumiSeason.entries.forEach { season ->
-                    SeasonTile(
-                        season = season,
-                        selected = selected == season,
-                        onSelect = { picked ->
-                            burstColors = seasonPetalColors(picked)
-                            burstTrigger++
-                            onSelect(picked)
-                        },
-                    )
+                val perRow = if (maxWidth >= 400.dp) SumiSeason.entries.size else 2
+                @OptIn(ExperimentalLayoutApi::class)
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
+                    verticalArrangement = Arrangement.spacedBy(20.dp),
+                    maxItemsInEachRow = perRow,
+                ) {
+                    SumiSeason.entries.forEach { season ->
+                        SeasonTile(
+                            season = season,
+                            selected = selected == season,
+                            onSelect = { picked ->
+                                burstColors = seasonPetalColors(picked)
+                                burstTrigger++
+                                onSelect(picked)
+                            },
+                        )
+                    }
                 }
             }
         }
