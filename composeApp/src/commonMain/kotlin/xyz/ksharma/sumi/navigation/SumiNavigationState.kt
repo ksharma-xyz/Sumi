@@ -49,14 +49,20 @@ class SumiNavigationState(
 ) {
     var topLevelRoute: NavKey by topLevelRouteState
 
-    // Bottom nav is hidden on these routes — full-screen flows where the tab bar adds no value.
-    private val noNavBarRoutes = setOf(SplashRoute, OnboardingRoute, SettingsRoute, LicensesRoute)
-
     private val _designerOpen = mutableStateOf(false)
+
+    // Bottom nav is hidden on full-screen flows where the tab bar adds no value
+    // (splash, onboarding, settings, an active game, etc.).
+    private fun hidesNavBar(route: NavKey): Boolean =
+        route is SplashRoute ||
+            route is OnboardingRoute ||
+            route is SettingsRoute ||
+            route is LicensesRoute ||
+            route is GameRoute
 
     val showBottomNav: Boolean
         get() = !_designerOpen.value && backStacks[topLevelRoute]?.lastOrNull()
-            .let { it != null && it !in noNavBarRoutes }
+            .let { it != null && !hidesNavBar(it) }
 
     fun setDesignerOpen(open: Boolean) {
         _designerOpen.value = open
