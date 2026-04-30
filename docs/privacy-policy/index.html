@@ -22,11 +22,28 @@
 </head>
 <body>
 
-<!-- Same atmospheric ink-bleed corners as the landing page; aria-hidden. -->
-<div class="ink-bleeds" aria-hidden="true">
-  <img class="ink-bleed ink-bleed--ne" src="../assets/ink_bleed_02.png" alt="" loading="lazy">
-  <img class="ink-bleed ink-bleed--sw" src="../assets/ink_bleed_03.png" alt="" loading="lazy">
-  <img class="ink-bleed ink-bleed--w"  src="../assets/ink_bleed_01.png" alt="" loading="lazy">
+<!-- Shared InkBleed primitive defs — same as index.html. -->
+<svg width="0" height="0" style="position:absolute;pointer-events:none" aria-hidden="true">
+  <defs>
+    <filter id="ink-blot-distort" x="-20%" y="-20%" width="140%" height="140%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.5" numOctaves="2" seed="3"/>
+      <feDisplacementMap in="SourceGraphic" scale="5"/>
+    </filter>
+    <symbol id="ink-blot" viewBox="0 0 60 60">
+      <g filter="url(#ink-blot-distort)">
+        <circle cx="30" cy="30" r="18" fill="currentColor" opacity="0.12"/>
+        <circle cx="30" cy="30" r="12" fill="currentColor" opacity="0.20"/>
+        <circle cx="30" cy="30" r="6"  fill="currentColor" opacity="0.30"/>
+      </g>
+    </symbol>
+  </defs>
+</svg>
+
+<!-- Same ink-blot corners as the landing page; aria-hidden. -->
+<div class="ink-blots" aria-hidden="true">
+  <svg class="ink-blot ib-ne"  viewBox="0 0 60 60"><use href="#ink-blot"/></svg>
+  <svg class="ink-blot ib-sw"  viewBox="0 0 60 60"><use href="#ink-blot"/></svg>
+  <svg class="ink-blot ib-mid" viewBox="0 0 60 60"><use href="#ink-blot"/></svg>
 </div>
 
 <a class="chop-stamp" href="https://github.com/ksharma-xyz/Sumi" aria-label="Sumi on GitHub" title="ksharma-xyz/Sumi">印</a>

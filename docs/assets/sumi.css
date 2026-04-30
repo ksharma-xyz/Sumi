@@ -81,56 +81,37 @@ body::before {
   color: var(--ink);
 }
 
-/* ── Ambient ink-bleed splotches ─────────────────────────────────────── */
+/* ── InkBleed bullseye accents ──────────────────────────────────────────
+   The design-system primitive (3 concentric circles + turbulence /
+   displacement filter) scattered as decorative stamps. Each blot inherits
+   its color via CSS `color` (the SVG circles use fill="currentColor"). */
 
-.ink-bleeds {
+.ink-blots {
   position: fixed;
   inset: 0;
   pointer-events: none;
   overflow: hidden;
-  /* Below the noise overlay (z-index 1) so noise grain falls onto the ink
-     uniformly, just like the rest of the paper — but above the page bg
-     color, which has no z-index of its own. */
   z-index: 0;
 }
 
-.ink-bleed {
+.ink-blot {
   position: absolute;
   display: block;
-  mix-blend-mode: multiply;
-  user-select: none;
+  color: var(--ink);
 }
 
-.ink-bleed--ne {
-  top: -80px;
-  right: -100px;
-  width: 440px;
-  height: 440px;
-  opacity: 0.55;
-}
-
-.ink-bleed--sw {
-  bottom: -100px;
-  left: -120px;
-  width: 380px;
-  height: 380px;
-  opacity: 0.45;
-  transform: rotate(8deg);
-}
-
-.ink-bleed--w {
-  top: 46vh;
-  left: -180px;
-  width: 320px;
-  height: 320px;
-  opacity: 0.30;
-  transform: rotate(-14deg);
-}
+.ib-ne  { top: 56px;          right: 64px;  width: 200px; height: 200px; transform: rotate(8deg); }
+.ib-sw  { bottom: 80px;       left: 48px;   width: 220px; height: 220px; color: var(--red); transform: rotate(-14deg); }
+.ib-mid { top: 52vh;          right: 8vw;   width: 140px; height: 140px; color: var(--gold); transform: rotate(22deg); }
+.ib-tl  { top: 20vh;          left: 32px;   width: 120px; height: 120px; color: var(--teal); transform: rotate(-30deg); opacity: 0.85; }
+.ib-br  { bottom: 18vh;       right: 32px;  width: 160px; height: 160px; transform: rotate(40deg); opacity: 0.9; }
 
 @media (max-width: 820px) {
-  .ink-bleed--ne { width: 280px; height: 280px; top: -50px; right: -70px; opacity: 0.50; }
-  .ink-bleed--sw { width: 240px; height: 240px; bottom: -70px; left: -80px; opacity: 0.40; }
-  .ink-bleed--w  { display: none; }
+  .ib-ne  { width: 140px; height: 140px; top: 32px; right: 32px; }
+  .ib-sw  { width: 160px; height: 160px; bottom: 60px; left: 24px; }
+  .ib-mid { display: none; }
+  .ib-tl  { display: none; }
+  .ib-br  { width: 110px; height: 110px; bottom: 20vh; right: 16px; }
 }
 
 /* ── Container & section rhythm ────────────────────────────────────────── */
