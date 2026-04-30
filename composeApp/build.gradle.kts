@@ -2,7 +2,6 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import xyz.ksharma.sumi.gradle.AndroidVersion
 
 import com.codingfeline.buildkonfig.compiler.FieldSpec.Type.BOOLEAN
-import com.codingfeline.buildkonfig.compiler.FieldSpec.Type.STRING
 
 plugins {
     alias(libs.plugins.sumi.kotlin.multiplatform)
@@ -112,31 +111,14 @@ buildkonfig {
     objectName = "BuildKonfig"
     exposeObjectWithName = "BuildKonfig"
 
-    // Defaults = debug. AdMob test unit IDs are safe to commit and won't generate revenue.
-    // Reference: https://developers.google.com/admob/android/test-ads
+    // Defaults = debug. Switch via `./gradlew ... -Pbuildkonfig.flavor=release`.
+    // Ad unit IDs are hardcoded in `ads/AdUnits.kt` and selected off IS_DEBUG;
+    // BuildKonfig STRING fields are avoided here because they generate Kotlin
+    // source with literal `"` characters embedded in the value at runtime.
     defaultConfigs {
         buildConfigField(BOOLEAN, "IS_DEBUG", "true")
-        buildConfigField(STRING, "BUILD_TYPE", "\"debug\"")
-
-        buildConfigField(STRING, "AD_BANNER_ANDROID",       "\"ca-app-pub-3940256099942544/6300978111\"")
-        buildConfigField(STRING, "AD_BANNER_IOS",           "\"ca-app-pub-3940256099942544/2934735716\"")
-        buildConfigField(STRING, "AD_INTERSTITIAL_ANDROID", "\"ca-app-pub-3940256099942544/1033173712\"")
-        buildConfigField(STRING, "AD_INTERSTITIAL_IOS",     "\"ca-app-pub-3940256099942544/4411468910\"")
-        buildConfigField(STRING, "AD_REWARDED_ANDROID",     "\"ca-app-pub-3940256099942544/5224354917\"")
-        buildConfigField(STRING, "AD_REWARDED_IOS",         "\"ca-app-pub-3940256099942544/1712485313\"")
     }
-
-    // Activate with: ./gradlew ... -Pbuildkonfig.flavor=release
-    // Real Sumi unit IDs (publisher 1771675816656791) for both Android + iOS.
     defaultConfigs("release") {
         buildConfigField(BOOLEAN, "IS_DEBUG", "false")
-        buildConfigField(STRING, "BUILD_TYPE", "\"release\"")
-
-        buildConfigField(STRING, "AD_BANNER_ANDROID",       "\"ca-app-pub-1771675816656791/4801131656\"")
-        buildConfigField(STRING, "AD_BANNER_IOS",           "\"ca-app-pub-1771675816656791/8716325930\"")
-        buildConfigField(STRING, "AD_INTERSTITIAL_ANDROID", "\"ca-app-pub-1771675816656791/6038280998\"")
-        buildConfigField(STRING, "AD_INTERSTITIAL_IOS",     "\"ca-app-pub-1771675816656791/9083766250\"")
-        buildConfigField(STRING, "AD_REWARDED_ANDROID",     "\"ca-app-pub-1771675816656791/9638525361\"")
-        buildConfigField(STRING, "AD_REWARDED_IOS",         "\"ca-app-pub-1771675816656791/9877973172\"")
     }
 }
