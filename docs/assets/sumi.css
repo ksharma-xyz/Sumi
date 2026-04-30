@@ -100,12 +100,15 @@ body::before {
   color: var(--ink);
 }
 
+/* Two blots only: pink (SW) + winter indigo (NE). The indigo matches the
+   app's SumiSeason.Winter accent so the marketing site and the in-app
+   winter mode share the same blue chord. */
 .ib-sw { bottom: 80px; left: 48px; width: 240px; height: 240px; color: var(--red); transform: rotate(-14deg); }
-.ib-ne { top: 56px;    right: 64px; width: 200px; height: 200px; transform: rotate(8deg); }
+.ib-ne { top: 56px;    right: 64px; width: 220px; height: 220px; color: #4A5CB0; transform: rotate(8deg); }
 
 @media (max-width: 820px) {
   .ib-sw { width: 180px; height: 180px; bottom: 56px; left: 20px; }
-  .ib-ne { width: 140px; height: 140px; top: 28px;    right: 28px; }
+  .ib-ne { width: 150px; height: 150px; top: 28px;    right: 28px; }
 }
 
 /* ── Container & section rhythm ────────────────────────────────────────── */
