@@ -119,7 +119,7 @@ fun OnboardingScreen(
                 .systemBarsPadding()
                 .padding(horizontal = 32.dp),
         ) {
-            OnboardingTopBar(skipSrc = skipSrc, onSkip = { onComplete(selectedSeason) })
+            OnboardingTopBar(skipSrc = skipSrc, accent = accent, onSkip = { onComplete(selectedSeason) })
             // Selected accent threads through the rest of onboarding so the
             // user's first decision visibly carries forward.
             val accent = SumiTokens.Color.Season.forSeason(selectedSeason).accent
@@ -145,7 +145,7 @@ fun OnboardingScreen(
 }
 
 @Composable
-private fun OnboardingTopBar(skipSrc: MutableInteractionSource, onSkip: () -> Unit) {
+private fun OnboardingTopBar(skipSrc: MutableInteractionSource, accent: Color, onSkip: () -> Unit) {
     Box(
         modifier = Modifier.fillMaxWidth().height(52.dp),
         contentAlignment = Alignment.CenterEnd,
@@ -153,7 +153,7 @@ private fun OnboardingTopBar(skipSrc: MutableInteractionSource, onSkip: () -> Un
         Text(
             text = "Skip →",
             style = SumiTheme.typography.body.copy(fontSize = 15.sp),
-            color = SumiTheme.colors.inkSoft,
+            color = accent,
             modifier = Modifier.clickable(interactionSource = skipSrc, indication = null, onClick = onSkip),
         )
     }
@@ -479,5 +479,8 @@ private fun slideHeadline(page: Int) = when (page) {
 private fun slideBody(page: Int) = when (page) {
     0 -> "Ink on paper. No chrome. No noise.\nNine by nine, every day."
     1 -> "Tap to enter. Hold to pencil.\nYour hand, your pace, your pause."
-    else -> "Pause without penalty. Return without cost.\nThe grid waits."
+    // Non-breaking space ( ) glues "without penalty" and "without cost"
+    // together so the trailing word never gets stranded on its own line at
+    // narrow widths.
+    else -> "Pause without penalty. Return without cost.\nThe grid waits."
 }
