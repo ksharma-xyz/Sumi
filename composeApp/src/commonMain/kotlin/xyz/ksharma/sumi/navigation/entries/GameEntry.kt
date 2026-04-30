@@ -175,13 +175,18 @@ fun EntryProviderScope<NavKey>.GameEntry(navigator: SumiNavigator) {
         // (declared above) reports READY; otherwise release the flag so the player isn't
         // stuck waiting on an ad that never appears.
         if (showIdleInterstitial && !isPro && isAdsEnabled) {
+            // Keep InterstitialAd composed across READY → SHOWING → SHOWN.
+            // Removing it mid-show (returning Unit on SHOWING/SHOWN) disposes the
+            // composable's DisposableEffect and the underlying iOS GADInterstitialAd
+            // while presentation is still in flight — that's the iOS crash inside
+            // basic-ads' InterstitialAd seen in production. Only the dismissal
+            // callback should drop the composable.
             when (idleAdState.value.state) {
-                AdState.READY -> InterstitialAd(
+                AdState.READY, AdState.SHOWING, AdState.SHOWN -> InterstitialAd(
                     loadedAd = idleAdState.value,
                     onDismissed = vm::onIdleInterstitialDone,
                     onFailure = { _ -> vm.onIdleInterstitialDone() },
                 )
-                AdState.SHOWING, AdState.SHOWN -> Unit
                 else -> LaunchedEffect(showIdleInterstitial) { vm.onIdleInterstitialDone() }
             }
         }

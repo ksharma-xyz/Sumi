@@ -144,17 +144,17 @@ fun WinScreen(
                 } else null,
             )
         }
-        // Only render InterstitialAd once the pre-loaded ad reports READY.
-        // Other states (LOADING, FAILED, SHOWING, SHOWN) either skip or are
-        // self-managed by the library — see comment on rememberInterstitialAd above.
+        // Only render InterstitialAd once the pre-loaded ad reports READY, and keep it
+        // composed through SHOWING/SHOWN. Removing the composable mid-presentation
+        // disposes the underlying iOS GADInterstitialAd while it's still on screen —
+        // that's the production iOS crash inside basic-ads' InterstitialAd.
         if (showInterstitialAd) {
             when (interstitialAdState.value.state) {
-                AdState.READY -> InterstitialAd(
+                AdState.READY, AdState.SHOWING, AdState.SHOWN -> InterstitialAd(
                     loadedAd = interstitialAdState.value,
                     onDismissed = onInterstitialDismiss,
                     onFailure = { _ -> onInterstitialDismiss() },
                 )
-                AdState.SHOWING, AdState.SHOWN -> Unit // ad on screen; onDismissed will dismiss the flag
                 else -> {
                     // Not ready (still loading / failed / no fill) — release the flag
                     // so the user isn't blocked waiting on an ad that never appears.
