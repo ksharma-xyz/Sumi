@@ -43,7 +43,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
-import xyz.ksharma.sumi.design.components.InkBleed
+import xyz.ksharma.sumi.design.components.InkStain
 import xyz.ksharma.sumi.design.components.LogoEnso
 import xyz.ksharma.sumi.design.components.SumiPetals
 import xyz.ksharma.sumi.design.components.WashiBG
@@ -76,14 +76,15 @@ fun SplashScreen(
     }
 }
 
-/** Bottom-left bullseye accent — same ambient ink-blot the marketing site uses. */
+/** Bottom-left organic ink stain — the irregular-edge variant from the
+ *  marketing site, distinct from the geometric InkBleed used elsewhere. */
 @Composable
 private fun SplashAmbientBleed() {
     Box(
         modifier = Modifier.fillMaxSize().padding(start = 16.dp, bottom = 56.dp),
         contentAlignment = Alignment.BottomStart,
     ) {
-        InkBleed(sizeDp = 200.dp)
+        InkStain(sizeDp = 200.dp)
     }
 }
 
