@@ -137,6 +137,7 @@ fun OnboardingScreen(
             OnboardingFooter(
                 currentPage = pagerState.currentPage,
                 isLast = isLast,
+                accent = accent,
                 onComplete = { onComplete(selectedSeason) },
             )
         }
@@ -159,7 +160,7 @@ private fun OnboardingTopBar(skipSrc: MutableInteractionSource, onSkip: () -> Un
 }
 
 @Composable
-private fun OnboardingFooter(currentPage: Int, isLast: Boolean, onComplete: () -> Unit) {
+private fun OnboardingFooter(currentPage: Int, isLast: Boolean, accent: Color, onComplete: () -> Unit) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
@@ -168,11 +169,14 @@ private fun OnboardingFooter(currentPage: Int, isLast: Boolean, onComplete: () -
         ) {
             repeat(SLIDE_COUNT) { i ->
                 if (i > 0) Spacer(Modifier.size(8.dp))
+                // Active dot picks up the season accent; inactive dots stay
+                // ink-faint so the active one reads as a clear pointer.
                 Box(
                     modifier = Modifier
                         .size(8.dp)
                         .background(
-                            color = SumiTheme.colors.ink.copy(alpha = if (i == currentPage) 1f else 0.24f),
+                            color = if (i == currentPage) accent
+                            else SumiTheme.colors.ink.copy(alpha = 0.24f),
                             shape = CircleShape,
                         ),
                 )
@@ -218,7 +222,16 @@ private fun SlidePage(page: Int, accent: Color) {
                 2 -> RestKanji(color = accent)
             }
         }
-        Spacer(Modifier.height(40.dp))
+        Spacer(Modifier.height(28.dp))
+        // Ceremonial-numeral eyebrow in the season accent — small, tracked
+        // wide. Reinforces the user's choice without competing with the
+        // headline for hierarchy.
+        Text(
+            text = slideEyebrow(page),
+            style = SumiTheme.typography.cjk.copy(fontSize = 20.sp, letterSpacing = 6.sp),
+            color = accent,
+        )
+        Spacer(Modifier.height(10.dp))
         Text(
             text = slideHeadline(page),
             style = SumiTheme.typography.h2.copy(
@@ -448,6 +461,13 @@ private fun LogoGridDots(size: androidx.compose.ui.unit.Dp, accent: Color) {
             }
         }
     }
+}
+
+// Slides 2/3/4 of the four-slide flow (the season picker is slide 1).
+private fun slideEyebrow(page: Int) = when (page) {
+    0 -> "弐"
+    1 -> "参"
+    else -> "肆"
 }
 
 private fun slideHeadline(page: Int) = when (page) {
