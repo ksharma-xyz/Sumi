@@ -453,7 +453,7 @@ private fun slideHeadline(page: Int) = when (page) {
 }
 
 private fun slideBody(page: Int) = when (page) {
-    0 -> "Ink on paper. No chrome. No streaks.\nNine by nine, every day."
+    0 -> "Ink on paper. No chrome. No noise.\nNine by nine, every day."
     1 -> "Tap to enter. Hold to pencil.\nYour hand, your pace, your pause."
     else -> "Pause without penalty. Return without cost.\nThe grid waits."
 }

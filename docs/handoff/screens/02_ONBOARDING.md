@@ -59,7 +59,7 @@ Each slide gets **one ink bleed** positioned differently so the set feels hand-a
 
 > *Sudoku as quiet practice.*
 >
-> Ink on paper. No chrome. No streaks.
+> Ink on paper. No chrome. No noise.
 > Nine by nine, every day.
 
 - Headline: `Sudoku as quiet practice.` (Cormorant Italic 34sp, `Sumi.Color.ink`)

@@ -21,7 +21,7 @@
 
 <br/>
 
-> *Ink on paper. No chrome. No streaks.*  
+> *Ink on paper. No chrome. No noise.*  
 > *Nine by nine, every day.*
 
 Sumi is a daily Sudoku app designed around stillness. No leaderboards, no timers ticking in your face, no gamification noise. Just the grid — ink on warm paper — and the quiet satisfaction of placing the last number.
