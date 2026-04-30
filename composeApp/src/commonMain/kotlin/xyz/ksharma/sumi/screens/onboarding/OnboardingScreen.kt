@@ -120,6 +120,9 @@ fun OnboardingScreen(
                 .padding(horizontal = 32.dp),
         ) {
             OnboardingTopBar(skipSrc = skipSrc, onSkip = { onComplete(selectedSeason) })
+            // Selected accent threads through the rest of onboarding so the
+            // user's first decision visibly carries forward.
+            val accent = SumiTokens.Color.Season.forSeason(selectedSeason).accent
             HorizontalPager(state = pagerState, modifier = Modifier.weight(1f)) { page ->
                 // Season picker is page 0 — picking the accent first means the
                 // remaining onboarding renders in the user's chosen palette.
@@ -128,7 +131,7 @@ fun OnboardingScreen(
                 if (page == 0) {
                     SeasonPickerSlide(selected = selectedSeason, onSelect = { selectedSeason = it })
                 } else {
-                    SlidePage(page = page - 1)
+                    SlidePage(page = page - 1, accent = accent)
                 }
             }
             OnboardingFooter(
@@ -198,7 +201,7 @@ private fun SlideInkBleed(page: Int) {
 }
 
 @Composable
-private fun SlidePage(page: Int) {
+private fun SlidePage(page: Int, accent: Color) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -208,9 +211,11 @@ private fun SlidePage(page: Int) {
     ) {
         Box(modifier = Modifier.size(200.dp), contentAlignment = Alignment.Center) {
             when (page) {
+                // Enso stays ink — it IS the sumi-ink mark, recolouring it would
+                // lose the meaning. The accent shows up on the next two slides.
                 0 -> LogoEnso(size = 200.dp, color = SumiTheme.colors.ink)
-                1 -> LogoGridDots(size = 180.dp)
-                2 -> RestKanji()
+                1 -> LogoGridDots(size = 180.dp, accent = accent)
+                2 -> RestKanji(color = accent)
             }
         }
         Spacer(Modifier.height(40.dp))
@@ -408,11 +413,11 @@ private fun seasonLabel(season: SumiSeason) = when (season) {
 }
 
 @Composable
-private fun RestKanji() {
+private fun RestKanji(color: Color) {
     Text(
         text = "休",
         style = SumiTheme.typography.cjk.copy(fontSize = 120.sp),
-        color = SumiTheme.colors.red,
+        color = color,
     )
 }
 
@@ -424,11 +429,10 @@ private fun RestKanji() {
  * vanished against the night-paper background in dark mode.
  */
 @Composable
-private fun LogoGridDots(size: androidx.compose.ui.unit.Dp) {
+private fun LogoGridDots(size: androidx.compose.ui.unit.Dp, accent: Color) {
     val ink = SumiTheme.colors.ink
-    // Bottom-centre dot uses the gold accent — premium signature touch,
-    // always visible against any season's paper / dark mode.
-    val accent = SumiTheme.colors.gold
+    // Bottom-centre dot uses the selected season's accent so the user's
+    // first choice traces visibly through the rest of onboarding.
     androidx.compose.foundation.Canvas(modifier = Modifier.size(size)) {
         val unit = this.size.minDimension / 120f
         for (row in 0..2) {
