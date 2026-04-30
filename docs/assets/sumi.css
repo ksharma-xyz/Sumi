@@ -467,12 +467,16 @@ section { padding-block: 112px; position: relative; z-index: 2; }
   height: 100%;
 }
 
+/* translateY uses pixel values, NOT percentages — transform percentages are
+   resolved against the element's own dimensions (a 24px petal × 120% = 29px,
+   nowhere near the container floor). 360px easily clears both the desktop
+   field height (280px) and the mobile one (220px). */
 @keyframes petal-drift {
-  0%   { transform: translate3d(0, -20%, 0) rotate(0deg); opacity: 0; }
+  0%   { transform: translate3d(0, -40px, 0) rotate(0deg); opacity: 0; }
   10%  { opacity: var(--petal-o, 0.7); }
-  50%  { transform: translate3d(var(--petal-sway, 24px), 50%, 0) rotate(var(--petal-spin, 180deg)); }
+  50%  { transform: translate3d(var(--petal-sway, 24px), 160px, 0) rotate(var(--petal-spin, 180deg)); }
   90%  { opacity: var(--petal-o, 0.7); }
-  100% { transform: translate3d(calc(var(--petal-sway, 24px) * -0.5), 120%, 0) rotate(calc(var(--petal-spin, 180deg) * 2)); opacity: 0; }
+  100% { transform: translate3d(calc(var(--petal-sway, 24px) * -0.5), 360px, 0) rotate(calc(var(--petal-spin, 180deg) * 2)); opacity: 0; }
 }
 
 .season-meta {
