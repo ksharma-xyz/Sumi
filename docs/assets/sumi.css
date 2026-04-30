@@ -88,7 +88,10 @@ body::before {
   inset: 0;
   pointer-events: none;
   overflow: hidden;
-  z-index: 1;
+  /* Below the noise overlay (z-index 1) so noise grain falls onto the ink
+     uniformly, just like the rest of the paper — but above the page bg
+     color, which has no z-index of its own. */
+  z-index: 0;
 }
 
 .ink-bleed {
@@ -96,38 +99,37 @@ body::before {
   display: block;
   mix-blend-mode: multiply;
   user-select: none;
-  filter: contrast(1.04);
 }
 
 .ink-bleed--ne {
-  top: -64px;
-  right: -90px;
-  width: 380px;
-  height: 380px;
-  opacity: 0.20;
+  top: -80px;
+  right: -100px;
+  width: 440px;
+  height: 440px;
+  opacity: 0.55;
 }
 
 .ink-bleed--sw {
-  bottom: -90px;
-  left: -110px;
-  width: 340px;
-  height: 340px;
-  opacity: 0.16;
+  bottom: -100px;
+  left: -120px;
+  width: 380px;
+  height: 380px;
+  opacity: 0.45;
   transform: rotate(8deg);
 }
 
 .ink-bleed--w {
-  top: 48vh;
-  left: -160px;
-  width: 280px;
-  height: 280px;
-  opacity: 0.09;
+  top: 46vh;
+  left: -180px;
+  width: 320px;
+  height: 320px;
+  opacity: 0.30;
   transform: rotate(-14deg);
 }
 
 @media (max-width: 820px) {
-  .ink-bleed--ne { width: 240px; height: 240px; top: -40px; right: -60px; opacity: 0.16; }
-  .ink-bleed--sw { width: 220px; height: 220px; bottom: -60px; left: -70px; opacity: 0.12; }
+  .ink-bleed--ne { width: 280px; height: 280px; top: -50px; right: -70px; opacity: 0.50; }
+  .ink-bleed--sw { width: 240px; height: 240px; bottom: -70px; left: -80px; opacity: 0.40; }
   .ink-bleed--w  { display: none; }
 }
 
