@@ -43,6 +43,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
+import xyz.ksharma.sumi.design.components.InkBleed
 import xyz.ksharma.sumi.design.components.LogoEnso
 import xyz.ksharma.sumi.design.components.SumiPetals
 import xyz.ksharma.sumi.design.components.WashiBG
@@ -68,9 +69,21 @@ fun SplashScreen(
     WashiBG(modifier = modifier.fillMaxSize()) {
         SumiPetals(modifier = Modifier.fillMaxSize(), count = 17, sizeMultiplier = 1.8f, speedFactor = 3f)
         SplashInkBleed()
+        SplashAmbientBleed()
         SplashEnso(ensoProgress.value)
         SplashWordmark(wordmarkAlpha.value)
         if (dotsVisible) SplashDots()
+    }
+}
+
+/** Bottom-left bullseye accent — same ambient ink-blot the marketing site uses. */
+@Composable
+private fun SplashAmbientBleed() {
+    Box(
+        modifier = Modifier.fillMaxSize().padding(start = 16.dp, bottom = 56.dp),
+        contentAlignment = Alignment.BottomStart,
+    ) {
+        InkBleed(sizeDp = 200.dp)
     }
 }
 
