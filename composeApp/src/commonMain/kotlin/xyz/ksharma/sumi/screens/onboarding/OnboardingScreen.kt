@@ -119,10 +119,10 @@ fun OnboardingScreen(
                 .systemBarsPadding()
                 .padding(horizontal = 32.dp),
         ) {
-            OnboardingTopBar(skipSrc = skipSrc, accent = accent, onSkip = { onComplete(selectedSeason) })
             // Selected accent threads through the rest of onboarding so the
             // user's first decision visibly carries forward.
             val accent = SumiTokens.Color.Season.forSeason(selectedSeason).accent
+            OnboardingTopBar(skipSrc = skipSrc, accent = accent, onSkip = { onComplete(selectedSeason) })
             HorizontalPager(state = pagerState, modifier = Modifier.weight(1f)) { page ->
                 // Season picker is page 0 — picking the accent first means the
                 // remaining onboarding renders in the user's chosen palette.
