@@ -63,7 +63,12 @@ fun SumiBoard(
     val colors = SumiTheme.colors
     val ink = colors.ink
     val teal = colors.teal
+    // colors.red is the muted calligraphy red — used for selection wash + the
+    // sumi chop seal aesthetic. colors.error is the bold red (identical in
+    // light + dark) — used SPECIFICALLY for wrong-digit signalling so it
+    // reads at a glance regardless of theme.
     val red = colors.red
+    val errorRed = colors.error
     val tone = if (SumiTheme.isDark) AuroraTone.Night else AuroraTone.Paper
     // Mode-aware selection-wash alphas — dark paper needs hotter values to read.
     val selectionAlphas = if (SumiTheme.isDark) Sumi.Color.BoardSelection.Dark
@@ -88,11 +93,18 @@ fun SumiBoard(
                 },
         ) {
             val px = cellSize.toPx()
-            drawCellBackgrounds(state, selected, errorCells, px, CellColors(ink, teal, red), selectionAlphas)
+            drawCellBackgrounds(
+                state,
+                selected,
+                errorCells,
+                px,
+                CellColors(ink, teal, red, errorRed),
+                selectionAlphas,
+            )
             drawGridLines(px, ink)
         }
 
-        CellContents(state = state, cellSize = cellSize, ink = ink, teal = teal, red = red)
+        CellContents(state = state, cellSize = cellSize, ink = ink, teal = teal, errorRed = errorRed)
 
         SweepLayer(
             activeSweeps = activeSweeps,
@@ -174,7 +186,7 @@ private fun CellContents(
     cellSize: Dp,
     ink: Color,
     teal: Color,
-    red: Color,
+    errorRed: Color,
 ) {
     val errorCells = state.errorCells
     for (r in 0..8) {
@@ -183,7 +195,7 @@ private fun CellContents(
             if (cell.value == 0 && cell.notes.isEmpty()) continue
             val isError = (r to c) in errorCells
             val textColor = when {
-                isError -> red
+                isError -> errorRed
                 cell.given -> ink
                 else -> teal
             }
@@ -329,7 +341,7 @@ private fun NoteGrid(
     }
 }
 
-private data class CellColors(val ink: Color, val teal: Color, val red: Color)
+private data class CellColors(val ink: Color, val teal: Color, val red: Color, val errorRed: Color)
 
 @Suppress("LongParameterList")
 private fun DrawScope.drawCellBackgrounds(
@@ -368,7 +380,7 @@ private fun cellBg(
     val isSameDigit = selectedValue != null && selectedValue != 0 &&
         cell.value == selectedValue && !isSelected
     return when {
-        isError -> colors.red.copy(alpha = alphas.error)
+        isError -> colors.errorRed.copy(alpha = alphas.error)
         isSelected -> colors.red.copy(alpha = alphas.selected)
         isSameDigit -> colors.teal.copy(alpha = alphas.sameDigit)
         isInUnit -> colors.ink.copy(alpha = alphas.inUnit)

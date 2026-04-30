@@ -90,7 +90,10 @@ private fun sumiDarkColors(season: SumiSeason): SumiColors {
         goldLight = SumiTokens.Color.Night.gold,
         success = SumiTokens.Color.success,
         warning = SumiTokens.Color.warning,
-        error = accent,
+        // error is the SAME bold red across light + dark — this is the
+        // wrong-digit / mistake colour and must read identically in both
+        // modes. Don't pull it from the season palette like other accents.
+        error = SumiTokens.Color.error,
         hint = SumiTokens.Color.Night.gold,
     )
 }

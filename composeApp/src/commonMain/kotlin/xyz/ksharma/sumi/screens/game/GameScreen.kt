@@ -289,7 +289,9 @@ private fun MarksHintsRow(
             Text(
                 text = buildAnnotatedString {
                     withStyle(SpanStyle(color = SumiTheme.colors.inkSoft)) { append("MISTAKES ") }
-                    withStyle(SpanStyle(color = SumiTheme.colors.red, fontWeight = FontWeight.Bold)) {
+                    // colors.error (bold red, identical light/dark) — the
+                    // mistake count must read at a glance regardless of theme.
+                    withStyle(SpanStyle(color = SumiTheme.colors.error, fontWeight = FontWeight.Bold)) {
                         append("$mistakeCount")
                     }
                 },

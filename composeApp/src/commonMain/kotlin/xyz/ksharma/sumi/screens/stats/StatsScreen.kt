@@ -511,7 +511,7 @@ private val StatsShareGold = Color(0xFF8A6B2A)
 private fun StatsShareCard(state: StatsState, layer: GraphicsLayer) {
     Column(
         modifier = Modifier
-            .size(width = 360.dp, height = 480.dp)
+            .size(width = 360.dp, height = 600.dp)
             .drawWithContent {
                 layer.record {
                     drawRect(color = StatsSharePaper)
@@ -521,7 +521,6 @@ private fun StatsShareCard(state: StatsState, layer: GraphicsLayer) {
             }
             .padding(Sumi.Space.s7),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(Sumi.Space.s5),
     ) {
         // Brand line
         Text(
@@ -529,19 +528,20 @@ private fun StatsShareCard(state: StatsState, layer: GraphicsLayer) {
             style = SumiTheme.typography.quote.copy(fontSize = 22.sp, fontStyle = FontStyle.Italic),
             color = StatsShareInk,
         )
+        Spacer(Modifier.height(Sumi.Space.s1))
         Text(
             text = "PRACTICE LOG",
             style = SumiTheme.typography.uiLabel.copy(fontSize = 11.sp, letterSpacing = 2.sp),
             color = StatsShareInkFaint,
         )
 
-        Spacer(Modifier.height(Sumi.Space.s2))
+        Spacer(Modifier.height(Sumi.Space.s5))
 
         // Hero — total solved
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
                 text = state.totalPuzzlesSolved.toString(),
-                style = SumiTheme.typography.h1.copy(fontSize = 80.sp, fontStyle = FontStyle.Italic),
+                style = SumiTheme.typography.h1.copy(fontSize = 64.sp, fontStyle = FontStyle.Italic),
                 color = StatsShareInk,
             )
             Text(
@@ -551,22 +551,72 @@ private fun StatsShareCard(state: StatsState, layer: GraphicsLayer) {
             )
         }
 
-        // Streak + best time
-        Row(
+        Spacer(Modifier.height(Sumi.Space.s5))
+
+        // Streak (only header stat alongside total — best times now break out by difficulty below)
+        ShareStat(
+            value = state.currentStreak.toString(),
+            label = if (state.currentStreak == 1) "DAY STREAK" else "DAY STREAK",
+        )
+
+        Spacer(Modifier.height(Sumi.Space.s5))
+
+        // Personal Bests — full list across every difficulty so the share
+        // image stands as a complete log, not a one-stat summary.
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(0.5.dp)
+                .background(StatsShareInkFaint.copy(alpha = 0.5f)),
+        )
+        Spacer(Modifier.height(Sumi.Space.s3))
+        Text(
+            text = "PERSONAL BESTS",
+            style = SumiTheme.typography.uiLabel.copy(fontSize = 11.sp, letterSpacing = 2.sp),
+            color = StatsShareInkFaint,
+        )
+        Spacer(Modifier.height(Sumi.Space.s3))
+        Column(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalArrangement = Arrangement.spacedBy(Sumi.Space.s2),
         ) {
-            ShareStat(
-                value = state.currentStreak.toString(),
-                label = "STREAK",
-            )
-            val bestEver = state.bestTimes.values.minOrNull()
-            ShareStat(
-                value = bestEver?.let { formatTimeShort(it) } ?: "—",
-                label = "BEST",
-                accent = StatsShareGold,
-            )
+            Difficulty.entries.forEach { diff ->
+                BestTimeRow(
+                    kanji = difficultyKanji(diff),
+                    label = diff.label,
+                    time = state.bestTimes[diff.name],
+                )
+            }
         }
+    }
+}
+
+@Composable
+private fun BestTimeRow(kanji: String, label: String, time: Long?) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = kanji,
+            style = SumiTheme.typography.cjk.copy(fontSize = 18.sp),
+            color = StatsShareInk,
+        )
+        Spacer(Modifier.size(Sumi.Space.s3))
+        Text(
+            text = label,
+            style = SumiTheme.typography.body.copy(fontSize = 14.sp),
+            color = StatsShareInk,
+        )
+        Spacer(Modifier.weight(1f))
+        Text(
+            text = time?.let { formatTimeShort(it) } ?: "—",
+            style = SumiTheme.typography.numeral.copy(
+                fontSize = 16.sp,
+                fontStyle = FontStyle.Italic,
+            ),
+            color = if (time == null) StatsShareInkFaint else StatsShareGold,
+        )
     }
 }
 

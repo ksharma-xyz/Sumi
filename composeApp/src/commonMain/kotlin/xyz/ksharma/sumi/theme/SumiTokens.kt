@@ -67,7 +67,12 @@ object SumiTokens {
         // States
         val success = androidx.compose.ui.graphics.Color(0xFF5A7A3A)
         val warning = androidx.compose.ui.graphics.Color(0xFFA8632A)
-        val error = androidx.compose.ui.graphics.Color(0xFFA8342A)
+        // Error red is intentionally bolder than `red` (which is the muted
+        // calligraphy ink red used for chop seals + ornaments). Used for
+        // wrong-digit highlights and the mistake counter — must read at a
+        // glance in BOTH light and dark mode, so it's the same value across
+        // sumiLightColors / sumiDarkColors instead of being theme-derived.
+        val error = androidx.compose.ui.graphics.Color(0xFFE63946)
         val hint = androidx.compose.ui.graphics.Color(0xFF8A6B2A)
 
         // Sakura petal palette — used in ambient and burst petal animations
