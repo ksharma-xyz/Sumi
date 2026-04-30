@@ -1,7 +1,6 @@
 package xyz.ksharma.sumi.navigation
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -47,22 +46,35 @@ fun BottomNavBar(
     modifier: Modifier = Modifier,
 ) {
     val colors = SumiTheme.colors
-    Row(
+    // Background extends to the screen's bottom edge so the phone's rounded
+    // corner clips it cleanly. Only a top hairline divider is drawn — side
+    // and bottom borders would render straight lines through the curved area.
+    Column(
         modifier = modifier
             .fillMaxWidth()
-            .border(width = 1.dp, color = colors.paperEdge)
-            .background(colors.paper)
-            .windowInsetsPadding(WindowInsets.navigationBars)
-            .padding(horizontal = Sumi.Space.s4, vertical = Sumi.Space.s3),
-        horizontalArrangement = Arrangement.SpaceAround,
+            .background(colors.paper),
     ) {
-        TABS.forEach { tab ->
-            BottomNavItem(
-                label = tab.label,
-                icon = tab.icon,
-                selected = currentTab == tab.route,
-                onClick = { onTabClick(tab.route) },
-            )
+        Spacer(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(1.dp)
+                .background(colors.paperEdge),
+        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .windowInsetsPadding(WindowInsets.navigationBars)
+                .padding(horizontal = Sumi.Space.s4, vertical = Sumi.Space.s3),
+            horizontalArrangement = Arrangement.SpaceAround,
+        ) {
+            TABS.forEach { tab ->
+                BottomNavItem(
+                    label = tab.label,
+                    icon = tab.icon,
+                    selected = currentTab == tab.route,
+                    onClick = { onTabClick(tab.route) },
+                )
+            }
         }
     }
 }
