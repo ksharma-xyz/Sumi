@@ -242,7 +242,7 @@ private fun GameTopBar(difficulty: Difficulty, elapsedMs: Long, onBack: () -> Un
                     .clickable(interactionSource = backSrc, indication = null, onClick = onBack),
                 contentAlignment = Alignment.Center,
             ) {
-                SumiIcon(icon = SumiIcons.Back, contentDescription = "Back", tint = SumiTheme.colors.ink, size = 22.dp)
+                Text(text = "←", style = SumiTheme.typography.h3, color = SumiTheme.colors.ink)
             }
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
