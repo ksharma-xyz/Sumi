@@ -48,7 +48,6 @@ import app.lexilabs.basic.ads.composable.rememberInterstitialAd
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import xyz.ksharma.sumi.Quote
-import xyz.ksharma.sumi.ads.AdUnits
 import xyz.ksharma.sumi.design.components.SudokuThumbnail
 import xyz.ksharma.sumi.design.components.SumiButton
 import xyz.ksharma.sumi.design.components.SumiButtonSize
@@ -81,6 +80,8 @@ fun WinScreen(
     solution: String = "",
     showInterstitialAd: Boolean = false,
     onInterstitialDismiss: () -> Unit = {},
+    /** Resolved at the entry layer so this screen stays free of Koin / global lookups. */
+    interstitialAdUnitId: String = "",
 ) {
     val shareLayer = rememberGraphicsLayer()
     val cardBackground = SumiTheme.colors.paper
@@ -92,7 +93,7 @@ fun WinScreen(
     // pre-load via rememberInterstitialAd and only render InterstitialAd when state == READY.
     // Must be called unconditionally per Compose composable rules.
     val interstitialAdState = rememberInterstitialAd(
-        adUnitId = AdUnits.Interstitial,
+        adUnitId = interstitialAdUnitId,
         onLoad = {},
         onFailure = { /* fall-through; the conditional render below skips when state != READY */ },
     )

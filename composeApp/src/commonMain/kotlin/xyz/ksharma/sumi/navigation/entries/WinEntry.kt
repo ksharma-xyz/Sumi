@@ -13,6 +13,7 @@ import kotlinx.datetime.toLocalDateTime
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import xyz.ksharma.sumi.FREE_QUOTES
+import xyz.ksharma.sumi.ads.AdUnits
 import xyz.ksharma.sumi.haptic.rememberHapticEngine
 import xyz.ksharma.sumi.navigation.GameRoute
 import xyz.ksharma.sumi.navigation.HomeRoute
@@ -37,6 +38,7 @@ fun EntryProviderScope<NavKey>.WinEntry(navigator: SumiNavigator) {
         val themePrefs = koinInject<ThemePreferences>()
         val proRepo = koinInject<ProRepository>()
         val debugPrefs = koinInject<DebugPreferences>()
+        val adUnits = koinInject<AdUnits>()
         val coroutineScope = rememberCoroutineScope()
         val hapticsEnabled by themePrefs.observeHapticsEnabled().collectAsState(initial = true)
         val isPro by proRepo.isPro().collectAsState(initial = false)
@@ -72,6 +74,7 @@ fun EntryProviderScope<NavKey>.WinEntry(navigator: SumiNavigator) {
             },
             showInterstitialAd = showInterstitial && !isPro && isAdsEnabled,
             onInterstitialDismiss = vm::onInterstitialDone,
+            interstitialAdUnitId = adUnits.Interstitial,
         )
     }
 }

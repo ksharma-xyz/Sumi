@@ -65,6 +65,7 @@ fun EntryProviderScope<NavKey>.GameEntry(navigator: SumiNavigator) {
         val analytics = koinInject<SumiAnalytics>()
         val proRepo = koinInject<ProRepository>()
         val debugPrefs = koinInject<DebugPreferences>()
+        val adUnits = koinInject<AdUnits>()
         val diff = Difficulty.entries.firstOrNull { it.name == key.difficulty } ?: Difficulty.Medium
         val isPro by proRepo.isPro().collectAsState(initial = false)
         val isAdsEnabled by debugPrefs.observeAdsEnabled().collectAsState(initial = true)
@@ -91,7 +92,7 @@ fun EntryProviderScope<NavKey>.GameEntry(navigator: SumiNavigator) {
         // (composable rules) but only rendered when the orchestrator decides the moment + the
         // pre-load reports READY.
         val idleAdState = rememberInterstitialAd(
-            adUnitId = AdUnits.Interstitial,
+            adUnitId = adUnits.Interstitial,
             onLoad = {},
             onFailure = {},
         )
@@ -165,7 +166,7 @@ fun EntryProviderScope<NavKey>.GameEntry(navigator: SumiNavigator) {
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(50.dp),
-                    ) { BannerAd(adUnitId = AdUnits.Banner) }
+                    ) { BannerAd(adUnitId = adUnits.Banner) }
                 }
             } else null,
             rewardedHintAvailable = !isPro && isAdsEnabled,
@@ -195,7 +196,7 @@ fun EntryProviderScope<NavKey>.GameEntry(navigator: SumiNavigator) {
         // so it bypasses the orchestrator's interstitial frequency cap.
         if (showRewardedHintAd && !isPro && isAdsEnabled) {
             RewardedAd(
-                adUnitId = AdUnits.Rewarded,
+                adUnitId = adUnits.Rewarded,
                 onRewardEarned = { _ -> vm.grantHintsFromAd(count = 1) },
                 onDismissed = vm::onRewardedHintAdDone,
                 onFailure = { _ -> vm.onRewardedHintAdDone() },

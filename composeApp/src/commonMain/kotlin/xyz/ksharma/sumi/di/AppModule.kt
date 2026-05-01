@@ -2,11 +2,12 @@ package xyz.ksharma.sumi.di
 
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
-import xyz.ksharma.sumi.BuildKonfig
 import xyz.ksharma.sumi.ads.AdOrchestrator
+import xyz.ksharma.sumi.ads.AdUnits
 import xyz.ksharma.sumi.analytics.FirebaseSumiAnalytics
 import xyz.ksharma.sumi.analytics.SumiAnalytics
 import xyz.ksharma.sumi.game.di.gameModule
+import xyz.ksharma.sumi.platform.AppInfo
 import xyz.ksharma.sumi.preferences.DataStoreGameSaveRepository
 import xyz.ksharma.sumi.preferences.DataStoreSumiPreferences
 import xyz.ksharma.sumi.preferences.DebugPreferences
@@ -34,6 +35,7 @@ val appModule = module {
     single<GameSaveRepository> { DataStoreGameSaveRepository(store = get()) }
     single<ProRepository> { DebugProRepository(debug = get()) }
     single { AdOrchestrator() }
+    single { AdUnits(appInfo = get()) }
     viewModel { SplashViewModel(prefs = get()) }
     viewModel { GameViewModel(puzzleRepository = get(), saveRepository = get(), adOrchestrator = get()) }
     viewModel { HomeViewModel(prefs = get()) }
@@ -46,7 +48,7 @@ val appModule = module {
             debug = get(),
             gameSaves = get(),
             themes = get(),
-            isDebug = BuildKonfig.IS_DEBUG,
+            isDebug = get<AppInfo>().isDebugBuild,
         )
     }
 }

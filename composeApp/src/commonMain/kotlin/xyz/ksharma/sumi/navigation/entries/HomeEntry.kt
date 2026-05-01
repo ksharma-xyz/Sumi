@@ -59,6 +59,7 @@ fun EntryProviderScope<NavKey>.HomeEntry(navigator: SumiNavigator) {
         val proRepo = koinInject<ProRepository>()
         val debugPrefs = koinInject<DebugPreferences>()
         val shareManager = koinInject<ShareManager>()
+        val adUnits = koinInject<AdUnits>()
         val scope = rememberCoroutineScope()
         val isPro by proRepo.isPro().collectAsState(initial = false)
         val isAdsEnabled by debugPrefs.observeAdsEnabled().collectAsState(initial = true)
@@ -96,7 +97,7 @@ fun EntryProviderScope<NavKey>.HomeEntry(navigator: SumiNavigator) {
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(50.dp),
-                    ) { BannerAd(adUnitId = AdUnits.Banner) }
+                    ) { BannerAd(adUnitId = adUnits.Banner) }
                 }
             } else null,
         )
