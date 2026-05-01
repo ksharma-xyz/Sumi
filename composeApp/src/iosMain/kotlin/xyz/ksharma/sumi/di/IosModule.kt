@@ -10,6 +10,8 @@ import org.koin.dsl.module
 import platform.Foundation.NSDocumentDirectory
 import platform.Foundation.NSFileManager
 import platform.Foundation.NSUserDomainMask
+import xyz.ksharma.sumi.platform.AppInfo
+import xyz.ksharma.sumi.platform.IosAppInfo
 
 val iosModule = module {
     single<DataStore<Preferences>> {
@@ -20,4 +22,5 @@ val iosModule = module {
             "$docDir/sumi.preferences_pb".toPath()
         }
     }
+    single<AppInfo> { IosAppInfo() }
 }
