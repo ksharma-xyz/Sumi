@@ -174,7 +174,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "if [ \"YES\" = \"$OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED\" ]; then\n  echo \"Skipping Gradle build task invocation due to OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED environment variable set to \\\"YES\\\"\"\n  exit 0\nfi\ncd \"$SRCROOT/..\"\n./gradlew :composeApp:embedAndSignAppleFrameworkForXcode\n";
+			shellScript = "if [ \"YES\" = \"$OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED\" ]; then\n  echo \"Skipping Gradle build task invocation due to OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED environment variable set to \\\"YES\\\"\"\n  exit 0\nfi\ncd \"$SRCROOT/..\"\n# Forward Xcode's configuration into BuildKonfig so Release archives\n# (TestFlight, App Store) bake IS_DEBUG=false into the shared framework.\n# Without this, archives ship the debug flavour: DebugSection visible in\n# Settings + AdMob test unit IDs instead of real ones.\nif [ \"$CONFIGURATION\" = \"Release\" ]; then\n  ./gradlew :composeApp:embedAndSignAppleFrameworkForXcode -Pbuildkonfig.flavor=release\nelse\n  ./gradlew :composeApp:embedAndSignAppleFrameworkForXcode\nfi\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
