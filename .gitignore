@@ -25,3 +25,19 @@ GoogleService-Info.plist
 # mkdocs build output (deployed to gh-pages by .github/workflows/deploy-docs.yml)
 site/
 .cache/
+
+# Android signing — keystore is base64-decoded by CI from ANDROID_KEYSTORE_FILE secret
+keystore.jks
+*.jks
+
+# Fastlane — generated build artifacts and report HTML
+iosApp/build/
+iosApp/fastlane/report.xml
+iosApp/fastlane/README.md
+iosApp/fastlane/test_output/
+iosApp/fastlane/screenshots/
+iosApp/Pods/
+
+# Ruby / Bundler — gem deps installed at CI time
+.bundle/
+vendor/bundle/

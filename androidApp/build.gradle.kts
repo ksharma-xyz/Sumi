@@ -11,8 +11,25 @@ android {
     defaultConfig {
         applicationId = "xyz.ksharma.sumi"
         minSdk = 28
-        versionCode = 1
+        // CI sets `-PversionCode="$VERSION_CODE"` so signed-bundle releases get a
+        // monotonic value from the GitHub repo variable ANDROID_VERSION_CODE.
+        // Local builds fall back to 10 — high enough that an accidental local
+        // upload to Play Console is rejected for collision rather than landing.
+        versionCode = findProperty("versionCode")?.toString()?.toInt() ?: 10
         versionName = "1.0"
+    }
+
+    signingConfigs {
+        create("release") {
+            // build-android.yml CI workflow base64-decodes ANDROID_KEYSTORE_FILE
+            // into rootProject/keystore.jks and exports the three secrets below
+            // as env vars before invoking Gradle. Local release builds need the
+            // same keystore + env vars to sign — see CI/CD setup notes.
+            storeFile = rootProject.file("keystore.jks")
+            storePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+            keyAlias = System.getenv("ANDROID_KEY_ALIAS")
+            keyPassword = System.getenv("ANDROID_KEY_PASSWORD")
+        }
     }
 
     buildTypes {
@@ -34,6 +51,7 @@ android {
                 "proguard-rules.pro",
             )
             manifestPlaceholders["admobAppId"] = admobAndroidAppId
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 
