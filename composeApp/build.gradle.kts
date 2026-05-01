@@ -1,15 +1,12 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import xyz.ksharma.sumi.gradle.AndroidVersion
 
-import com.codingfeline.buildkonfig.compiler.FieldSpec.Type.BOOLEAN
-
 plugins {
     alias(libs.plugins.sumi.kotlin.multiplatform)
     alias(libs.plugins.sumi.compose.multiplatform)
     alias(libs.plugins.sumi.android.kmp.library)
     alias(libs.plugins.kotlinSerialization)
     alias(libs.plugins.sqldelight)
-    alias(libs.plugins.buildkonfig)
 }
 
 kotlin {
@@ -106,19 +103,3 @@ compose.resources {
     generateResClass = auto
 }
 
-buildkonfig {
-    packageName = "xyz.ksharma.sumi"
-    objectName = "BuildKonfig"
-    exposeObjectWithName = "BuildKonfig"
-
-    // Defaults = debug. Switch via `./gradlew ... -Pbuildkonfig.flavor=release`.
-    // Ad unit IDs are hardcoded in `ads/AdUnits.kt` and selected off IS_DEBUG;
-    // BuildKonfig STRING fields are avoided here because they generate Kotlin
-    // source with literal `"` characters embedded in the value at runtime.
-    defaultConfigs {
-        buildConfigField(BOOLEAN, "IS_DEBUG", "true")
-    }
-    defaultConfigs("release") {
-        buildConfigField(BOOLEAN, "IS_DEBUG", "false")
-    }
-}

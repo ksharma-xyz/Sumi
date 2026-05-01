@@ -29,7 +29,6 @@ admob = "24.9.0"
 basic-ads = "1.1.0"
 google-services = "4.4.4"
 firebase-crashlytics-plugin = "3.0.6"
-buildkonfig = "0.17.1"
 
 [libraries]
 # Android
@@ -119,7 +118,6 @@ sqldelight = { id = "app.cash.sqldelight", version.ref = "sqldelight" }
 detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
 google-services            = { id = "com.google.gms.google-services",    version.ref = "google-services" }
 firebase-crashlyticsPlugin = { id = "com.google.firebase.crashlytics",   version.ref = "firebase-crashlytics-plugin" }
-buildkonfig                = { id = "com.codingfeline.buildkonfig",      version.ref = "buildkonfig" }
 
 # Convention plugins
 sumi-android-application = { id = "sumi.android.application", version = "unspecified" }
