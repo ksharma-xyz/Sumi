@@ -37,10 +37,11 @@ private val KEY_RECENT_TIMES = stringPreferencesKey("recent_times")
 private const val RECENT_TIMES_CAP = 30
 private val KEY_DEBUG_SIMULATE_PRO = booleanPreferencesKey("debug_simulate_pro")
 private val KEY_DEBUG_ADS_ENABLED = booleanPreferencesKey("debug_ads_enabled")
+private val KEY_IS_PRO = booleanPreferencesKey("is_pro")
 
 class DataStoreSumiPreferences(
     private val store: DataStore<Preferences>,
-) : SumiPreferences, DebugPreferences, ThemePreferences {
+) : SumiPreferences, DebugPreferences, ThemePreferences, ProPreferences {
 
     override suspend fun hasSeenOnboarding(): Boolean =
         store.data.first()[KEY_SEEN_ONBOARDING] ?: false
@@ -180,6 +181,13 @@ class DataStoreSumiPreferences(
 
     override suspend fun setSimulatePro(enabled: Boolean) {
         store.edit { it[KEY_DEBUG_SIMULATE_PRO] = enabled }
+    }
+
+    override fun observeIsPro(): Flow<Boolean> =
+        store.data.map { it[KEY_IS_PRO] ?: false }
+
+    override suspend fun setIsPro(value: Boolean) {
+        store.edit { it[KEY_IS_PRO] = value }
     }
 
     override fun observeAdsEnabled(): Flow<Boolean> =

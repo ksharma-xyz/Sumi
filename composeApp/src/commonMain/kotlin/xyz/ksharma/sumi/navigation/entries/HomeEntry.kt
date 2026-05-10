@@ -97,7 +97,7 @@ fun EntryProviderScope<NavKey>.HomeEntry(navigator: SumiNavigator) {
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(50.dp),
-                    ) { BannerAd(adUnitId = adUnits.Banner) }
+                    ) { BannerAd(adUnitId = adUnits.banner) }
                 }
             } else null,
         )

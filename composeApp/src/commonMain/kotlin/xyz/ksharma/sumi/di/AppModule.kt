@@ -11,9 +11,7 @@ import xyz.ksharma.sumi.platform.AppInfo
 import xyz.ksharma.sumi.preferences.DataStoreGameSaveRepository
 import xyz.ksharma.sumi.preferences.DataStoreSumiPreferences
 import xyz.ksharma.sumi.preferences.DebugPreferences
-import xyz.ksharma.sumi.preferences.DebugProRepository
 import xyz.ksharma.sumi.preferences.GameSaveRepository
-import xyz.ksharma.sumi.preferences.ProRepository
 import xyz.ksharma.sumi.preferences.SumiPreferences
 import xyz.ksharma.sumi.preferences.ThemePreferences
 import xyz.ksharma.sumi.screens.daily.DailyViewModel
@@ -33,7 +31,6 @@ val appModule = module {
     single<DebugPreferences> { get<DataStoreSumiPreferences>() }
     single<ThemePreferences> { get<DataStoreSumiPreferences>() }
     single<GameSaveRepository> { DataStoreGameSaveRepository(store = get()) }
-    single<ProRepository> { DebugProRepository(debug = get()) }
     single { AdOrchestrator() }
     single { AdUnits(appInfo = get()) }
     viewModel { SplashViewModel(prefs = get()) }

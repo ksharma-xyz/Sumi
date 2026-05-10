@@ -92,7 +92,7 @@ fun EntryProviderScope<NavKey>.GameEntry(navigator: SumiNavigator) {
         // (composable rules) but only rendered when the orchestrator decides the moment + the
         // pre-load reports READY.
         val idleAdState = rememberInterstitialAd(
-            adUnitId = adUnits.Interstitial,
+            adUnitId = adUnits.interstitial,
             onLoad = {},
             onFailure = {},
         )
@@ -166,7 +166,7 @@ fun EntryProviderScope<NavKey>.GameEntry(navigator: SumiNavigator) {
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(50.dp),
-                    ) { BannerAd(adUnitId = adUnits.Banner) }
+                    ) { BannerAd(adUnitId = adUnits.banner) }
                 }
             } else null,
             rewardedHintAvailable = !isPro && isAdsEnabled,
@@ -196,7 +196,7 @@ fun EntryProviderScope<NavKey>.GameEntry(navigator: SumiNavigator) {
         // so it bypasses the orchestrator's interstitial frequency cap.
         if (showRewardedHintAd && !isPro && isAdsEnabled) {
             RewardedAd(
-                adUnitId = adUnits.Rewarded,
+                adUnitId = adUnits.rewarded,
                 onRewardEarned = { _ -> vm.grantHintsFromAd(count = 1) },
                 onDismissed = vm::onRewardedHintAdDone,
                 onFailure = { _ -> vm.onRewardedHintAdDone() },

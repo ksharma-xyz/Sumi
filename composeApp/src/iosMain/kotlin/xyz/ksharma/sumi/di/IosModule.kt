@@ -12,6 +12,12 @@ import platform.Foundation.NSFileManager
 import platform.Foundation.NSUserDomainMask
 import xyz.ksharma.sumi.platform.AppInfo
 import xyz.ksharma.sumi.platform.IosAppInfo
+import xyz.ksharma.sumi.preferences.DataStoreSumiPreferences
+import xyz.ksharma.sumi.preferences.DebugPreferences
+import xyz.ksharma.sumi.preferences.DebugProRepository
+import xyz.ksharma.sumi.preferences.ProPreferences
+import xyz.ksharma.sumi.preferences.ProRepository
+import xyz.ksharma.sumi.preferences.StoreKitProRepository
 
 val iosModule = module {
     single<DataStore<Preferences>> {
@@ -23,4 +29,9 @@ val iosModule = module {
         }
     }
     single<AppInfo> { IosAppInfo() }
+    single<ProPreferences> { get<DataStoreSumiPreferences>() }
+    single<ProRepository> {
+        if (get<AppInfo>().isDebugBuild) DebugProRepository(debug = get<DebugPreferences>())
+        else StoreKitProRepository(prefs = get())
+    }
 }

@@ -20,7 +20,7 @@ class AdUnits(appInfo: AppInfo) {
 
     private val isDebug = appInfo.isDebugBuild
 
-    val Banner: String = AdUnitId.autoSelect(
+    val banner: String = AdUnitId.autoSelect(
         androidAdUnitId = if (isDebug) {
             "ca-app-pub-3940256099942544/6300978111"
         } else {
@@ -33,7 +33,7 @@ class AdUnits(appInfo: AppInfo) {
         },
     )
 
-    val Interstitial: String = AdUnitId.autoSelect(
+    val interstitial: String = AdUnitId.autoSelect(
         androidAdUnitId = if (isDebug) {
             "ca-app-pub-3940256099942544/1033173712"
         } else {
@@ -46,7 +46,7 @@ class AdUnits(appInfo: AppInfo) {
         },
     )
 
-    val Rewarded: String = AdUnitId.autoSelect(
+    val rewarded: String = AdUnitId.autoSelect(
         androidAdUnitId = if (isDebug) {
             "ca-app-pub-3940256099942544/5224354917"
         } else {

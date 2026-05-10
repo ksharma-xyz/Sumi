@@ -74,7 +74,7 @@ fun EntryProviderScope<NavKey>.WinEntry(navigator: SumiNavigator) {
             },
             showInterstitialAd = showInterstitial && !isPro && isAdsEnabled,
             onInterstitialDismiss = vm::onInterstitialDone,
-            interstitialAdUnitId = adUnits.Interstitial,
+            interstitialAdUnitId = adUnits.interstitial,
         )
     }
 }

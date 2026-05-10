@@ -268,62 +268,70 @@ private fun SeasonPickerSlide(selected: SumiSeason, onSelect: (SumiSeason) -> Un
                 .padding(top = 40.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text(
-                text = "Choose your season.",
-                style = SumiTheme.typography.h2.copy(
-                    fontSize = 34.sp,
-                    fontStyle = FontStyle.Italic,
-                    lineHeight = (34 * 1.15f).sp,
-                    letterSpacing = (-0.02f).em,
-                ),
-                color = SumiTheme.colors.ink,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth(),
-            )
-            Spacer(Modifier.height(12.dp))
-            Text(
-                text = "Sets the accent colour. You can change it in Settings.",
-                style = SumiTheme.typography.body.copy(fontSize = 15.sp, lineHeight = 22.sp),
-                color = SumiTheme.colors.inkSoft,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth(),
-            )
+            SeasonPickerHeading()
             Spacer(Modifier.height(48.dp))
-            // 4 tiles × 80dp + 3 × 24dp gap = 392dp, plus side padding. ≥ 420dp
-            // wide → all four fit in a single row; narrower (iPhone 14 / SE /
-            // mini territory) → 2×2 grid via FlowRow's wrap. maxItemsInEachRow
-            // caps it so we never end up with an awkward 3+1 split on
-            // borderline widths.
-            BoxWithConstraints(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                val perRow = if (maxWidth >= 420.dp) SumiSeason.entries.size else 2
-                @OptIn(ExperimentalLayoutApi::class)
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterHorizontally),
-                    verticalArrangement = Arrangement.spacedBy(28.dp),
-                    maxItemsInEachRow = perRow,
-                ) {
-                    SumiSeason.entries.forEach { season ->
-                        SeasonTile(
-                            season = season,
-                            selected = selected == season,
-                            onSelect = { picked ->
-                                burstColors = seasonPetalColors(picked)
-                                burstTrigger++
-                                onSelect(picked)
-                            },
-                        )
-                    }
-                }
-            }
+            SeasonFlowGrid(
+                selected = selected,
+                onSelect = { picked ->
+                    burstColors = seasonPetalColors(picked)
+                    burstTrigger++
+                    onSelect(picked)
+                },
+            )
         }
         SumiPetalBurst(
             trigger = burstTrigger,
             modifier = Modifier.fillMaxSize(),
             config = PetalBurstConfig(count = 24, durationMs = 2_500, colors = burstColors),
         )
+    }
+}
+
+@Composable
+private fun SeasonPickerHeading() {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            text = "Choose your season.",
+            style = SumiTheme.typography.h2.copy(
+                fontSize = 34.sp,
+                fontStyle = FontStyle.Italic,
+                lineHeight = (34 * 1.15f).sp,
+                letterSpacing = (-0.02f).em,
+            ),
+            color = SumiTheme.colors.ink,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Spacer(Modifier.height(12.dp))
+        Text(
+            text = "Sets the accent colour. You can change it in Settings.",
+            style = SumiTheme.typography.body.copy(fontSize = 15.sp, lineHeight = 22.sp),
+            color = SumiTheme.colors.inkSoft,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth(),
+        )
+    }
+}
+
+// 4 tiles × 80dp + 3 × 24dp gap = 392dp, plus side padding. ≥ 420dp wide → single row;
+// narrower (iPhone SE / mini) → 2×2 via FlowRow wrap. maxItemsInEachRow prevents awkward 3+1.
+@Composable
+private fun SeasonFlowGrid(selected: SumiSeason, onSelect: (SumiSeason) -> Unit) {
+    BoxWithConstraints(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        val perRow = if (maxWidth >= 420.dp) SumiSeason.entries.size else 2
+        @OptIn(ExperimentalLayoutApi::class)
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterHorizontally),
+            verticalArrangement = Arrangement.spacedBy(28.dp),
+            maxItemsInEachRow = perRow,
+        ) {
+            SumiSeason.entries.forEach { season ->
+                SeasonTile(season = season, selected = selected == season, onSelect = onSelect)
+            }
+        }
     }
 }
 
