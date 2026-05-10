@@ -14,7 +14,7 @@ import kotlinx.coroutines.flow.flowOf
 class DebugProRepository(private val debug: DebugPreferences) : ProRepository {
     override fun isPro(): Flow<Boolean> = debug.observeSimulatePro()
 
-    override fun observePrice(productId: String): Flow<String?> = flowOf(null)
+    override fun observePrice(productId: String): Flow<String?> = flowOf("$2.99")
 
     override suspend fun restorePurchases(): Result<Unit> = Result.success(Unit)
 

@@ -12,6 +12,6 @@ object AppLinks {
     const val APP_STORE_URL = "https://example.org/sumi-ios"
     const val PLAY_STORE_URL = "https://example.org/sumi-android"
     const val LANDING_URL = "https://example.org/sumi"
-    const val PRIVACY_URL = "https://example.org/sumi/privacy"
-    const val TERMS_URL = "https://example.org/sumi/terms"
+    const val PRIVACY_URL = "https://ksharma-xyz.github.io/Sumi/privacy-policy/"
+    const val TERMS_URL = "https://ksharma-xyz.github.io/Sumi/privacy-policy/"
 }

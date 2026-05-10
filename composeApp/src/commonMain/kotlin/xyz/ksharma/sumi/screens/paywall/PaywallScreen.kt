@@ -25,8 +25,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -34,7 +32,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -42,7 +39,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.koinInject
-import xyz.ksharma.sumi.AppLinks
 import xyz.ksharma.sumi.coroutines.ext.launchWithExceptionHandler
 import xyz.ksharma.sumi.design.components.LogoEnso
 import xyz.ksharma.sumi.design.components.QuoteRule
@@ -56,9 +52,6 @@ import xyz.ksharma.sumi.resources.Res
 import xyz.ksharma.sumi.resources.ink_bleed_01
 import xyz.ksharma.sumi.theme.SumiTheme
 import xyz.ksharma.sumi.theme.SumiTokens as Sumi
-
-// Privacy + Terms URLs sourced from AppLinks. Update there once real legal
-// pages are hosted (placeholders point to example.org until then).
 
 private val PRO_FEATURES = listOf(
     "Remove all ads. Forever quiet.",
@@ -86,7 +79,6 @@ fun PaywallScreen(
 ) {
     val proRepo = koinInject<ProRepository>()
     val scope = rememberCoroutineScope()
-    val lifetimePrice by proRepo.observePrice(ProProducts.LIFETIME).collectAsState(initial = null)
 
     val rowAlphas = remember { List(PRO_FEATURES.size) { Animatable(0f) } }
     val rowOffsets = remember { List(PRO_FEATURES.size) { Animatable(24f) } }
@@ -109,6 +101,7 @@ fun PaywallScreen(
                 alpha = 0.14f,
             )
         }
+        PaywallCloseButton(onBack = onBack)
         PaywallContent(
             ensoProgress = ensoProgress.value,
             headerAlpha = headerAlpha.value,
@@ -116,7 +109,6 @@ fun PaywallScreen(
             rowOffsets = rowOffsets.map { it.value },
             pricingAlpha = pricingAlpha.value,
             pricingOffset = pricingOffset.value,
-            lifetimePrice = lifetimePrice,
             onPurchase = {
                 scope.launchWithExceptionHandler<ProRepository>(Dispatchers.Default) {
                     proRepo.purchase(ProProducts.LIFETIME)
@@ -127,7 +119,6 @@ fun PaywallScreen(
                     proRepo.restorePurchases()
                 }
             },
-            onDismiss = onBack,
         )
     }
 }
@@ -141,10 +132,8 @@ private fun PaywallContent(
     rowOffsets: List<Float>,
     pricingAlpha: Float,
     pricingOffset: Float,
-    lifetimePrice: String?,
     onPurchase: () -> Unit,
     onRestore: () -> Unit,
-    onDismiss: () -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -167,10 +156,8 @@ private fun PaywallContent(
         PaywallPricing(
             alpha = pricingAlpha,
             offsetDp = pricingOffset,
-            lifetimePrice = lifetimePrice,
             onPurchase = onPurchase,
             onRestore = onRestore,
-            onDismiss = onDismiss,
         )
         Spacer(Modifier.height(Sumi.Space.s6))
     }
@@ -258,22 +245,15 @@ private fun PaywallFeatures(rowAlphas: List<Float>, rowOffsets: List<Float>) {
     }
 }
 
-@Suppress("LongParameterList")
 @Composable
 private fun PaywallPricing(
     alpha: Float,
     offsetDp: Float,
-    lifetimePrice: String?,
     onPurchase: () -> Unit,
     onRestore: () -> Unit,
-    onDismiss: () -> Unit,
 ) {
     val density = LocalDensity.current
     val offsetPx = with(density) { offsetDp.dp.toPx() }
-    // Single one-time purchase — no monthly/yearly tiers. Label resolves to
-    // store-supplied price; placeholder while the flow is still null.
-    val lifetimeLabel = lifetimePrice?.let { "Unlock Sumi Pro — $it" } ?: "Unlock Sumi Pro"
-    val pricesLoading = lifetimePrice == null
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.fillMaxWidth().graphicsLayer {
@@ -283,15 +263,10 @@ private fun PaywallPricing(
     ) {
         QuoteRule(color = SumiTheme.colors.paperEdge, ornament = "墓")
         Spacer(Modifier.height(Sumi.Space.s5))
-        // Price comes from the store (Play Billing / StoreKit) via observePrice.
-        // While the flow returns null we show "Unlock Sumi Pro" alone; never
-        // hardcode currency or amount — both Apple and Google reject paywalls
-        // with mismatched / hardcoded prices.
         SumiTextButton(
-            text = lifetimeLabel,
+            text = "Unlock Sumi Pro",
             onClick = onPurchase,
             modifier = Modifier.fillMaxWidth(),
-            enabled = !pricesLoading,
         )
         Spacer(Modifier.height(Sumi.Space.s2))
         Text(
@@ -300,64 +275,49 @@ private fun PaywallPricing(
             color = SumiTheme.colors.inkFaint,
         )
         Spacer(Modifier.height(Sumi.Space.s4))
-        PaywallFooterLinks(onRestore = onRestore, onDismiss = onDismiss)
+        PaywallFooterLinks(onRestore = onRestore)
     }
 }
 
 @Composable
-private fun PaywallFooterLinks(onRestore: () -> Unit, onDismiss: () -> Unit) {
-    val uriHandler = LocalUriHandler.current
+private fun PaywallFooterLinks(onRestore: () -> Unit) {
     val restoreSource = remember { MutableInteractionSource() }
-    val notNowSource = remember { MutableInteractionSource() }
-    val termsSource = remember { MutableInteractionSource() }
-    val privacySource = remember { MutableInteractionSource() }
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(Sumi.Space.s2),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = "Restore",
-            style = SumiTheme.typography.uiMeta,
-            color = SumiTheme.colors.inkFaint,
-            modifier = Modifier.clickable(
+    Text(
+        text = "Restore purchase",
+        style = SumiTheme.typography.bodySmall,
+        color = SumiTheme.colors.inkSoft,
+        modifier = Modifier
+            .clickable(
                 interactionSource = restoreSource,
                 indication = null,
                 onClick = onRestore,
-            ),
-        )
-        Text(text = "/", style = SumiTheme.typography.uiMeta, color = SumiTheme.colors.inkFaint)
-        Text(
-            text = "Not now",
-            style = SumiTheme.typography.uiMeta,
-            color = SumiTheme.colors.inkFaint,
-            modifier = Modifier.clickable(
-                interactionSource = notNowSource,
-                indication = null,
-                onClick = onDismiss,
-            ),
-        )
-        Text(text = "/", style = SumiTheme.typography.uiMeta, color = SumiTheme.colors.inkFaint)
-        Text(
-            text = "Terms",
-            style = SumiTheme.typography.uiMeta,
-            color = SumiTheme.colors.inkFaint,
-            modifier = Modifier.clickable(
-                interactionSource = termsSource,
-                indication = null,
-                onClick = { uriHandler.openUri(AppLinks.TERMS_URL) },
-            ),
-        )
-        Text(text = "/", style = SumiTheme.typography.uiMeta, color = SumiTheme.colors.inkFaint)
-        Text(
-            text = "Privacy",
-            style = SumiTheme.typography.uiMeta,
-            color = SumiTheme.colors.inkFaint,
-            modifier = Modifier.clickable(
-                interactionSource = privacySource,
-                indication = null,
-                onClick = { uriHandler.openUri(AppLinks.PRIVACY_URL) },
-            ),
-        )
+            )
+            .padding(vertical = Sumi.Space.s3, horizontal = Sumi.Space.s4),
+    )
+}
+
+@Composable
+private fun PaywallCloseButton(onBack: () -> Unit) {
+    val closeSource = remember { MutableInteractionSource() }
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .windowInsetsPadding(WindowInsets.statusBars)
+            .padding(horizontal = Sumi.Space.s4, vertical = Sumi.Space.s3),
+        contentAlignment = Alignment.TopEnd,
+    ) {
+        Box(
+            modifier = Modifier
+                .clickable(interactionSource = closeSource, indication = null, onClick = onBack)
+                .padding(Sumi.Space.s2),
+        ) {
+            SumiIcon(
+                icon = SumiIcons.Close,
+                contentDescription = "Close",
+                tint = SumiTheme.colors.inkFaint,
+                size = Sumi.Space.s5,
+            )
+        }
     }
 }
 
