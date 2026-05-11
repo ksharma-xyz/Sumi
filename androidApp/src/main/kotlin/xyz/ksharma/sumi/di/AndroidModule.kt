@@ -11,6 +11,7 @@ import xyz.ksharma.sumi.platform.AppInfo
 import xyz.ksharma.sumi.preferences.DataStoreSumiPreferences
 import xyz.ksharma.sumi.preferences.DebugPreferences
 import xyz.ksharma.sumi.preferences.DebugProRepository
+import xyz.ksharma.sumi.preferences.PlayBillingProRepository
 import xyz.ksharma.sumi.preferences.ProPreferences
 import xyz.ksharma.sumi.preferences.ProRepository
 
@@ -23,6 +24,8 @@ val androidModule = module {
     }
     single<AppInfo> { AndroidAppInfo(context = androidApplication()) }
     single<ProPreferences> { get<DataStoreSumiPreferences>() }
-    // TODO: replace with PlayBillingProRepository once Play Billing is wired up.
-    single<ProRepository> { DebugProRepository(debug = get<DebugPreferences>()) }
+    single<ProRepository> {
+        if (get<AppInfo>().isDebugBuild) DebugProRepository(debug = get<DebugPreferences>())
+        else PlayBillingProRepository(context = androidApplication(), prefs = get())
+    }
 }
