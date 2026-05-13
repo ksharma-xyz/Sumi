@@ -286,7 +286,7 @@ private fun PaywallPricing(
         if (purchaseError) {
             Text(
                 text = "Something went wrong — please try again.",
-                style = SumiTheme.typography.uiMeta,
+                style = SumiTheme.typography.bodySmall,
                 color = SumiTheme.colors.red,
             )
         } else {
