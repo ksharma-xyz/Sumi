@@ -18,8 +18,5 @@ class DebugProRepository(private val debug: DebugPreferences) : ProRepository {
 
     override suspend fun restorePurchases(): Result<Unit> = Result.success(Unit)
 
-    override suspend fun purchase(productId: String): Result<Unit> {
-        debug.setSimulatePro(true)
-        return Result.success(Unit)
-    }
+    override suspend fun purchase(productId: String): Result<Unit> = Result.success(Unit)
 }
