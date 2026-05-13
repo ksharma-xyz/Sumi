@@ -1,6 +1,7 @@
 import SwiftUI
 import FirebaseCore
 import ComposeApp
+import AppTrackingTransparency
 
 class AppDelegate: NSObject, UIApplicationDelegate {
     func application(
@@ -10,6 +11,10 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         FirebaseApp.configure()
         MainViewControllerKt.doInitKoinIos()
         return true
+    }
+
+    func applicationDidBecomeActive(_ application: UIApplication) {
+        ATTrackingManager.requestTrackingAuthorization { _ in }
     }
 }
 
