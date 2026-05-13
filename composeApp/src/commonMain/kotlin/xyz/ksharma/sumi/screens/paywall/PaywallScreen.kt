@@ -25,8 +25,11 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
@@ -91,6 +94,8 @@ fun PaywallScreen(
         launchPaywallAnimation(rowAlphas, rowOffsets, pricingAlpha, pricingOffset, ensoProgress, headerAlpha)
     }
 
+    var purchaseError by remember { mutableStateOf(false) }
+
     WashiBG(modifier = modifier.fillMaxSize()) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
             Image(
@@ -109,9 +114,15 @@ fun PaywallScreen(
             rowOffsets = rowOffsets.map { it.value },
             pricingAlpha = pricingAlpha.value,
             pricingOffset = pricingOffset.value,
+            purchaseError = purchaseError,
             onPurchase = {
-                scope.launchWithExceptionHandler<ProRepository>(Dispatchers.Default) {
-                    proRepo.purchase(ProProducts.LIFETIME)
+                purchaseError = false
+                scope.launchWithExceptionHandler<ProRepository>(
+                    dispatcher = Dispatchers.Main,
+                    errorBlock = { purchaseError = true },
+                ) {
+                    val result = proRepo.purchase(ProProducts.LIFETIME)
+                    if (result.isFailure) purchaseError = true
                 }
             },
             onRestore = {
@@ -132,6 +143,7 @@ private fun PaywallContent(
     rowOffsets: List<Float>,
     pricingAlpha: Float,
     pricingOffset: Float,
+    purchaseError: Boolean,
     onPurchase: () -> Unit,
     onRestore: () -> Unit,
 ) {
@@ -156,6 +168,7 @@ private fun PaywallContent(
         PaywallPricing(
             alpha = pricingAlpha,
             offsetDp = pricingOffset,
+            purchaseError = purchaseError,
             onPurchase = onPurchase,
             onRestore = onRestore,
         )
@@ -249,6 +262,7 @@ private fun PaywallFeatures(rowAlphas: List<Float>, rowOffsets: List<Float>) {
 private fun PaywallPricing(
     alpha: Float,
     offsetDp: Float,
+    purchaseError: Boolean,
     onPurchase: () -> Unit,
     onRestore: () -> Unit,
 ) {
@@ -269,11 +283,19 @@ private fun PaywallPricing(
             modifier = Modifier.fillMaxWidth(),
         )
         Spacer(Modifier.height(Sumi.Space.s2))
-        Text(
-            text = "One-time purchase. No subscriptions.",
-            style = SumiTheme.typography.uiMeta,
-            color = SumiTheme.colors.inkFaint,
-        )
+        if (purchaseError) {
+            Text(
+                text = "Something went wrong — please try again.",
+                style = SumiTheme.typography.uiMeta,
+                color = SumiTheme.colors.red,
+            )
+        } else {
+            Text(
+                text = "One-time purchase. No subscriptions.",
+                style = SumiTheme.typography.uiMeta,
+                color = SumiTheme.colors.inkFaint,
+            )
+        }
         Spacer(Modifier.height(Sumi.Space.s4))
         PaywallFooterLinks(onRestore = onRestore)
     }
