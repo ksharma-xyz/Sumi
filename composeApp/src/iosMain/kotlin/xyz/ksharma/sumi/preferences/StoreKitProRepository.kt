@@ -47,8 +47,10 @@ class StoreKitProRepository(private val prefs: ProPreferences) : ProRepository {
     private val _isPro = MutableStateFlow(false)
     private val _price = MutableStateFlow<String?>(null)
     private var cachedProduct: SKProduct? = null
-    // Kept alive as a strong ref because SKProductsRequest.delegate is weak on iOS
+    // Both fields kept as strong refs: SKProductsRequest.delegate is weak on iOS,
+    // and Kotlin/Native's tracing GC collects isolated self-retain cycles.
     private var productFetchDelegate: ProductFetchDelegate? = null
+    private var activeProductRequest: SKProductsRequest? = null
 
     private val observer = TransactionObserver(
         onSuccess = {
@@ -101,15 +103,18 @@ class StoreKitProRepository(private val prefs: ProPreferences) : ProRepository {
                 cachedProduct = product
                 _price.value = product?.formattedPrice()
                 productFetchDelegate = null
+                activeProductRequest = null
                 if (cont.isActive) cont.resume(Unit)
             }
             productFetchDelegate = delegate
             val request = SKProductsRequest(productIdentifiers = setOf(productId))
+            activeProductRequest = request
             request.delegate = delegate
             request.start()
             cont.invokeOnCancellation {
                 request.cancel()
                 productFetchDelegate = null
+                activeProductRequest = null
             }
         }
     }
@@ -120,6 +125,8 @@ class StoreKitProRepository(private val prefs: ProPreferences) : ProRepository {
 private val TX_PURCHASED = SKPaymentTransactionState.SKPaymentTransactionStatePurchased
 private val TX_RESTORED = SKPaymentTransactionState.SKPaymentTransactionStateRestored
 private val TX_FAILED = SKPaymentTransactionState.SKPaymentTransactionStateFailed
+// ObjC constant SKErrorPaymentCancelled = 2
+private const val SK_ERROR_PAYMENT_CANCELLED = 2
 
 private class TransactionObserver(
     private val onSuccess: () -> Unit,
@@ -138,12 +145,12 @@ private class TransactionObserver(
                     cb?.invoke(Result.success(Unit))
                 }
                 TX_FAILED -> {
-                    val err = tx.error
+                    val isCancelled = tx.error?.code?.toInt() == SK_ERROR_PAYMENT_CANCELLED
                     queue.finishTransaction(tx)
                     val cb = purchaseContinuation.also { purchaseContinuation = null }
                     cb?.invoke(
-                        if (err != null) Result.failure(Exception(err.localizedDescription))
-                        else Result.failure(Exception("Purchase failed.")),
+                        if (isCancelled) Result.success(Unit)
+                        else Result.failure(Exception("Something went wrong — please try again.")),
                     )
                 }
                 else -> { /* purchasing / deferred — wait for next callback */ }
@@ -161,9 +168,7 @@ private class TransactionObserver(
         restoreCompletedTransactionsFailedWithError: NSError,
     ) {
         val cb = restoreContinuation.also { restoreContinuation = null }
-        cb?.invoke(
-            Result.failure(Exception(restoreCompletedTransactionsFailedWithError.localizedDescription)),
-        )
+        cb?.invoke(Result.failure(Exception("Something went wrong — please try again.")))
     }
 }
 
