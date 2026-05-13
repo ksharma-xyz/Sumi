@@ -8,7 +8,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlinx.coroutines.withContext
 import platform.Foundation.NSError
 import platform.Foundation.NSNumberFormatter
 import platform.Foundation.NSNumberFormatterCurrencyStyle
@@ -80,22 +79,18 @@ class StoreKitProRepository(private val prefs: ProPreferences) : ProRepository {
             cachedProduct
         } ?: return Result.failure(Exception("Product '$productId' is not available from the App Store."))
 
-        return withContext(Dispatchers.Main) {
-            suspendCancellableCoroutine { cont ->
-                observer.purchaseContinuation = { result -> if (cont.isActive) cont.resume(result) }
-                SKPaymentQueue.defaultQueue().addPayment(SKPayment.paymentWithProduct(product))
-                cont.invokeOnCancellation { observer.purchaseContinuation = null }
-            }
+        return suspendCancellableCoroutine { cont ->
+            observer.purchaseContinuation = { result -> if (cont.isActive) cont.resume(result) }
+            SKPaymentQueue.defaultQueue().addPayment(SKPayment.paymentWithProduct(product))
+            cont.invokeOnCancellation { observer.purchaseContinuation = null }
         }
     }
 
     override suspend fun restorePurchases(): Result<Unit> =
-        withContext(Dispatchers.Main) {
-            suspendCancellableCoroutine { cont ->
-                observer.restoreContinuation = { result -> if (cont.isActive) cont.resume(result) }
-                SKPaymentQueue.defaultQueue().restoreCompletedTransactions()
-                cont.invokeOnCancellation { observer.restoreContinuation = null }
-            }
+        suspendCancellableCoroutine { cont ->
+            observer.restoreContinuation = { result -> if (cont.isActive) cont.resume(result) }
+            SKPaymentQueue.defaultQueue().restoreCompletedTransactions()
+            cont.invokeOnCancellation { observer.restoreContinuation = null }
         }
 
     // ── Price fetching ────────────────────────────────────────────────────────
