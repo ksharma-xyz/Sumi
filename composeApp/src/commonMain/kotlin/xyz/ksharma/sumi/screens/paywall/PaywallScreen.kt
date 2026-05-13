@@ -22,7 +22,9 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -94,7 +96,11 @@ fun PaywallScreen(
         launchPaywallAnimation(rowAlphas, rowOffsets, pricingAlpha, pricingOffset, ensoProgress, headerAlpha)
     }
 
-    var purchaseError by remember { mutableStateOf(false) }
+    var purchaseErrorMsg by remember { mutableStateOf<String?>(null) }
+
+    purchaseErrorMsg?.let { msg ->
+        DebugPurchaseErrorDialog(message = msg, onDismiss = { purchaseErrorMsg = null })
+    }
 
     WashiBG(modifier = modifier.fillMaxSize()) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
@@ -114,15 +120,17 @@ fun PaywallScreen(
             rowOffsets = rowOffsets.map { it.value },
             pricingAlpha = pricingAlpha.value,
             pricingOffset = pricingOffset.value,
-            purchaseError = purchaseError,
+            purchaseError = purchaseErrorMsg != null,
             onPurchase = {
-                purchaseError = false
+                purchaseErrorMsg = null
                 scope.launchWithExceptionHandler<ProRepository>(
                     dispatcher = Dispatchers.Main,
-                    errorBlock = { purchaseError = true },
+                    errorBlock = { purchaseErrorMsg = "Uncaught exception in purchase" },
                 ) {
                     val result = proRepo.purchase(ProProducts.LIFETIME)
-                    if (result.isFailure) purchaseError = true
+                    if (result.isFailure) {
+                        purchaseErrorMsg = result.exceptionOrNull()?.message ?: "Unknown error"
+                    }
                 }
             },
             onRestore = {
@@ -341,6 +349,16 @@ private fun PaywallCloseButton(onBack: () -> Unit) {
             )
         }
     }
+}
+
+@Composable
+private fun DebugPurchaseErrorDialog(message: String, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Debug — Purchase Error") },
+        text = { Text(message) },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("OK") } },
+    )
 }
 
 @Composable
