@@ -48,6 +48,8 @@ class StoreKitProRepository(private val prefs: ProPreferences) : ProRepository {
     private val _isPro = MutableStateFlow(false)
     private val _price = MutableStateFlow<String?>(null)
     private var cachedProduct: SKProduct? = null
+    // Kept alive as a strong ref because SKProductsRequest.delegate is weak on iOS
+    private var productFetchDelegate: ProductFetchDelegate? = null
 
     private val observer = TransactionObserver(
         onSuccess = {
@@ -103,12 +105,17 @@ class StoreKitProRepository(private val prefs: ProPreferences) : ProRepository {
             val delegate = ProductFetchDelegate { product ->
                 cachedProduct = product
                 _price.value = product?.formattedPrice()
+                productFetchDelegate = null
                 if (cont.isActive) cont.resume(Unit)
             }
+            productFetchDelegate = delegate
             val request = SKProductsRequest(productIdentifiers = setOf(productId))
             request.delegate = delegate
             request.start()
-            cont.invokeOnCancellation { request.cancel() }
+            cont.invokeOnCancellation {
+                request.cancel()
+                productFetchDelegate = null
+            }
         }
     }
 }
