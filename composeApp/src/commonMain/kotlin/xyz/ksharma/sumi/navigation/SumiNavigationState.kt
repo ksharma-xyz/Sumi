@@ -77,7 +77,6 @@ class SumiNavigationState(
         } else {
             backStacks[topLevelRoute]?.add(route)
         }
-        logStack("goTo(${route::class.simpleName})")
     }
 
     fun pop() {
@@ -89,7 +88,6 @@ class SumiNavigationState(
             currentStack.size > 1 -> currentStack.removeLastOrNull()
             // Single non-root item — can't pop without emptying; do nothing.
         }
-        logStack("pop()")
     }
 
     fun resetRoot(route: NavKey) {
@@ -97,14 +95,6 @@ class SumiNavigationState(
         // Add the new root first so the stack is never empty (NavDisplay requires non-empty entries).
         stack.add(route)
         while (stack.size > 1) stack.removeAt(0)
-        logStack("resetRoot(${route::class.simpleName})")
-    }
-
-    private fun logStack(action: String) {
-        val stackStr = backStacks[topLevelRoute]
-            ?.joinToString(" → ") { routeLabel(it) }
-            ?: "empty"
-        println("[Nav] $action | tab=${routeLabel(topLevelRoute)} | stack=[$stackStr]")
     }
 
     private fun routeLabel(key: NavKey): String = key::class.simpleName ?: key.toString()
