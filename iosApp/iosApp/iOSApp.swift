@@ -14,7 +14,8 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     }
 
     func applicationDidBecomeActive(_ application: UIApplication) {
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+        guard ATTrackingManager.authorizationStatus == .notDetermined else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
             ATTrackingManager.requestTrackingAuthorization { _ in }
         }
     }
