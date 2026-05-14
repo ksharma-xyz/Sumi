@@ -47,6 +47,7 @@ class StoreKitProRepository(private val prefs: ProPreferences) : ProRepository {
     private val _isPro = MutableStateFlow(false)
     private val _price = MutableStateFlow<String?>(null)
     private var cachedProduct: SKProduct? = null
+    private var lastInvalidIds: Set<String> = emptySet()
     // Both fields kept as strong refs: SKProductsRequest.delegate is weak on iOS,
     // and Kotlin/Native's tracing GC collects isolated self-retain cycles.
     private var productFetchDelegate: ProductFetchDelegate? = null
@@ -79,7 +80,15 @@ class StoreKitProRepository(private val prefs: ProPreferences) : ProRepository {
         val product = cachedProduct ?: run {
             fetchProduct(productId)
             cachedProduct
-        } ?: return Result.failure(Exception("Product '$productId' is not available from the App Store."))
+        } ?: return Result.failure(
+            Exception(
+                if (productId in lastInvalidIds) {
+                    "Product ID '$productId' was rejected (invalid ID or not linked to this app)"
+                } else {
+                    "Product '$productId' not returned (check Paid Apps agreement and product status)"
+                },
+            ),
+        )
 
         return suspendCancellableCoroutine { cont ->
             observer.purchaseContinuation = { result -> if (cont.isActive) cont.resume(result) }
@@ -99,7 +108,8 @@ class StoreKitProRepository(private val prefs: ProPreferences) : ProRepository {
 
     private suspend fun fetchProduct(productId: String) {
         suspendCancellableCoroutine { cont ->
-            val delegate = ProductFetchDelegate { product ->
+            val delegate = ProductFetchDelegate { product, invalidIds ->
+                lastInvalidIds = invalidIds
                 cachedProduct = product
                 _price.value = product?.formattedPrice()
                 productFetchDelegate = null
@@ -173,15 +183,17 @@ private class TransactionObserver(
 }
 
 private class ProductFetchDelegate(
-    private val onResult: (SKProduct?) -> Unit,
+    private val onResult: (SKProduct?, Set<String>) -> Unit,
 ) : NSObject(), SKProductsRequestDelegateProtocol {
 
     override fun productsRequest(request: SKProductsRequest, didReceiveResponse: SKProductsResponse) {
-        onResult(didReceiveResponse.products.filterIsInstance<SKProduct>().firstOrNull())
+        val product = didReceiveResponse.products.filterIsInstance<SKProduct>().firstOrNull()
+        val invalidIds = didReceiveResponse.invalidProductIdentifiers.filterIsInstance<String>().toSet()
+        onResult(product, invalidIds)
     }
 
     override fun request(request: SKRequest, didFailWithError: NSError) {
-        onResult(null)
+        onResult(null, emptySet())
     }
 }
 
