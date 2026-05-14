@@ -1,6 +1,7 @@
 package xyz.ksharma.sumi.navigation.entries
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
@@ -10,6 +11,7 @@ import xyz.ksharma.sumi.analytics.SumiAnalytics
 import xyz.ksharma.sumi.navigation.HomeRoute
 import xyz.ksharma.sumi.navigation.OnboardingRoute
 import xyz.ksharma.sumi.navigation.SumiNavigator
+import xyz.ksharma.sumi.platform.requestTrackingPermission
 import xyz.ksharma.sumi.preferences.SumiPreferences
 import xyz.ksharma.sumi.preferences.ThemePreferences
 import xyz.ksharma.sumi.screens.onboarding.OnboardingScreen
@@ -22,6 +24,7 @@ fun EntryProviderScope<NavKey>.OnboardingEntry(navigator: SumiNavigator) {
         val themePrefs = koinInject<ThemePreferences>()
         val analytics = koinInject<SumiAnalytics>()
         val scope = rememberCoroutineScope()
+        LaunchedEffect(Unit) { requestTrackingPermission() }
         OnboardingScreen(
             onComplete = { season ->
                 scope.launch {
