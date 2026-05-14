@@ -28,7 +28,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     private func showAttDebugAlert(status: ATTrackingManager.AuthorizationStatus) {
         let label: String
         switch status {
-        case .notDetermined: label = "notDetermined — dialog will appear in 0.5s"
+        case .notDetermined: label = "notDetermined — ATT dialog will appear in 0.5s"
         case .restricted:    label = "restricted — dialog suppressed by policy"
         case .denied:        label = "denied — user already refused"
         case .authorized:    label = "authorized — already granted"
@@ -40,7 +40,11 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         else { return }
         let alert = UIAlertController(title: "ATT Debug", message: label, preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "OK", style: .default))
-        root.present(alert, animated: true)
+        topPresented(from: root).present(alert, animated: true)
+    }
+
+    private func topPresented(from vc: UIViewController) -> UIViewController {
+        vc.presentedViewController.map { topPresented(from: $0) } ?? vc
     }
 }
 
