@@ -14,9 +14,36 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     }
 
     func applicationDidBecomeActive(_ application: UIApplication) {
-        guard ATTrackingManager.authorizationStatus == .notDetermined else { return }
+        let status = ATTrackingManager.trackingAuthorizationStatus
+        showAttDebugAlert(status: status)
+        guard status == ATTrackingManager.AuthorizationStatus.notDetermined else { return }
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
             ATTrackingManager.requestTrackingAuthorization { _ in }
+        }
+    }
+
+    // DEBUG — remove before final submission
+    private func showAttDebugAlert(status: ATTrackingManager.AuthorizationStatus) {
+        let label: String
+        switch status {
+        case .notDetermined: label = "notDetermined — dialog will appear"
+        case .restricted:    label = "restricted — dialog suppressed by policy"
+        case .denied:        label = "denied — user already refused"
+        case .authorized:    label = "authorized — already granted"
+        @unknown default:    label = "unknown (\(status.rawValue))"
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            guard
+                let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                let root = scene.windows.first?.rootViewController
+            else { return }
+            let alert = UIAlertController(
+                title: "ATT Debug",
+                message: label,
+                preferredStyle: .alert
+            )
+            alert.addAction(UIAlertAction(title: "OK", style: .default))
+            root.present(alert, animated: true)
         }
     }
 }
