@@ -2,11 +2,8 @@
 
 package xyz.ksharma.sumi.screens.game
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -40,7 +37,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.draw.blur
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
@@ -48,23 +44,20 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.delay
 import xyz.ksharma.sumi.design.board.SumiBoard
-import xyz.ksharma.sumi.design.components.LogoEnso
 import xyz.ksharma.sumi.design.components.PetalBurstConfig
 import xyz.ksharma.sumi.design.components.SumiIcon
 import xyz.ksharma.sumi.design.components.SumiPetalBurst
-import xyz.ksharma.sumi.design.components.SumiPetals
 import xyz.ksharma.sumi.design.components.WashiBG
 import xyz.ksharma.sumi.design.components.WashiVariant
 import xyz.ksharma.sumi.design.icons.SumiIcons
 import xyz.ksharma.sumi.game.model.BoardState
 import xyz.ksharma.sumi.game.model.Difficulty
+import xyz.ksharma.sumi.platform.KeepScreenOn
 import xyz.ksharma.sumi.theme.SumiTheme
 import xyz.ksharma.sumi.theme.SumiTokens as Sumi
 
@@ -112,33 +105,30 @@ fun GameScreen(
     rewardedHintAvailable: Boolean = false,
     showMistakes: Boolean = true,
 ) {
+    // A solve can take a long time with little screen interaction — keep the
+    // display awake for the whole Game screen (auto-reverts on leave).
+    KeepScreenOn()
     Box(modifier = modifier.fillMaxSize()) {
         // Game content — blurred when paused so the scrim reads as frosted glass
         val blurMod = if (paused) Modifier.blur(24.dp, BlurredEdgeTreatment.Unbounded) else Modifier
         Box(modifier = Modifier.fillMaxSize().then(blurMod)) {
             WashiBG(modifier = Modifier.fillMaxSize(), variant = WashiVariant.Quiet)
-            // Don't draw the board until the puzzle is ready. The VM seeds
-            // `state` with an all-zero EMPTY_BOARD; rendering it would flash an
-            // empty grid (and the wrong difficulty) for the ~200ms before the
-            // loading overlay reveals, then jump to the real puzzle once slow
-            // Hard/Edo generation finishes. Fast loads just show paper for a
-            // frame, so nothing flickers there either.
-            if (!isInitializing) {
-                GameBody(
-                    state = state,
-                    elapsedMs = elapsedMs,
-                    diff = difficulty,
-                    callbacks = callbacks,
-                    bottomReservedHeight = if (bottomBanner != null) 64.dp else 0.dp,
-                    rewardedHintAvailable = rewardedHintAvailable,
-                    showMistakes = showMistakes,
-                )
-            }
+            // The whole game scaffold (timer, controls, number pad) shows
+            // immediately so the screen feels responsive. Only the 9×9 grid
+            // is withheld until the puzzle is ready — it fades in over the
+            // blank board area (see GameBody's `boardReady`). No stale grid,
+            // no full-screen spinner, no flash.
+            GameBody(
+                state = state,
+                elapsedMs = elapsedMs,
+                diff = difficulty,
+                boardReady = !isInitializing,
+                callbacks = callbacks,
+                bottomReservedHeight = if (bottomBanner != null) 64.dp else 0.dp,
+                rewardedHintAvailable = rewardedHintAvailable,
+                showMistakes = showMistakes,
+            )
         }
-        // Loading overlay for slow generations (Master / Edo first-time can take
-        // a few seconds). Delayed reveal so fast loads (resumes, Easy) don't
-        // flash an animation that would feel janky.
-        PuzzleLoadingOverlay(visible = isInitializing, difficulty = difficulty)
         // Subtle, sparse petals for row / column / 3x3 completions — they should
         // feel like a wink, not a parade. The big shower is reserved for the
         // full grid (below) so the "you finished!" moment lands distinctly.
@@ -179,6 +169,7 @@ private fun GameBody(
     state: BoardState,
     elapsedMs: Long,
     diff: Difficulty,
+    boardReady: Boolean,
     callbacks: GameCallbacks,
     bottomReservedHeight: androidx.compose.ui.unit.Dp = 0.dp,
     rewardedHintAvailable: Boolean = false,
@@ -190,7 +181,10 @@ private fun GameBody(
             .verticalScroll(rememberScrollState()) // Lets landscape + small phones scroll the
             // board + tools + number-pad stack instead of clipping the bottom.
             .windowInsetsPadding(WindowInsets.statusBars)
-            .padding(horizontal = Sumi.Space.s6)
+            // Tight side margin so the grid (and number-pad tap targets) get
+            // as much width as possible — easier to read / tap, better for
+            // low vision. MAX_BOARD_WIDTH still caps it on tablets.
+            .padding(horizontal = Sumi.Space.s3)
             .padding(bottom = bottomReservedHeight),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
@@ -213,11 +207,24 @@ private fun GameBody(
             contentAlignment = Alignment.Center,
         ) {
             val resolvedCellSize = minOf(maxWidth, MAX_BOARD_WIDTH) / 9
-            SumiBoard(
-                state = state,
-                cellSize = resolvedCellSize,
-                onCellTap = { r, c -> callbacks.onSelect(r, c) },
-            )
+            // Reserve the board's square footprint so the tools row + number
+            // pad never jump when the grid arrives. The grid itself fades in
+            // from the blank paper once the puzzle is ready.
+            Box(modifier = Modifier.size(resolvedCellSize * 9), contentAlignment = Alignment.Center) {
+                Crossfade(
+                    targetState = boardReady,
+                    animationSpec = tween(320, easing = Sumi.Ease.paper),
+                    label = "boardFade",
+                ) { ready ->
+                    if (ready) {
+                        SumiBoard(
+                            state = state,
+                            cellSize = resolvedCellSize,
+                            onCellTap = { r, c -> callbacks.onSelect(r, c) },
+                        )
+                    }
+                }
+            }
         }
         Spacer(Modifier.height(Sumi.Space.s4))
         ToolsRow(
@@ -475,73 +482,3 @@ private fun formatTime(ms: Long): String {
     val sec = totalSec % 60
     return "${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}"
 }
-
-/**
- * Premium loading overlay shown while [PuzzleLoadingOverlay.visible] is true.
- *
- * The reveal is delayed by [LOADING_OVERLAY_REVEAL_DELAY_MS] so an instant
- * resume (existing save, no generation) finishes inside that window and the
- * overlay never appears — the board just shows once it's ready. A real
- * generation (fresh / Hard / Edo) outlasts the delay, so the overlay covers
- * the genuine wait and dismisses the moment the puzzle is ready. No forced
- * minimum — it's only ever up for as long as generation actually takes.
- */
-@Composable
-private fun PuzzleLoadingOverlay(visible: Boolean, difficulty: Difficulty) {
-    var actuallyShow by remember { mutableStateOf(false) }
-    LaunchedEffect(visible) {
-        if (visible) {
-            delay(LOADING_OVERLAY_REVEAL_DELAY_MS)
-            if (visible) actuallyShow = true
-        } else {
-            actuallyShow = false
-        }
-    }
-    AnimatedVisibility(
-        visible = actuallyShow,
-        enter = fadeIn(tween(380, easing = Sumi.Ease.paper)),
-        exit = fadeOut(tween(280, easing = Sumi.Ease.paper)),
-    ) {
-        LoadingOverlayContent(difficulty = difficulty)
-    }
-}
-
-@Composable
-private fun LoadingOverlayContent(difficulty: Difficulty) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(SumiTheme.colors.paper),
-        contentAlignment = Alignment.Center,
-    ) {
-        WashiBG(modifier = Modifier.fillMaxSize(), variant = WashiVariant.Quiet)
-        SumiPetals(
-            modifier = Modifier.fillMaxSize(),
-            count = 6,
-            sizeMultiplier = 0.8f,
-            speedFactor = 0.45f,
-        )
-        val ensoProgress = remember { Animatable(0f) }
-        val titleAlpha = remember { Animatable(0f) }
-        LaunchedEffect(Unit) {
-            ensoProgress.animateTo(1f, tween(900, easing = Sumi.Ease.brush))
-            titleAlpha.animateTo(1f, tween(420, easing = Sumi.Ease.paper))
-        }
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            LogoEnso(
-                size = 72.dp,
-                color = SumiTheme.colors.ink,
-                progress = ensoProgress.value,
-            )
-            Spacer(Modifier.height(Sumi.Space.s5))
-            Text(
-                text = "Preparing ${difficulty.label} puzzle…",
-                style = SumiTheme.typography.subhead.copy(fontStyle = FontStyle.Italic),
-                color = SumiTheme.colors.inkSoft,
-                modifier = Modifier.graphicsLayer { alpha = titleAlpha.value },
-            )
-        }
-    }
-}
-
-private const val LOADING_OVERLAY_REVEAL_DELAY_MS = 200L
