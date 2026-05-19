@@ -38,15 +38,12 @@ import kotlin.time.ExperimentalTime
 private val PRO_DIFFICULTIES = setOf("Hard", "Master", "Edo")
 
 /**
- * Body of the "Pass Sumi along" share. Includes both store links so the
- * recipient lands on the correct one. URLs are sourced from [AppLinks] —
- * placeholders for now, real listing URLs once published.
+ * Body of the "Pass Sumi along" share. URL is sourced from [AppLinks].
  */
 private val INVITE_TEXT = buildString {
     append("I've been finding quiet in this Sudoku app — Sumi.\n")
     append("Daily puzzles, no noise.\n\n")
-    append("iOS: ").append(AppLinks.APP_STORE_URL).append('\n')
-    append("Android: ").append(AppLinks.PLAY_STORE_URL)
+    append(AppLinks.APP_STORE_URL)
 }
 
 @Suppress("ComposableNaming")

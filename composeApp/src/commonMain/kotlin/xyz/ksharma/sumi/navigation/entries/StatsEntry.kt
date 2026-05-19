@@ -20,8 +20,7 @@ import xyz.ksharma.sumi.share.ShareManager
 
 private val SHARE_TEXT = buildString {
     append("My Sumi practice log — quiet sudoku, daily.\n\n")
-    append("iOS: ").append(AppLinks.APP_STORE_URL).append('\n')
-    append("Android: ").append(AppLinks.PLAY_STORE_URL)
+    append(AppLinks.APP_STORE_URL)
 }
 
 @Suppress("ComposableNaming")
