@@ -97,8 +97,6 @@ class SumiNavigationState(
         while (stack.size > 1) stack.removeAt(0)
     }
 
-    private fun routeLabel(key: NavKey): String = key::class.simpleName ?: key.toString()
-
     @Composable
     fun toEntries(entryProvider: (NavKey) -> NavEntry<NavKey>): SnapshotStateList<NavEntry<NavKey>> {
         val decoratedEntries = backStacks.mapValues { (_, stack) ->

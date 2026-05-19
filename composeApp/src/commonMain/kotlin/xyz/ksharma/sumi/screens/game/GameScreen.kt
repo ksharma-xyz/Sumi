@@ -67,8 +67,6 @@ import xyz.ksharma.sumi.game.model.BoardState
 import xyz.ksharma.sumi.game.model.Difficulty
 import xyz.ksharma.sumi.theme.SumiTheme
 import xyz.ksharma.sumi.theme.SumiTokens as Sumi
-import kotlin.time.TimeMark
-import kotlin.time.TimeSource
 
 private val DIFFICULTY_KANJI = mapOf(
     Difficulty.Easy to "一",
@@ -481,32 +479,20 @@ private fun formatTime(ms: Long): String {
 /**
  * Premium loading overlay shown while [PuzzleLoadingOverlay.visible] is true.
  *
- * Two-sided timing so it always feels intentional, never janky:
- *  - Reveal is delayed by [LOADING_OVERLAY_REVEAL_DELAY_MS]. An instant resume
- *    (existing save, no generation) finishes inside that window, so the overlay
- *    never appears and the board shows immediately.
- *  - Once it *does* reveal (a fresh / slow Hard / Edo generation), it's held
- *    for at least [MIN_OVERLAY_VISIBLE_MS] even if generation finishes sooner,
- *    so the enso brush + title animation plays out as a calm ~2s moment rather
- *    than flashing on and snapping away mid-stroke.
+ * The reveal is delayed by [LOADING_OVERLAY_REVEAL_DELAY_MS] so an instant
+ * resume (existing save, no generation) finishes inside that window and the
+ * overlay never appears — the board just shows once it's ready. A real
+ * generation (fresh / Hard / Edo) outlasts the delay, so the overlay covers
+ * the genuine wait and dismisses the moment the puzzle is ready. No forced
+ * minimum — it's only ever up for as long as generation actually takes.
  */
 @Composable
 private fun PuzzleLoadingOverlay(visible: Boolean, difficulty: Difficulty) {
     var actuallyShow by remember { mutableStateOf(false) }
-    var shownSinceMark by remember { mutableStateOf<TimeMark?>(null) }
     LaunchedEffect(visible) {
         if (visible) {
             delay(LOADING_OVERLAY_REVEAL_DELAY_MS)
-            if (visible) {
-                shownSinceMark = TimeSource.Monotonic.markNow()
-                actuallyShow = true
-            }
-        } else if (actuallyShow) {
-            // Overlay was revealed — let the animation breathe before dismissing.
-            val shownFor = shownSinceMark?.elapsedNow()?.inWholeMilliseconds ?: 0L
-            val remaining = MIN_OVERLAY_VISIBLE_MS - shownFor
-            if (remaining > 0L) delay(remaining)
-            actuallyShow = false
+            if (visible) actuallyShow = true
         } else {
             actuallyShow = false
         }
@@ -516,46 +502,46 @@ private fun PuzzleLoadingOverlay(visible: Boolean, difficulty: Difficulty) {
         enter = fadeIn(tween(380, easing = Sumi.Ease.paper)),
         exit = fadeOut(tween(280, easing = Sumi.Ease.paper)),
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(SumiTheme.colors.paper),
-            contentAlignment = Alignment.Center,
-        ) {
-            WashiBG(modifier = Modifier.fillMaxSize(), variant = WashiVariant.Quiet)
-            SumiPetals(
-                modifier = Modifier.fillMaxSize(),
-                count = 6,
-                sizeMultiplier = 0.8f,
-                speedFactor = 0.45f,
+        LoadingOverlayContent(difficulty = difficulty)
+    }
+}
+
+@Composable
+private fun LoadingOverlayContent(difficulty: Difficulty) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(SumiTheme.colors.paper),
+        contentAlignment = Alignment.Center,
+    ) {
+        WashiBG(modifier = Modifier.fillMaxSize(), variant = WashiVariant.Quiet)
+        SumiPetals(
+            modifier = Modifier.fillMaxSize(),
+            count = 6,
+            sizeMultiplier = 0.8f,
+            speedFactor = 0.45f,
+        )
+        val ensoProgress = remember { Animatable(0f) }
+        val titleAlpha = remember { Animatable(0f) }
+        LaunchedEffect(Unit) {
+            ensoProgress.animateTo(1f, tween(900, easing = Sumi.Ease.brush))
+            titleAlpha.animateTo(1f, tween(420, easing = Sumi.Ease.paper))
+        }
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            LogoEnso(
+                size = 72.dp,
+                color = SumiTheme.colors.ink,
+                progress = ensoProgress.value,
             )
-            val ensoProgress = remember { Animatable(0f) }
-            val titleAlpha = remember { Animatable(0f) }
-            LaunchedEffect(Unit) {
-                ensoProgress.animateTo(1f, tween(900, easing = Sumi.Ease.brush))
-                titleAlpha.animateTo(1f, tween(420, easing = Sumi.Ease.paper))
-            }
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                LogoEnso(
-                    size = 72.dp,
-                    color = SumiTheme.colors.ink,
-                    progress = ensoProgress.value,
-                )
-                Spacer(Modifier.height(Sumi.Space.s5))
-                Text(
-                    text = "Preparing ${difficulty.label} puzzle…",
-                    style = SumiTheme.typography.subhead.copy(fontStyle = FontStyle.Italic),
-                    color = SumiTheme.colors.inkSoft,
-                    modifier = Modifier.graphicsLayer { alpha = titleAlpha.value },
-                )
-            }
+            Spacer(Modifier.height(Sumi.Space.s5))
+            Text(
+                text = "Preparing ${difficulty.label} puzzle…",
+                style = SumiTheme.typography.subhead.copy(fontStyle = FontStyle.Italic),
+                color = SumiTheme.colors.inkSoft,
+                modifier = Modifier.graphicsLayer { alpha = titleAlpha.value },
+            )
         }
     }
 }
 
 private const val LOADING_OVERLAY_REVEAL_DELAY_MS = 200L
-
-// Once the overlay actually reveals (a real generation, not an instant resume),
-// keep it up at least this long so the enso animation reads as a deliberate
-// moment instead of a flash.
-private const val MIN_OVERLAY_VISIBLE_MS = 2_000L

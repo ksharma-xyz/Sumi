@@ -107,65 +107,65 @@ class GameViewModel(
         // sudoku solver — and DataStore IO) runs on Dispatchers.Default to keep
         // the main thread free for the loading-state UI.
         viewModelScope.launchWithExceptionHandler<GameViewModel>(dispatcher = Dispatchers.Default) {
-          try {
-            if (fresh) saveRepository.clearSave(difficulty)
+            try {
+                if (fresh) saveRepository.clearSave(difficulty)
 
-            val freshPuzzle: BoardState
-            val save: GameSave?
-            // We're already on Dispatchers.Default thanks to the outer
-            // launchWithExceptionHandler, so the generator + DataStore calls
-            // below run off-main without further withContext gymnastics.
-            if (fresh) {
-                // Random seed so "New Puzzle" always gives different clues from the daily puzzle.
-                currentSeed = Clock.System.now().toEpochMilliseconds()
-                freshPuzzle = puzzleRepository.fromSeed(difficulty, currentSeed)
-                save = null
-            } else {
-                val loadedSave = saveRepository.loadSave(difficulty)
-                if (loadedSave != null && loadedSave.puzzleSeed != 0L) {
-                    currentSeed = loadedSave.puzzleSeed
+                val freshPuzzle: BoardState
+                val save: GameSave?
+                // We're already on Dispatchers.Default thanks to the outer
+                // launchWithExceptionHandler, so the generator + DataStore calls
+                // below run off-main without further withContext gymnastics.
+                if (fresh) {
+                    // Random seed so "New Puzzle" always gives different clues from the daily puzzle.
+                    currentSeed = Clock.System.now().toEpochMilliseconds()
                     freshPuzzle = puzzleRepository.fromSeed(difficulty, currentSeed)
+                    save = null
                 } else {
-                    currentSeed = 0L
-                    freshPuzzle = puzzleRepository.daily(difficulty)
+                    val loadedSave = saveRepository.loadSave(difficulty)
+                    if (loadedSave != null && loadedSave.puzzleSeed != 0L) {
+                        currentSeed = loadedSave.puzzleSeed
+                        freshPuzzle = puzzleRepository.fromSeed(difficulty, currentSeed)
+                    } else {
+                        currentSeed = 0L
+                        freshPuzzle = puzzleRepository.daily(difficulty)
+                    }
+                    save = loadedSave
                 }
-                save = loadedSave
+
+                val restoredState = if (save != null) restoreState(freshPuzzle, save) else freshPuzzle
+                val restoredElapsed = save?.elapsedMs ?: 0L
+
+                val hintCount = if (proHints) BoardState.HINTS_UNLIMITED
+                else minOf(restoredState.hintsRemaining, BoardState.DEFAULT_HINTS)
+                val stateWithHints = restoredState.copy(hintsRemaining = hintCount)
+
+                boardManager = RealBoardManager(stateWithHints)
+                val resolved = boardManager.state.value
+                if (resolved.isComplete) {
+                    // Stale save from a completed game (process was killed before clear ran) — start fresh.
+                    saveRepository.clearSave(difficulty)
+                    val freshWithHints = freshPuzzle.copy(hintsRemaining = hintCount)
+                    boardManager = RealBoardManager(freshWithHints)
+                    _elapsedMs.value = 0L
+                } else {
+                    _elapsedMs.value = restoredElapsed
+                }
+
+                _state.value = boardManager.state.value
+                // Persist the seed immediately when starting a fresh puzzle, even with
+                // zero user moves. Without this, "New Puzzle" → navigate away → return
+                // would re-open the daily puzzle (no save existed yet) instead of the
+                // freshly-rolled one. startSync's auto-save only fires once the user
+                // makes a move, so we seed the save up front.
+                if (fresh) saveRepository.writeSave(currentDifficulty, buildSave(_state.value))
+                startSync()
+                startTimer()
+            } finally {
+                // Always clear the loading flag — the Game screen now hides the
+                // board entirely while this is true, so a generation failure must
+                // not strand the user on a permanent loading overlay.
+                _isInitializing.value = false
             }
-
-            val restoredState = if (save != null) restoreState(freshPuzzle, save) else freshPuzzle
-            val restoredElapsed = save?.elapsedMs ?: 0L
-
-            val hintCount = if (proHints) BoardState.HINTS_UNLIMITED
-            else minOf(restoredState.hintsRemaining, BoardState.DEFAULT_HINTS)
-            val stateWithHints = restoredState.copy(hintsRemaining = hintCount)
-
-            boardManager = RealBoardManager(stateWithHints)
-            val resolved = boardManager.state.value
-            if (resolved.isComplete) {
-                // Stale save from a completed game (process was killed before clear ran) — start fresh.
-                saveRepository.clearSave(difficulty)
-                val freshWithHints = freshPuzzle.copy(hintsRemaining = hintCount)
-                boardManager = RealBoardManager(freshWithHints)
-                _elapsedMs.value = 0L
-            } else {
-                _elapsedMs.value = restoredElapsed
-            }
-
-            _state.value = boardManager.state.value
-            // Persist the seed immediately when starting a fresh puzzle, even with
-            // zero user moves. Without this, "New Puzzle" → navigate away → return
-            // would re-open the daily puzzle (no save existed yet) instead of the
-            // freshly-rolled one. startSync's auto-save only fires once the user
-            // makes a move, so we seed the save up front.
-            if (fresh) saveRepository.writeSave(currentDifficulty, buildSave(_state.value))
-            startSync()
-            startTimer()
-          } finally {
-            // Always clear the loading flag — the Game screen now hides the
-            // board entirely while this is true, so a generation failure must
-            // not strand the user on a permanent loading overlay.
-            _isInitializing.value = false
-          }
         }
     }
 

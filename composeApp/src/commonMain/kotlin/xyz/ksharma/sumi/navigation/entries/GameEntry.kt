@@ -8,6 +8,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -71,8 +72,16 @@ fun EntryProviderScope<NavKey>.GameEntry(navigator: SumiNavigator) {
         val isAdsEnabled by debugPrefs.observeAdsEnabled().collectAsState(initial = true)
         var paused by rememberSaveable { mutableStateOf(false) }
 
+        // Gate the board on init having started *for this entry*. The first
+        // composition runs before the LaunchedEffect below fires vm.init(), so
+        // a reused/retained VM would briefly expose a stale board + stale
+        // isInitializing=false — that's the "puzzle flashes, then loading
+        // animation, then puzzle" the player sees. initStarted stays false
+        // until we've actually kicked off generation for this route.
+        var initStarted by remember(key) { mutableStateOf(false) }
         LaunchedEffect(key.difficulty) {
             vm.init(diff, proHints = isPro)
+            initStarted = true
             analytics.logGameStarted(key.difficulty)
         }
 
@@ -136,7 +145,10 @@ fun EntryProviderScope<NavKey>.GameEntry(navigator: SumiNavigator) {
             elapsedMs = elapsedMs,
             celebrationCount = celebrationCount,
             gridCelebrationCount = gridCelebrationCount,
-            isInitializing = isInitializing,
+            // "Not ready" until init has started for this entry AND finished —
+            // GameScreen hides the board and shows the loading overlay while
+            // this is true, so no stale puzzle frame ever leaks through.
+            isInitializing = !(initStarted && !isInitializing),
             paused = paused,
             difficulty = diff,
             showMistakes = showMistakes,
