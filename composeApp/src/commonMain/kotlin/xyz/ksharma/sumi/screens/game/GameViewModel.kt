@@ -107,6 +107,7 @@ class GameViewModel(
         // sudoku solver — and DataStore IO) runs on Dispatchers.Default to keep
         // the main thread free for the loading-state UI.
         viewModelScope.launchWithExceptionHandler<GameViewModel>(dispatcher = Dispatchers.Default) {
+          try {
             if (fresh) saveRepository.clearSave(difficulty)
 
             val freshPuzzle: BoardState
@@ -159,7 +160,12 @@ class GameViewModel(
             if (fresh) saveRepository.writeSave(currentDifficulty, buildSave(_state.value))
             startSync()
             startTimer()
+          } finally {
+            // Always clear the loading flag — the Game screen now hides the
+            // board entirely while this is true, so a generation failure must
+            // not strand the user on a permanent loading overlay.
             _isInitializing.value = false
+          }
         }
     }
 

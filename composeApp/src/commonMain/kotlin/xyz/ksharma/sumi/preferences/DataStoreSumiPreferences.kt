@@ -34,6 +34,9 @@ private val KEY_LAST_DIFFICULTY = stringPreferencesKey("last_difficulty")
 private val KEY_BEST_TIMES = stringSetPreferencesKey("best_times")
 // Rolling list of recent elapsed times for the Improvement chart, oldest→newest, "ms,ms,ms"
 private val KEY_RECENT_TIMES = stringPreferencesKey("recent_times")
+// Signature of the last recorded solve ("<diff>:<elapsedMs>") — dedupe guard so
+// one solved puzzle can't be counted twice if recordSolve is reached again.
+private val KEY_LAST_SOLVE_SIG = stringPreferencesKey("last_solve_sig")
 private const val RECENT_TIMES_CAP = 30
 private val KEY_DEBUG_SIMULATE_PRO = booleanPreferencesKey("debug_simulate_pro")
 private val KEY_DEBUG_ADS_ENABLED = booleanPreferencesKey("debug_ads_enabled")
@@ -76,6 +79,19 @@ class DataStoreSumiPreferences(
         val today = todayEpochDay()
         var newStreak = 0
         store.edit { prefs ->
+            // Idempotency guard. The same solved puzzle can reach recordSolve
+            // more than once — e.g. the Win screen is re-entered after process
+            // death or a config change (its LaunchedEffect re-fires with the
+            // same route args). Without this, total / recent-times / the
+            // improvement chart silently inflate. elapsedMs is millisecond-
+            // precise, so two genuinely distinct solves never collide.
+            val sig = "$difficulty:$elapsedMs"
+            if (prefs[KEY_LAST_SOLVE_SIG] == sig) {
+                newStreak = prefs[KEY_STREAK] ?: 0
+                return@edit
+            }
+            prefs[KEY_LAST_SOLVE_SIG] = sig
+
             val lastDay = prefs[KEY_LAST_SOLVE_DAY] ?: Long.MIN_VALUE
             val current = prefs[KEY_STREAK] ?: 0
             newStreak = when {
@@ -169,6 +185,7 @@ class DataStoreSumiPreferences(
             prefs.remove(KEY_LAST_DIFFICULTY)
             prefs.remove(KEY_BEST_TIMES)
             prefs.remove(KEY_RECENT_TIMES)
+            prefs.remove(KEY_LAST_SOLVE_SIG)
         }
     }
 

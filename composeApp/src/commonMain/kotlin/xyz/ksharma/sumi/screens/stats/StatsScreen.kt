@@ -556,7 +556,7 @@ private fun StatsShareCard(state: StatsState, layer: GraphicsLayer) {
         // Streak (only header stat alongside total — best times now break out by difficulty below)
         ShareStat(
             value = state.currentStreak.toString(),
-            label = if (state.currentStreak == 1) "DAY STREAK" else "DAY STREAK",
+            label = "DAY STREAK",
         )
 
         Spacer(Modifier.height(Sumi.Space.s5))

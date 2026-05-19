@@ -117,15 +117,23 @@ fun GameScreen(
         val blurMod = if (paused) Modifier.blur(24.dp, BlurredEdgeTreatment.Unbounded) else Modifier
         Box(modifier = Modifier.fillMaxSize().then(blurMod)) {
             WashiBG(modifier = Modifier.fillMaxSize(), variant = WashiVariant.Quiet)
-            GameBody(
-                state = state,
-                elapsedMs = elapsedMs,
-                diff = difficulty,
-                callbacks = callbacks,
-                bottomReservedHeight = if (bottomBanner != null) 64.dp else 0.dp,
-                rewardedHintAvailable = rewardedHintAvailable,
-                showMistakes = showMistakes,
-            )
+            // Don't draw the board until the puzzle is ready. The VM seeds
+            // `state` with an all-zero EMPTY_BOARD; rendering it would flash an
+            // empty grid (and the wrong difficulty) for the ~200ms before the
+            // loading overlay reveals, then jump to the real puzzle once slow
+            // Hard/Edo generation finishes. Fast loads just show paper for a
+            // frame, so nothing flickers there either.
+            if (!isInitializing) {
+                GameBody(
+                    state = state,
+                    elapsedMs = elapsedMs,
+                    diff = difficulty,
+                    callbacks = callbacks,
+                    bottomReservedHeight = if (bottomBanner != null) 64.dp else 0.dp,
+                    rewardedHintAvailable = rewardedHintAvailable,
+                    showMistakes = showMistakes,
+                )
+            }
         }
         // Loading overlay for slow generations (Master / Edo first-time can take
         // a few seconds). Delayed reveal so fast loads (resumes, Easy) don't
