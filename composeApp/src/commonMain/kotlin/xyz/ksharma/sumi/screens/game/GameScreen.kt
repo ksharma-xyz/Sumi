@@ -76,11 +76,14 @@ private val DIFFICULTY_KANJI = mapOf(
     Difficulty.Edo to "五",
 )
 
+// Same graceful, drifting character as the full-grid shower below — just
+// fewer petals so a row / column / box completion reads as a smaller version
+// of the win moment rather than a separate, abrupt effect.
 private val LINE_BURST = PetalBurstConfig(
-    count = 8,
-    sizeMultiplier = 0.85f,
-    durationMs = 1_600,
-    swayScale = 0.6f,
+    count = 16,
+    sizeMultiplier = 2.0f,
+    durationMs = 2_800,
+    swayScale = 1.0f,
 )
 
 private val GRID_BURST = PetalBurstConfig(

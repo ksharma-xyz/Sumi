@@ -289,9 +289,11 @@ fun SumiPetalBurst(
 
     LaunchedEffect(trigger) {
         if (trigger == 0) return@LaunchedEffect
+        // Fresh random seed per burst so consecutive completions never repeat
+        // the same petal layout — each one drifts differently.
         petals = generateBurstPetals(
             count = config.count,
-            seed = trigger,
+            seed = kotlin.random.Random.nextInt(),
             sizeMultiplier = config.sizeMultiplier,
             swayScale = config.swayScale,
             colors = colors,
