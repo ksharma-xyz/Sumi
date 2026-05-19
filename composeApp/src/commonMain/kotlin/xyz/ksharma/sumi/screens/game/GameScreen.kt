@@ -213,7 +213,9 @@ private fun GameBody(
             Box(modifier = Modifier.size(resolvedCellSize * 9), contentAlignment = Alignment.Center) {
                 Crossfade(
                     targetState = boardReady,
-                    animationSpec = tween(320, easing = Sumi.Ease.paper),
+                    // Slow, calm reveal — the grid eases in rather than
+                    // snapping. Matches the zen pacing of the rest of the app.
+                    animationSpec = tween(620, easing = Sumi.Ease.paper),
                     label = "boardFade",
                 ) { ready ->
                     if (ready) {
