@@ -67,6 +67,8 @@ import xyz.ksharma.sumi.game.model.BoardState
 import xyz.ksharma.sumi.game.model.Difficulty
 import xyz.ksharma.sumi.theme.SumiTheme
 import xyz.ksharma.sumi.theme.SumiTokens as Sumi
+import kotlin.time.TimeMark
+import kotlin.time.TimeSource
 
 private val DIFFICULTY_KANJI = mapOf(
     Difficulty.Easy to "一",
@@ -478,18 +480,33 @@ private fun formatTime(ms: Long): String {
 
 /**
  * Premium loading overlay shown while [PuzzleLoadingOverlay.visible] is true.
- * The reveal is delayed by 200ms so resumes / Easy generations (which finish
- * almost instantly) never flash an animation that would feel janky. Edo + Master
- * generations on lower-end devices can take a few seconds — this is the screen
- * the user sees during that wait.
+ *
+ * Two-sided timing so it always feels intentional, never janky:
+ *  - Reveal is delayed by [LOADING_OVERLAY_REVEAL_DELAY_MS]. An instant resume
+ *    (existing save, no generation) finishes inside that window, so the overlay
+ *    never appears and the board shows immediately.
+ *  - Once it *does* reveal (a fresh / slow Hard / Edo generation), it's held
+ *    for at least [MIN_OVERLAY_VISIBLE_MS] even if generation finishes sooner,
+ *    so the enso brush + title animation plays out as a calm ~2s moment rather
+ *    than flashing on and snapping away mid-stroke.
  */
 @Composable
 private fun PuzzleLoadingOverlay(visible: Boolean, difficulty: Difficulty) {
     var actuallyShow by remember { mutableStateOf(false) }
+    var shownSinceMark by remember { mutableStateOf<TimeMark?>(null) }
     LaunchedEffect(visible) {
         if (visible) {
             delay(LOADING_OVERLAY_REVEAL_DELAY_MS)
-            if (visible) actuallyShow = true
+            if (visible) {
+                shownSinceMark = TimeSource.Monotonic.markNow()
+                actuallyShow = true
+            }
+        } else if (actuallyShow) {
+            // Overlay was revealed — let the animation breathe before dismissing.
+            val shownFor = shownSinceMark?.elapsedNow()?.inWholeMilliseconds ?: 0L
+            val remaining = MIN_OVERLAY_VISIBLE_MS - shownFor
+            if (remaining > 0L) delay(remaining)
+            actuallyShow = false
         } else {
             actuallyShow = false
         }
@@ -537,3 +554,8 @@ private fun PuzzleLoadingOverlay(visible: Boolean, difficulty: Difficulty) {
 }
 
 private const val LOADING_OVERLAY_REVEAL_DELAY_MS = 200L
+
+// Once the overlay actually reveals (a real generation, not an instant resume),
+// keep it up at least this long so the enso animation reads as a deliberate
+// moment instead of a flash.
+private const val MIN_OVERLAY_VISIBLE_MS = 2_000L
