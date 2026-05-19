@@ -14,6 +14,8 @@ data class StatsState(
     val currentStreak: Int = 0,
     val bestStreak: Int = 0,
     val daysPlayed: Int = 0,
+    /** Puzzles solved in the last 7 days (count of solves, not distinct days). */
+    val solvedThisWeek: Int = 0,
     val solveDays: Set<Long> = emptySet(),
     /** Solve times in ms keyed by difficulty name; empty if never played that difficulty. */
     val bestTimes: Map<String, Long> = emptyMap(),
@@ -44,8 +46,9 @@ class StatsViewModel(
             prefs.observeRecentSolveTimes(),
             prefs.observeLastPlayedDifficulty(),
             proRepo.isPro(),
-        ) { bests, recent, lastDiff, isPro ->
-            StatsExtras(bests, recent, lastDiff, isPro)
+            prefs.observeWeeklySolvedCount(),
+        ) { bests, recent, lastDiff, isPro, weekly ->
+            StatsExtras(bests, recent, lastDiff, isPro, weekly)
         },
     ) { total, streak, best, days, extras ->
         StatsState(
@@ -53,6 +56,7 @@ class StatsViewModel(
             currentStreak = streak,
             bestStreak = best,
             daysPlayed = days.size,
+            solvedThisWeek = extras.weeklySolved,
             solveDays = days,
             bestTimes = extras.bestTimes,
             recentSolveTimes = extras.recentSolveTimes,
@@ -71,6 +75,7 @@ class StatsViewModel(
         val recentSolveTimes: List<Long>,
         val lastDifficulty: String?,
         val isPro: Boolean,
+        val weeklySolved: Int,
     )
 
     private companion object {

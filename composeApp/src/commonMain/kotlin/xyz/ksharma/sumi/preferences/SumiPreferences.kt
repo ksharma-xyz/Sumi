@@ -24,6 +24,13 @@ interface SumiPreferences {
     fun observeTotalPuzzlesSolved(): Flow<Int>
     fun observeSolveDays(): Flow<Set<Long>>
 
+    /**
+     * Number of puzzles solved within the last 7 calendar days (today + 6).
+     * Counts every solve, not distinct days — solving 5 today returns 5.
+     * Only reflects solves recorded after this tracking was added.
+     */
+    fun observeWeeklySolvedCount(): Flow<Int>
+
     // ── Mutations ──────────────────────────────────────────────────────────────
     /**
      * Records today as a solve day for the given difficulty + elapsed time. Returns the

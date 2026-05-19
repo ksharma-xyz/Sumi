@@ -48,8 +48,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
 import xyz.ksharma.sumi.design.components.InkBleed
 import xyz.ksharma.sumi.design.components.SumiIcon
 import xyz.ksharma.sumi.design.components.WashiBG
@@ -211,9 +209,9 @@ private fun StatHero(total: Int) {
 
 @Composable
 private fun ThisWeekGrid(state: StatsState) {
-    // Solved-this-week: count days within the last 7 epoch days.
-    val today = thisEpochDay()
-    val solvedThisWeek = (0L..6L).count { offset -> (today - offset) in state.solveDays }
+    // Puzzles solved in the last 7 days — a solve count (computed in the VM),
+    // not a distinct-day count.
+    val solvedThisWeek = state.solvedThisWeek
 
     // Avg solve time = mean of last 7 entries in recentSolveTimes.
     val recent7 = state.recentSolveTimes.takeLast(7)
@@ -483,12 +481,6 @@ private fun formatTimeShort(ms: Long): String {
     val min = totalSec / 60
     val sec = totalSec % 60
     return "$min:${sec.toString().padStart(2, '0')}"
-}
-
-@OptIn(kotlin.time.ExperimentalTime::class)
-private fun thisEpochDay(): Long {
-    val now = kotlin.time.Clock.System.now()
-    return now.toLocalDateTime(TimeZone.currentSystemDefault()).date.toEpochDays()
 }
 
 private val PRO_DIFFICULTIES = setOf(Difficulty.Hard, Difficulty.Master, Difficulty.Edo)

@@ -4,6 +4,7 @@
 package xyz.ksharma.sumi.preferences
 
 import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
@@ -37,6 +38,11 @@ private val KEY_RECENT_TIMES = stringPreferencesKey("recent_times")
 // Signature of the last recorded solve ("<diff>:<elapsedMs>") — dedupe guard so
 // one solved puzzle can't be counted twice if recordSolve is reached again.
 private val KEY_LAST_SOLVE_SIG = stringPreferencesKey("last_solve_sig")
+// Per-day solve counts: "<epochDay>:<count>" entries. Drives Stats' "this week
+// solved" (a puzzle count, not a distinct-day count). Pruned to recent days.
+private val KEY_DAILY_COUNTS = stringSetPreferencesKey("daily_solve_counts")
+private const val DAILY_COUNTS_RETENTION_DAYS = 60
+private const val WEEK_WINDOW_DAYS = 7L
 private const val RECENT_TIMES_CAP = 30
 private val KEY_DEBUG_SIMULATE_PRO = booleanPreferencesKey("debug_simulate_pro")
 private val KEY_DEBUG_ADS_ENABLED = booleanPreferencesKey("debug_ads_enabled")
@@ -75,6 +81,13 @@ class DataStoreSumiPreferences(
             prefs[KEY_SOLVE_DAYS]?.mapNotNull { it.toLongOrNull() }?.toSet() ?: emptySet()
         }
 
+    override fun observeWeeklySolvedCount(): Flow<Int> =
+        store.data.map { prefs ->
+            val counts = decodeDayCounts(prefs[KEY_DAILY_COUNTS])
+            val today = todayEpochDay()
+            (0L until WEEK_WINDOW_DAYS).sumOf { offset -> counts[today - offset] ?: 0 }
+        }
+
     override suspend fun recordSolve(difficulty: String, elapsedMs: Long): Int {
         val today = todayEpochDay()
         var newStreak = 0
@@ -92,32 +105,15 @@ class DataStoreSumiPreferences(
             }
             prefs[KEY_LAST_SOLVE_SIG] = sig
 
-            val lastDay = prefs[KEY_LAST_SOLVE_DAY] ?: Long.MIN_VALUE
-            val current = prefs[KEY_STREAK] ?: 0
-            newStreak = when {
-                lastDay == today -> current
-                lastDay == today - 1 -> current + 1
-                else -> 1
-            }
-            if (lastDay != today) {
-                prefs[KEY_STREAK] = newStreak
-                prefs[KEY_LAST_SOLVE_DAY] = today
-                val prevBest = prefs[KEY_BEST_STREAK] ?: 0
-                if (newStreak > prevBest) prefs[KEY_BEST_STREAK] = newStreak
-            }
+            newStreak = applyStreak(prefs, today)
             val existing = prefs[KEY_SOLVE_DAYS] ?: emptySet()
             prefs[KEY_SOLVE_DAYS] = existing + today.toString()
             prefs[KEY_TOTAL_PUZZLES] = (prefs[KEY_TOTAL_PUZZLES] ?: 0) + 1
+            applyDailyCount(prefs, today)
 
             // Track most recent difficulty for the Daily "Today" card.
             prefs[KEY_LAST_DIFFICULTY] = difficulty
-
-            // Per-difficulty personal best.
-            val bests = decodeBestTimes(prefs[KEY_BEST_TIMES])
-            val prevBestForDiff = bests[difficulty]
-            if (prevBestForDiff == null || elapsedMs < prevBestForDiff) {
-                prefs[KEY_BEST_TIMES] = encodeBestTimes(bests + (difficulty to elapsedMs))
-            }
+            applyBestTime(prefs, difficulty, elapsedMs)
 
             // Rolling list of recent solve times for the Improvement chart.
             val recent = prefs[KEY_RECENT_TIMES]
@@ -186,6 +182,7 @@ class DataStoreSumiPreferences(
             prefs.remove(KEY_BEST_TIMES)
             prefs.remove(KEY_RECENT_TIMES)
             prefs.remove(KEY_LAST_SOLVE_SIG)
+            prefs.remove(KEY_DAILY_COUNTS)
         }
     }
 
@@ -243,6 +240,65 @@ private fun todayEpochDay(): Long {
     val now = Clock.System.now()
     val local = now.toLocalDateTime(TimeZone.currentSystemDefault())
     return local.date.toEpochDays()
+}
+
+/**
+ * Advance the daily streak for a solve on [today] and return the new value.
+ * Streak only changes on the first solve of a calendar day; same-day solves
+ * keep the current count. Best-streak is bumped when the streak exceeds it.
+ */
+private fun applyStreak(prefs: MutablePreferences, today: Long): Int {
+    val lastDay = prefs[KEY_LAST_SOLVE_DAY] ?: Long.MIN_VALUE
+    val current = prefs[KEY_STREAK] ?: 0
+    val newStreak = when {
+        lastDay == today -> current
+        lastDay == today - 1 -> current + 1
+        else -> 1
+    }
+    if (lastDay != today) {
+        prefs[KEY_STREAK] = newStreak
+        prefs[KEY_LAST_SOLVE_DAY] = today
+        val prevBest = prefs[KEY_BEST_STREAK] ?: 0
+        if (newStreak > prevBest) prefs[KEY_BEST_STREAK] = newStreak
+    }
+    return newStreak
+}
+
+/** Record [elapsedMs] as the personal best for [difficulty] if it beats the prior one. */
+private fun applyBestTime(prefs: MutablePreferences, difficulty: String, elapsedMs: Long) {
+    val bests = decodeBestTimes(prefs[KEY_BEST_TIMES])
+    val prevBestForDiff = bests[difficulty]
+    if (prevBestForDiff == null || elapsedMs < prevBestForDiff) {
+        prefs[KEY_BEST_TIMES] = encodeBestTimes(bests + (difficulty to elapsedMs))
+    }
+}
+
+/**
+ * Increment the solve count for [today] and prune entries older than
+ * [DAILY_COUNTS_RETENTION_DAYS] so storage stays bounded.
+ */
+private fun applyDailyCount(prefs: MutablePreferences, today: Long) {
+    val counts = decodeDayCounts(prefs[KEY_DAILY_COUNTS]).toMutableMap()
+    counts[today] = (counts[today] ?: 0) + 1
+    val cutoff = today - DAILY_COUNTS_RETENTION_DAYS
+    prefs[KEY_DAILY_COUNTS] = encodeDayCounts(counts.filterKeys { it >= cutoff })
+}
+
+private fun encodeDayCounts(counts: Map<Long, Int>): Set<String> =
+    counts.entries.map { "${it.key}:${it.value}" }.toSet()
+
+private fun decodeDayCounts(raw: Set<String>?): Map<Long, Int> {
+    if (raw.isNullOrEmpty()) return emptyMap()
+    return buildMap {
+        raw.forEach { entry ->
+            val idx = entry.lastIndexOf(':')
+            if (idx > 0) {
+                val day = entry.substring(0, idx).toLongOrNull()
+                val count = entry.substring(idx + 1).toIntOrNull()
+                if (day != null && count != null) put(day, count)
+            }
+        }
+    }
 }
 
 /** Encode a difficulty→best-time map as a String set: `["Easy:240000", "Medium:412000", ...]`. */
