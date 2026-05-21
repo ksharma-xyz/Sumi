@@ -15,7 +15,7 @@ android {
         // monotonic value from the GitHub repo variable ANDROID_VERSION_CODE.
         // Local builds fall back to 10 — high enough that an accidental local
         // upload to Play Console is rejected for collision rather than landing.
-        versionCode = findProperty("versionCode")?.toString()?.toInt() ?: 10
+        versionCode = findProperty("versionCode")?.toString()?.toInt() ?: 104
         versionName = "1.1"
     }
 
