@@ -2,10 +2,10 @@
 
 package xyz.ksharma.sumi.game.generator
 
-import kotlin.random.Random
 import xyz.ksharma.sumi.game.model.BoardState
 import xyz.ksharma.sumi.game.model.Cell
 import xyz.ksharma.sumi.game.model.Difficulty
+import kotlin.random.Random
 
 object SudokuGenerator {
 
@@ -14,11 +14,13 @@ object SudokuGenerator {
         val solution = IntArray(81) { 0 }
         solve(solution, rng)
         val puzzle = solution.copyOf()
-        removeCells(puzzle, solution, difficulty, rng)
-        val cells = List(9) { r -> List(9) { c ->
-            val v = puzzle[r * 9 + c]
-            Cell(value = v, given = v != 0)
-        }}
+        removeCells(puzzle, difficulty, rng)
+        val cells = List(9) { r ->
+            List(9) { c ->
+                val v = puzzle[r * 9 + c]
+                Cell(value = v, given = v != 0)
+            }
+        }
         val solGrid = List(9) { r -> List(9) { c -> solution[r * 9 + c] } }
         return BoardState(cells = cells, difficulty = difficulty, solution = solGrid)
     }
@@ -56,7 +58,7 @@ object SudokuGenerator {
         return count
     }
 
-    private fun removeCells(puzzle: IntArray, solution: IntArray, difficulty: Difficulty, rng: Random) {
+    private fun removeCells(puzzle: IntArray, difficulty: Difficulty, rng: Random) {
         val toRemove = 81 - difficulty.givenCount
         val positions = (0..80).toMutableList().also { it.shuffle(rng) }
         var removed = 0

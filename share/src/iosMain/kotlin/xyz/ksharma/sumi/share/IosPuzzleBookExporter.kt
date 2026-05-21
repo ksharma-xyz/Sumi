@@ -5,8 +5,8 @@ package xyz.ksharma.sumi.share
 import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.addressOf
-import kotlinx.cinterop.usePinned
 import kotlinx.cinterop.useContents
+import kotlinx.cinterop.usePinned
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import platform.CoreGraphics.CGContextAddPath
@@ -43,9 +43,6 @@ import platform.UIKit.NSTextAlignmentCenter
 import platform.UIKit.NSTextAlignmentLeft
 import platform.UIKit.NSTextAlignmentRight
 import platform.UIKit.UIActivityViewController
-import platform.UIKit.drawAtPoint
-import platform.UIKit.setAlignment
-import platform.UIKit.sizeWithAttributes
 import platform.UIKit.UIApplication
 import platform.UIKit.UIBezierPath
 import platform.UIKit.UIColor
@@ -58,7 +55,10 @@ import platform.UIKit.UISceneActivationStateForegroundActive
 import platform.UIKit.UIViewController
 import platform.UIKit.UIWindow
 import platform.UIKit.UIWindowScene
+import platform.UIKit.drawAtPoint
 import platform.UIKit.popoverPresentationController
+import platform.UIKit.setAlignment
+import platform.UIKit.sizeWithAttributes
 import platform.posix.memcpy
 import kotlin.math.PI
 
@@ -70,7 +70,7 @@ private const val MARGIN = 28.0
 private const val HEADER_RULE_Y = 56.0
 private const val GRID_TOP = 70.0
 private const val CELL_SIZE = 40.0
-private const val GRID_SIZE = CELL_SIZE * 9.0  // 360pt
+private const val GRID_SIZE = CELL_SIZE * 9.0 // 360pt
 private const val FOOTER_GAP = 14.0
 private const val LOGO_VIEWPORT = 120.0
 private const val LOGO_STROKE_WIDTH = 11.0

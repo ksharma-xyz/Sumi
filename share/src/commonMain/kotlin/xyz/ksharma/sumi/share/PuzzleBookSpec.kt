@@ -2,7 +2,7 @@ package xyz.ksharma.sumi.share
 
 /** One page of a printable puzzle book. */
 data class PuzzleBookPage(
-    val clues: List<Int>,           // 81 ints: 0 = empty cell, 1–9 = given digit
+    val clues: List<Int>, // 81 ints: 0 = empty cell, 1–9 = given digit
     val solution: List<Int> = emptyList(), // 81 ints: full solved grid (all non-zero)
     val pageNumber: Int,
     val difficulty: String,

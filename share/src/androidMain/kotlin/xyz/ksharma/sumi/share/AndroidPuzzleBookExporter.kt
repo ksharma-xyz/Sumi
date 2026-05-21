@@ -343,16 +343,16 @@ class AndroidPuzzleBookExporter(private val context: Context) : PuzzleBookExport
     }
 
     private companion object {
-        const val PAGE_W = 420f         // A5 width  (148mm)
-        const val PAGE_H = 595f         // A5 height (210mm)
+        const val PAGE_W = 420f // A5 width  (148mm)
+        const val PAGE_H = 595f // A5 height (210mm)
         const val MARGIN = 28f
-        const val HEADER_RULE_Y = 56f   // below enso (centred at y=42) + text — was 38f (overlapped logo)
-        const val GRID_TOP = 70f        // was 50f
+        const val HEADER_RULE_Y = 56f // below enso (centred at y=42) + text — was 38f (overlapped logo)
+        const val GRID_TOP = 70f // was 50f
         const val CELL_SIZE = 40f
-        const val GRID_SIZE = CELL_SIZE * 9  // 360pt
+        const val GRID_SIZE = CELL_SIZE * 9 // 360pt
         const val FOOTER_GAP = 14f
-        const val LOGO_VIEWPORT = 120f      // matches viewportWidth/Height in logo_enso.xml
-        const val LOGO_STROKE_WIDTH = 11f   // matches android:strokeWidth in logo_enso.xml
+        const val LOGO_VIEWPORT = 120f // matches viewportWidth/Height in logo_enso.xml
+        const val LOGO_STROKE_WIDTH = 11f // matches android:strokeWidth in logo_enso.xml
     }
 }
 

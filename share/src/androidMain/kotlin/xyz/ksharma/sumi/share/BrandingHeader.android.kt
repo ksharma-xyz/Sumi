@@ -35,9 +35,15 @@ actual fun ImageBitmap.withBrandingHeader(
     val combined = createBitmap(width, original.height + headerHeight)
     val canvas = Canvas(combined)
 
-    canvas.drawRect(0f, 0f, width.toFloat(), headerHeight.toFloat(), Paint().apply {
-        color = backgroundColor.toArgb()
-    })
+    canvas.drawRect(
+        0f,
+        0f,
+        width.toFloat(),
+        headerHeight.toFloat(),
+        Paint().apply {
+            color = backgroundColor.toArgb()
+        },
+    )
 
     val titlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = textColor.toArgb()

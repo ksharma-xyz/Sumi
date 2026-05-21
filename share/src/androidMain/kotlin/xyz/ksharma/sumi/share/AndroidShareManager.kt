@@ -11,6 +11,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 
+private const val PNG_QUALITY = 100
+
 class AndroidShareManager(private val context: Context) : ShareManager {
 
     override suspend fun shareImage(bitmap: ImageBitmap, title: String, text: String?): Result<Unit> =
@@ -52,7 +54,7 @@ class AndroidShareManager(private val context: Context) : ShareManager {
         val file = File(cacheDir, "sumi_${System.currentTimeMillis()}.png")
         file.outputStream().use { out ->
             // compress() returns false on failure (recycled or hardware-backed bitmap).
-            val success = bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+            val success = bitmap.compress(Bitmap.CompressFormat.PNG, PNG_QUALITY, out)
             check(success) { "Bitmap.compress() failed" }
         }
         return FileProvider.getUriForFile(

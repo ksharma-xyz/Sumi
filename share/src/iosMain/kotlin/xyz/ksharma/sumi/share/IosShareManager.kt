@@ -21,6 +21,8 @@ import platform.UIKit.UIWindow
 import platform.UIKit.UIWindowScene
 import platform.UIKit.popoverPresentationController
 
+private const val PNG_QUALITY = 100
+
 @OptIn(ExperimentalForeignApi::class, BetaInteropApi::class)
 class IosShareManager : ShareManager {
 
@@ -29,7 +31,7 @@ class IosShareManager : ShareManager {
             // Skia PNG encoding is CPU-heavy — run off Main.
             val byteArray = withContext(Dispatchers.Default) {
                 val skiaImage = Image.makeFromBitmap(bitmap.asSkiaBitmap())
-                checkNotNull(skiaImage.encodeToData(EncodedImageFormat.PNG, 100)) {
+                checkNotNull(skiaImage.encodeToData(EncodedImageFormat.PNG, PNG_QUALITY)) {
                     "Skia encodeToData returned null — bitmap may be empty or invalid"
                 }.bytes
             }
