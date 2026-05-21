@@ -106,7 +106,6 @@ fun PaywallScreen(
                 alpha = 0.14f,
             )
         }
-        PaywallCloseButton(onBack = onBack)
         PaywallContent(
             ensoProgress = ensoProgress.value,
             headerAlpha = headerAlpha.value,
@@ -131,6 +130,8 @@ fun PaywallScreen(
                 }
             },
         )
+        // Drawn last so it sits above the full-screen content and receives taps.
+        PaywallCloseButton(onBack = onBack)
     }
 }
 
