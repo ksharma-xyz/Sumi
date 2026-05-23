@@ -7,6 +7,8 @@ on:
       - 'docs/index.html'
       - 'docs/privacy-policy/**'
       - 'docs/assets/**'
+      - 'docs/robots.txt'
+      - 'docs/sitemap.xml'
       - '.github/workflows/deploy-docs.yml'
   workflow_dispatch:
 
@@ -41,6 +43,9 @@ jobs:
           cp docs/index.html _site/
           cp docs/privacy-policy/index.html _site/privacy-policy/
           cp -R docs/assets/. _site/assets/
+          # Crawl hints — robots points Google at the sitemap.
+          cp docs/robots.txt _site/
+          cp docs/sitemap.xml _site/
           # .nojekyll stops GitHub Pages from running its Jekyll pass — we ship
           # plain HTML/CSS so Jekyll would only slow the deploy down.
           touch _site/.nojekyll

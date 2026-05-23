@@ -609,6 +609,15 @@ section { padding-block: 112px; position: relative; z-index: 2; }
   box-shadow: 5px 5px 0 var(--paper-edge);
 }
 
+/* The store button matching the visitor's device — a quiet resting offset
+   shadow so the right choice reads as primary without shouting. */
+.cta--target {
+  box-shadow: 4px 4px 0 var(--paper-edge);
+}
+.cta--target:hover {
+  box-shadow: 5px 5px 0 var(--paper-edge);
+}
+
 .cta .platform {
   font-family: var(--font-display);
   font-style: italic;
