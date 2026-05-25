@@ -116,7 +116,7 @@
   <svg class="ink-blot ib-ne" viewBox="0 0 60 60"><use href="#ink-blot"/></svg>
 </div>
 
-<a class="chop-stamp" href="https://github.com/ksharma-xyz/Sumi" aria-label="Sumi on GitHub" title="ksharma-xyz/Sumi">印</a>
+<a class="chop-stamp" id="chop-stamp" href="https://apps.apple.com/us/app/sumi-zen-sudoku/id6764288103" aria-label="Get Sumi on the App Store" title="Get Sumi">印</a>
 
 <main class="container">
 
@@ -506,6 +506,15 @@
   if (!plat) return;
   var btn = document.querySelector('#get-sumi .cta[data-platform="' + plat + '"]');
   if (btn) btn.classList.add('cta--target');
+  // Point the top-right chop stamp at the visitor's own store. Default markup
+  // links to the App Store; only Android needs a rewrite.
+  if (plat === 'android') {
+    var stamp = document.getElementById('chop-stamp');
+    if (stamp) {
+      stamp.href = 'https://play.google.com/store/apps/details?id=xyz.ksharma.sumi';
+      stamp.setAttribute('aria-label', 'Get Sumi on Google Play');
+    }
+  }
 })();
 </script>
 
