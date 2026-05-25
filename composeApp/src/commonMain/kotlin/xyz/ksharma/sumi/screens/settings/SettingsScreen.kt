@@ -7,6 +7,8 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -125,9 +127,16 @@ fun SettingsScreen(
     }
 }
 
+// FlowRow so chips wrap onto the next line at large font scales instead of the
+// trailing chip getting squished.
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun SeasonChips(current: SumiSeason, onSelect: (SumiSeason) -> Unit) {
-    Row(horizontalArrangement = Arrangement.spacedBy(Sumi.Space.s4)) {
+    FlowRow(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(Sumi.Space.s4),
+        verticalArrangement = Arrangement.spacedBy(Sumi.Space.s4),
+    ) {
         SumiSeason.entries.forEach { season ->
             SeasonChip(season = season, selected = season == current, onSelect = onSelect)
         }
