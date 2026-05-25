@@ -1,0 +1,522 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sumi: a quiet sudoku practice</title>
+<meta name="description" content="Sumi is a daily Sudoku app designed around stillness. Ink on paper, no chrome, no noise. For iOS and Android.">
+<meta name="author" content="ksharma-xyz">
+<link rel="canonical" href="https://ksharma-xyz.github.io/Sumi/">
+<meta name="theme-color" content="#F4ECE0">
+
+<!-- Open Graph (Facebook, LinkedIn, iMessage) -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Sumi">
+<meta property="og:url" content="https://ksharma-xyz.github.io/Sumi/">
+<meta property="og:title" content="Sumi: a quiet sudoku practice">
+<meta property="og:description" content="Ink on paper. No chrome. No noise. Nine by nine, every day.">
+<meta property="og:image" content="https://ksharma-xyz.github.io/Sumi/assets/og-cover.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="en_AU">
+
+<!-- Twitter / X card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:url" content="https://ksharma-xyz.github.io/Sumi/">
+<meta name="twitter:title" content="Sumi: a quiet sudoku practice">
+<meta name="twitter:description" content="Ink on paper. No chrome. No noise. Nine by nine, every day.">
+<meta name="twitter:image" content="https://ksharma-xyz.github.io/Sumi/assets/og-cover.png">
+
+<!-- Structured data — lets Google show a rich app card -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "MobileApplication",
+  "name": "Sumi",
+  "operatingSystem": "iOS, Android",
+  "applicationCategory": "GameApplication",
+  "applicationSubCategory": "Puzzle",
+  "description": "A daily Sudoku app designed around stillness. Ink on paper, no chrome, no noise.",
+  "url": "https://ksharma-xyz.github.io/Sumi/",
+  "image": "https://ksharma-xyz.github.io/Sumi/assets/og-cover.png",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "AUD"
+  },
+  "downloadUrl": "https://apps.apple.com/us/app/sumi-zen-sudoku/id6764288103",
+  "author": {
+    "@type": "Person",
+    "name": "Karan Sharma",
+    "url": "https://ksharma.xyz"
+  }
+}
+</script>
+
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' fill='%23F4ECE0'/><text x='50%25' y='62%25' text-anchor='middle' font-family='Shippori Mincho, Georgia, serif' font-weight='500' font-size='52' fill='%231A1410'>墨</text></svg>">
+<link rel="apple-touch-icon" href="assets/sumi-app-icon.png">
+
+<!-- Async-load Google Fonts via the print-onload swap so they don't block first paint. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&family=Source+Serif+4:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600&family=Shippori+Mincho:wght@400;500;700&display=swap">
+<link rel="stylesheet" media="print" onload="this.media='all'" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&family=Source+Serif+4:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600&family=Shippori+Mincho:wght@400;500;700&display=swap">
+<noscript>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&family=Source+Serif+4:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600&family=Shippori+Mincho:wght@400;500;700&display=swap">
+</noscript>
+
+<link rel="stylesheet" href="assets/sumi.css">
+</head>
+<body>
+
+<!-- Shared SVG defs — petal shapes for the seasons section, plus the
+     InkBleed bullseye primitive (3 concentric circles + turbulence /
+     displacement filter, from docs/handoff/reference/sumi/primitives.jsx). -->
+<svg width="0" height="0" style="position:absolute;pointer-events:none" aria-hidden="true">
+  <defs>
+    <filter id="ink-blot-distort" x="-20%" y="-20%" width="140%" height="140%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.5" numOctaves="2" seed="3"/>
+      <feDisplacementMap in="SourceGraphic" scale="5"/>
+    </filter>
+    <symbol id="ink-blot" viewBox="0 0 60 60">
+      <g filter="url(#ink-blot-distort)">
+        <circle cx="30" cy="30" r="18" fill="currentColor" opacity="0.12"/>
+        <circle cx="30" cy="30" r="12" fill="currentColor" opacity="0.20"/>
+        <circle cx="30" cy="30" r="6"  fill="currentColor" opacity="0.30"/>
+      </g>
+    </symbol>
+
+    <symbol id="petal-sakura" viewBox="0 0 24 24">
+      <path d="M12 4 C14 8, 18 8, 18 12 C18 16, 14 16, 12 20 C10 16, 6 16, 6 12 C6 8, 10 8, 12 4 Z" fill="currentColor"/>
+      <path d="M12 9 C12.8 10, 13.6 10.5, 14 12" stroke="#A8342A" stroke-width="0.3" fill="none" opacity="0.5"/>
+    </symbol>
+    <symbol id="petal-leaf" viewBox="0 0 24 24">
+      <path d="M12 3 C18 6, 20 14, 12 21 C4 14, 6 6, 12 3 Z" fill="currentColor"/>
+      <path d="M12 4 L12 20" stroke="#3F6E2F" stroke-width="0.5" opacity="0.4"/>
+    </symbol>
+    <symbol id="petal-maple" viewBox="0 0 24 24">
+      <path d="M12 3 L13.5 8 L18 6 L15.5 10.5 L21 11 L16 13 L19 18 L13.5 15 L12 21 L10.5 15 L5 18 L8 13 L3 11 L8.5 10.5 L6 6 L10.5 8 Z" fill="currentColor"/>
+    </symbol>
+    <symbol id="petal-snow" viewBox="0 0 24 24">
+      <!-- Bigger flakes — soft halo + a denser core. The previous r=1.5 dot
+           was effectively invisible at 14–32px render sizes. -->
+      <circle cx="12" cy="12" r="9" fill="currentColor" opacity="0.18"/>
+      <circle cx="12" cy="12" r="5" fill="currentColor" opacity="0.55"/>
+      <circle cx="12" cy="12" r="2.4" fill="currentColor"/>
+    </symbol>
+  </defs>
+</svg>
+
+<!-- InkBleed accents — the bullseye primitive from the design system,
+     scattered around the page as decorative ink stamps. Each instance gets
+     its own size, rotation, and color via CSS — the same symbol rendered
+     differently. -->
+<div class="ink-blots" aria-hidden="true">
+  <svg class="ink-blot ib-sw" viewBox="0 0 60 60"><use href="#ink-blot"/></svg>
+  <svg class="ink-blot ib-ne" viewBox="0 0 60 60"><use href="#ink-blot"/></svg>
+</div>
+
+<a class="chop-stamp" id="chop-stamp" href="https://apps.apple.com/us/app/sumi-zen-sudoku/id6764288103" aria-label="Get Sumi on the App Store" title="Get Sumi">印</a>
+
+<main class="container">
+
+  <!-- ── Hero ─────────────────────────────────────────────────────────── -->
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="logo-frame" aria-hidden="true">
+      <!-- Same icon the app ships with — kept as a real PNG so the website
+           and the home-screen icon read as the same mark. -->
+      <img class="logo-mark" src="assets/sumi-app-icon.png" alt="Sumi" width="1024" height="1024">
+    </div>
+    <h1 class="brand" id="hero-title">Sumi</h1>
+    <p class="tagline">A quiet sudoku practice.</p>
+    <p class="manifest">
+      <em>Ink on paper. Nothing in the way.</em>
+      Sumi is a daily Sudoku app designed around stillness. No leaderboards,
+      no nagging notifications, no celebration confetti. Just the grid, warm
+      paper underneath, and the quiet satisfaction of placing the last number.
+    </p>
+  </section>
+
+  <hr class="brush-rule">
+
+  <!-- ── Pause: a quote ───────────────────────────────────────────────── -->
+  <section class="quote">
+    <blockquote>Empty space is not empty. It is waiting.</blockquote>
+    <cite>House, Sumi quote book</cite>
+  </section>
+
+  <hr class="brush-rule">
+
+  <!-- ── The practice (features) ──────────────────────────────────────── -->
+  <section aria-labelledby="practice-title">
+    <header class="section-header">
+      <span class="section-num" aria-hidden="true">壱</span>
+      <span class="section-label" id="practice-title">The practice</span>
+    </header>
+
+    <div class="cards">
+      <article class="card">
+        <div class="kanji" aria-hidden="true">日</div>
+        <h3>Daily</h3>
+        <p>One puzzle a day, the same for everyone — generated deterministically from the date so the difficulty curve is shared.</p>
+      </article>
+
+      <article class="card">
+        <div class="kanji" aria-hidden="true">静</div>
+        <h3>Stillness</h3>
+        <p>No leaderboards, no nagging notifications, no "you broke your record!" overlays. Skip a day, skip a week — the puzzle waits.</p>
+      </article>
+
+      <article class="card">
+        <div class="kanji" aria-hidden="true">記</div>
+        <h3>Record</h3>
+        <p>Quiet stats. Personal bests by difficulty, an improvement curve, a calendar of the days you played. Nothing more.</p>
+      </article>
+
+      <article class="card">
+        <div class="kanji" aria-hidden="true">墨</div>
+        <h3>Aesthetic</h3>
+        <p>Warm washi paper, soft ink tones, an editorial serif typeface, and Japanese typographic accents. Sudoku as it should look.</p>
+      </article>
+    </div>
+  </section>
+
+  <hr class="brush-rule">
+
+  <!-- ── The grid ─────────────────────────────────────────────────────── -->
+  <section aria-labelledby="grid-title">
+    <header class="section-header">
+      <span class="section-num" aria-hidden="true">弐</span>
+      <span class="section-label" id="grid-title">The grid</span>
+    </header>
+
+    <div class="grid-wrap">
+      <div class="sudoku" role="img" aria-label="A Sudoku puzzle in progress, rendered in the Sumi design system. Given numbers in ink, your numbers in fountain-pen teal.">
+        <!-- 9 boxes × 9 cells. Hand-placed sample. Givens = ink, user = teal, blanks = · -->
+        <div class="box">
+          <div class="cell">5</div><div class="cell">3</div><div class="cell user">7</div>
+          <div class="cell">6</div><div class="cell empty">·</div><div class="cell empty">·</div>
+          <div class="cell empty">·</div><div class="cell">9</div><div class="cell">8</div>
+        </div>
+        <div class="box">
+          <div class="cell empty">·</div><div class="cell">7</div><div class="cell empty">·</div>
+          <div class="cell">1</div><div class="cell">9</div><div class="cell">5</div>
+          <div class="cell empty">·</div><div class="cell empty">·</div><div class="cell empty">·</div>
+        </div>
+        <div class="box">
+          <div class="cell empty">·</div><div class="cell empty">·</div><div class="cell empty">·</div>
+          <div class="cell user">3</div><div class="cell empty">·</div><div class="cell empty">·</div>
+          <div class="cell empty">·</div><div class="cell">6</div><div class="cell empty">·</div>
+        </div>
+        <div class="box">
+          <div class="cell">8</div><div class="cell empty">·</div><div class="cell empty">·</div>
+          <div class="cell">4</div><div class="cell empty">·</div><div class="cell empty">·</div>
+          <div class="cell">7</div><div class="cell empty">·</div><div class="cell empty">·</div>
+        </div>
+        <div class="box">
+          <div class="cell empty">·</div><div class="cell">6</div><div class="cell empty">·</div>
+          <div class="cell">8</div><div class="cell empty">·</div><div class="cell">3</div>
+          <div class="cell empty">·</div><div class="cell">2</div><div class="cell empty">·</div>
+        </div>
+        <div class="box">
+          <div class="cell empty">·</div><div class="cell empty">·</div><div class="cell">3</div>
+          <div class="cell empty">·</div><div class="cell empty">·</div><div class="cell">1</div>
+          <div class="cell empty">·</div><div class="cell empty">·</div><div class="cell user">6</div>
+        </div>
+        <div class="box">
+          <div class="cell empty">·</div><div class="cell">6</div><div class="cell empty">·</div>
+          <div class="cell empty">·</div><div class="cell empty">·</div><div class="cell empty">·</div>
+          <div class="cell empty">·</div><div class="cell empty">·</div><div class="cell empty">·</div>
+        </div>
+        <div class="box">
+          <div class="cell empty">·</div><div class="cell empty">·</div><div class="cell empty">·</div>
+          <div class="cell">4</div><div class="cell">1</div><div class="cell">9</div>
+          <div class="cell empty">·</div><div class="cell">8</div><div class="cell empty">·</div>
+        </div>
+        <div class="box">
+          <div class="cell">2</div><div class="cell">8</div><div class="cell empty">·</div>
+          <div class="cell empty">·</div><div class="cell empty">·</div><div class="cell">5</div>
+          <div class="cell empty">·</div><div class="cell">7</div><div class="cell user">9</div>
+        </div>
+      </div>
+
+      <p class="grid-caption">A puzzle in progress. Given numbers in ink; your numbers in fountain-pen teal.</p>
+    </div>
+  </section>
+
+  <hr class="brush-rule">
+
+  <!-- ── The seasons (live petal weather) ─────────────────────────────── -->
+  <section aria-labelledby="seasons-title">
+    <header class="section-header">
+      <span class="section-num" aria-hidden="true">参</span>
+      <span class="section-label" id="seasons-title">The seasons</span>
+    </header>
+
+    <p class="seasons-intro">Sumi tints itself to the calendar. Sakura, leaf, maple, and snow — the petals know what month it is.</p>
+
+    <div class="seasons">
+      <div class="season-panel" data-season="spring">
+        <div class="petal-field"></div>
+        <div class="season-meta">
+          <span class="season-kanji" aria-hidden="true">春</span>
+          <div class="season-info">
+            <span class="season-name">Spring</span>
+            <span class="season-romaji">Haru / Sakura</span>
+            <div class="season-dots" aria-hidden="true">
+              <span style="--c:#F5CED6"></span>
+              <span style="--c:#E8A3B3"></span>
+              <span style="--c:#C97A8E"></span>
+              <span style="--c:#A8342A"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="season-panel" data-season="summer">
+        <div class="petal-field"></div>
+        <div class="season-meta">
+          <span class="season-kanji" aria-hidden="true">夏</span>
+          <div class="season-info">
+            <span class="season-name">Summer</span>
+            <span class="season-romaji">Natsu / Leaf</span>
+            <div class="season-dots" aria-hidden="true">
+              <span style="--c:#7BA76C"></span>
+              <span style="--c:#5A8A4A"></span>
+              <span style="--c:#3F6E2F"></span>
+              <span style="--c:#B3C9A5"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="season-panel" data-season="autumn">
+        <div class="petal-field"></div>
+        <div class="season-meta">
+          <span class="season-kanji" aria-hidden="true">秋</span>
+          <div class="season-info">
+            <span class="season-name">Autumn</span>
+            <span class="season-romaji">Aki / Maple</span>
+            <div class="season-dots" aria-hidden="true">
+              <span style="--c:#C9613A"></span>
+              <span style="--c:#A8342A"></span>
+              <span style="--c:#E8943A"></span>
+              <span style="--c:#7E2820"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="season-panel" data-season="winter">
+        <div class="petal-field"></div>
+        <div class="season-meta">
+          <span class="season-kanji" aria-hidden="true">冬</span>
+          <div class="season-info">
+            <span class="season-name">Winter</span>
+            <span class="season-romaji">Fuyu / Indigo</span>
+            <div class="season-dots" aria-hidden="true">
+              <span style="--c:#333E88"></span>
+              <span style="--c:#4A5CB0"></span>
+              <span style="--c:#7B89C9"></span>
+              <span style="--c:#A8B0CC"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="brush-rule">
+
+  <!-- ── Get Sumi ─────────────────────────────────────────────────────── -->
+  <section aria-labelledby="get-title">
+    <header class="section-header">
+      <span class="section-num" aria-hidden="true">肆</span>
+      <span class="section-label" id="get-title">Get Sumi</span>
+    </header>
+
+    <div class="cta-row" id="get-sumi">
+      <a class="cta" data-platform="ios" href="https://apps.apple.com/us/app/sumi-zen-sudoku/id6764288103">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.36-1.09-.45-2.09-.46-3.24 0-1.44.62-2.2.44-3.06-.36C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.08zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>
+        <span>Download for</span>
+        <span class="platform">App Store</span>
+      </a>
+      <a class="cta" data-platform="android" href="https://play.google.com/store/apps/details?id=xyz.ksharma.sumi">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3.609 1.814L13.792 12 3.61 22.186a.997.997 0 01-.61-.92V2.734a.997.997 0 01.609-.92zm10.89 10.893l2.302 2.302-10.937 6.34 8.635-8.642zm3.7-2.116l2.7 1.566a1 1 0 010 1.732l-2.7 1.566-2.7-2.866 2.7-2.998zm-3.7-2.116L5.864 1.401l10.937 6.34-2.302 2.734z"/></svg>
+        <span>Download for</span>
+        <span class="platform">Google Play</span>
+      </a>
+    </div>
+
+    <p class="cta-note"><em>Free, with an optional one-time purchase to unlock the full game.</em></p>
+  </section>
+
+</main>
+
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <h4>Sumi</h4>
+        <p>A quiet sudoku practice for iOS and Android. Free, with an optional one-time purchase.</p>
+      </div>
+      <div>
+        <h4>Contact</h4>
+        <ul>
+          <li><a href="mailto:sumi.app.support@gmail.com">sumi.app.support@gmail.com</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Follow</h4>
+        <ul>
+          <li><a href="privacy-policy/">Privacy policy</a></li>
+          <li><a href="https://github.com/ksharma-xyz/Sumi">GitHub repository</a></li>
+        </ul>
+      </div>
+    </div>
+    <p class="footer-coda">Made in stillness.</p>
+  </div>
+</footer>
+
+<!-- Petal weather. Each season gets its own count / duration band / sway band
+     / spin scale / timing curve, plus a per-season hash offset so the four
+     panels never sync. Delays are distributed across the FULL duration cycle
+     of each petal, so at any frame some petals are entering, some falling,
+     some exiting — no collective empty moment. -->
+<script>
+(function () {
+  var SEASONS = {
+    spring: {                                            // sakura — light, dancing, plentiful
+      shape: 'sakura',
+      colors: ['#F5CED6', '#E8A3B3', '#C97A8E', '#FBF6ED'],
+      count: 18,
+      duration: [13, 24],
+      sway:     [25, 65],
+      size:     [14, 28],
+      spinScale: 0.6,
+      timing:   'cubic-bezier(0.42, 0.00, 0.58, 1.00)',
+      seed:     0
+    },
+    summer: {                                            // leaf — heavier, sparser, lazier
+      shape: 'leaf',
+      colors: ['#7BA76C', '#5A8A4A', '#3F6E2F', '#B3C9A5'],
+      count: 11,
+      duration: [10, 18],
+      sway:     [18, 42],
+      size:     [18, 32],
+      spinScale: 0.45,
+      timing:   'cubic-bezier(0.40, 0.05, 0.55, 1.00)',
+      seed:     7
+    },
+    autumn: {                                            // maple — twisting, varied speeds
+      shape: 'maple',
+      colors: ['#C9613A', '#A8342A', '#E8943A', '#7E2820'],
+      count: 13,
+      duration: [9, 20],
+      sway:     [35, 78],
+      size:     [16, 30],
+      spinScale: 1.1,
+      timing:   'cubic-bezier(0.45, 0.00, 0.50, 1.00)',
+      seed:     13
+    },
+    winter: {                                            // snow — many flakes, slow steady drift
+      shape: 'snow',
+      colors: ['#333E88', '#4A5CB0', '#7B89C9', '#A8B0CC'],
+      count: 24,
+      duration: [18, 30],
+      sway:     [8, 28],
+      size:     [12, 26],
+      spinScale: 0.18,
+      timing:   'linear',
+      seed:     19
+    }
+  };
+
+  var SVG_NS = 'http://www.w3.org/2000/svg';
+  var lerp = function (a, b, t) { return a + (b - a) * t; };
+  var hash01 = function (i, p, q) { return ((i * p + q) % 100) / 100; };
+
+  document.querySelectorAll('.season-panel').forEach(function (panel) {
+    var cfg = SEASONS[panel.dataset.season];
+    if (!cfg) return;
+    var field = panel.querySelector('.petal-field');
+    if (!field) return;
+    var frag = document.createDocumentFragment();
+
+    for (var i = 0; i < cfg.count; i++) {
+      var k = i + cfg.seed;                               // per-season offset → no cross-panel sync
+
+      // Each property uses a different prime pair so X / duration / size /
+      // sway distributions are independent — petals don't visually clump.
+      var tx     = hash01(k, 41, 19);
+      var td     = hash01(k, 67, 23);
+      var tdelay = hash01(k, 89, 11);
+      var tsize  = hash01(k, 113, 7);
+      var tsway  = hash01(k, 53, 31);
+
+      var xPos     = tx * 100;
+      var duration = lerp(cfg.duration[0], cfg.duration[1], td);
+      // delay covers a full duration cycle so each petal is at a unique
+      // phase at first paint — guarantees no collective empty moment.
+      var delay    = -(tdelay * duration);
+      var size     = lerp(cfg.size[0], cfg.size[1], tsize);
+      var swayMag  = lerp(cfg.sway[0], cfg.sway[1], tsway);
+      var sway     = (k % 2 === 0 ? 1 : -1) * swayMag;
+      var spin     = (k % 2 === 0 ? 1 : -1) * (60 + (k * 11) % 120) * cfg.spinScale;
+      var opacity  = 0.5 + ((k * 13) % 40) / 100;
+      var color    = cfg.colors[k % cfg.colors.length];
+
+      var petal = document.createElement('div');
+      petal.className = 'petal';
+      petal.style.left = xPos + '%';
+      petal.style.width = size + 'px';
+      petal.style.height = size + 'px';
+      petal.style.color = color;
+      petal.style.setProperty('--petal-sway', sway + 'px');
+      petal.style.setProperty('--petal-spin', spin + 'deg');
+      petal.style.setProperty('--petal-o', opacity);
+      petal.style.animationDuration = duration + 's';
+      petal.style.animationDelay = delay + 's';
+      petal.style.animationTimingFunction = cfg.timing;
+
+      var svg = document.createElementNS(SVG_NS, 'svg');
+      svg.setAttribute('viewBox', '0 0 24 24');
+      var use = document.createElementNS(SVG_NS, 'use');
+      use.setAttribute('href', '#petal-' + cfg.shape);
+      svg.appendChild(use);
+      petal.appendChild(svg);
+
+      frag.appendChild(petal);
+    }
+
+    field.appendChild(frag);
+  });
+})();
+</script>
+
+<!-- Get-app platform detection — highlight the store that matches the
+     visitor's device (iOS → App Store, Android → Google Play). Desktop
+     leaves both equal. Progressive enhancement: no JS, both stay equal. -->
+<script>
+(function () {
+  var ua = navigator.userAgent || '';
+  var plat = /iPhone|iPad|iPod/i.test(ua) ? 'ios'
+           : /Android/i.test(ua) ? 'android'
+           : null;
+  if (!plat) return;
+  var btn = document.querySelector('#get-sumi .cta[data-platform="' + plat + '"]');
+  if (btn) btn.classList.add('cta--target');
+  // Point the top-right chop stamp at the visitor's own store. Default markup
+  // links to the App Store; only Android needs a rewrite.
+  if (plat === 'android') {
+    var stamp = document.getElementById('chop-stamp');
+    if (stamp) {
+      stamp.href = 'https://play.google.com/store/apps/details?id=xyz.ksharma.sumi';
+      stamp.setAttribute('aria-label', 'Get Sumi on Google Play');
+    }
+  }
+})();
+</script>
+
+</body>
+</html>

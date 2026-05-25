@@ -1,0 +1,877 @@
+/* ─────────────────────────────────────────────────────────────────────────
+   Sumi — Marketing site styles. Mirror of the in-app design system tokens.
+   Source of truth: docs/handoff/reference/sumi/tokens.jsx
+   ───────────────────────────────────────────────────────────────────────── */
+
+:root {
+  /* Paper */
+  --paper:        #F4ECE0;
+  --paper-warm:   #EBE0CC;
+  --paper-deep:   #DFD1B6;
+  --paper-edge:   #C9B48A;
+  --paper-glow:   #FBF6ED;
+
+  /* Ink */
+  --ink:          #1A1410;
+  --ink-soft:     #5A4838;
+  --ink-faint:    #8A7560;
+  --ink-ghost:    #B3A088;
+
+  /* Accents — used sparingly */
+  --red:          #A8342A;
+  --red-deep:     #7E2820;
+  --teal:         #2A5A6E;
+  --teal-soft:    #4A7A8E;
+  --gold:         #8A6B2A;
+
+  /* Type families */
+  --font-display: "Cormorant Garamond", "Source Serif Pro", Georgia, serif;
+  --font-body:    "Source Serif 4", "Source Serif Pro", Georgia, serif;
+  --font-ui:      "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-cjk:     "Shippori Mincho", "Noto Serif JP", "Hiragino Mincho ProN", serif;
+  --font-hand:    "Caveat", "Kalam", cursive;
+
+  /* Motion easing — settles like wet ink */
+  --ease-paper:   cubic-bezier(0.22, 0.75, 0.28, 1);
+  --ease-bleed:   cubic-bezier(0.16, 0.84, 0.24, 1);
+}
+
+/* ── Reset ──────────────────────────────────────────────────────────────── */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { -webkit-text-size-adjust: 100%; }
+img, svg { display: block; max-width: 100%; }
+a { color: inherit; }
+
+/* ── Base ───────────────────────────────────────────────────────────────── */
+
+html {
+  font-size: 17px;
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-weight: 400;
+  line-height: 1.65;
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Washi paper noise — subtle multiply overlay so every surface has grain. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240' viewBox='0 0 240 240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='3'/><feColorMatrix values='0 0 0 0 0.10  0 0 0 0 0.08  0 0 0 0 0.06  0 0 0 0.22 0'/></filter><rect width='240' height='240' filter='url(%23n)'/></svg>");
+  mix-blend-mode: multiply;
+  opacity: 0.55;
+  pointer-events: none;
+  z-index: 1;
+}
+
+::selection {
+  background: rgba(168, 52, 42, 0.22);
+  color: var(--ink);
+}
+
+/* ── InkBleed bullseye accents ──────────────────────────────────────────
+   The design-system primitive (3 concentric circles + turbulence /
+   displacement filter) scattered as decorative stamps. Each blot inherits
+   its color via CSS `color` (the SVG circles use fill="currentColor"). */
+
+.ink-blots {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 0;
+}
+
+.ink-blot {
+  position: absolute;
+  display: block;
+  color: var(--ink);
+}
+
+/* Two blots only: pink (SW) + winter indigo (NE). The indigo matches the
+   app's SumiSeason.Winter accent so the marketing site and the in-app
+   winter mode share the same blue chord. */
+.ib-sw { bottom: 80px; left: 48px; width: 240px; height: 240px; color: var(--red); transform: rotate(-14deg); }
+.ib-ne { top: 56px;    right: 64px; width: 220px; height: 220px; color: #4A5CB0; transform: rotate(8deg); }
+
+@media (max-width: 820px) {
+  .ib-sw { width: 180px; height: 180px; bottom: 56px; left: 20px; }
+  .ib-ne { width: 150px; height: 150px; top: 28px;    right: 28px; }
+}
+
+/* ── Container & section rhythm ────────────────────────────────────────── */
+
+.container {
+  max-width: 1080px;
+  margin-inline: auto;
+  padding-inline: 32px;
+  position: relative;
+  z-index: 2;
+}
+
+section { padding-block: 112px; position: relative; z-index: 2; }
+
+@media (max-width: 768px) {
+  .container { padding-inline: 24px; }
+  section { padding-block: 72px; }
+}
+
+/* ── Chop-stamp seal (top-right anchor) ────────────────────────────────── */
+
+.chop-stamp {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 10;
+  width: 52px;
+  height: 52px;
+  background: var(--red);
+  color: var(--paper-glow);
+  font-family: var(--font-cjk);
+  font-size: 28px;
+  font-weight: 500;
+  display: grid;
+  place-items: center;
+  transform: rotate(-3deg);
+  box-shadow:
+    0 4px 0 rgba(120, 40, 30, 0.35),
+    0 10px 24px rgba(168, 52, 42, 0.22);
+  user-select: none;
+  text-decoration: none;
+  transition: transform 260ms var(--ease-paper), box-shadow 260ms var(--ease-paper);
+  animation: stamp-press 600ms 1.2s var(--ease-paper) both;
+}
+
+.chop-stamp:hover {
+  transform: rotate(-1deg) translateY(-2px);
+  box-shadow:
+    0 6px 0 rgba(120, 40, 30, 0.40),
+    0 14px 32px rgba(168, 52, 42, 0.28);
+}
+
+@keyframes stamp-press {
+  0%   { opacity: 0; transform: rotate(8deg) scale(1.6); }
+  60%  { opacity: 1; }
+  100% { opacity: 1; transform: rotate(-3deg) scale(1); }
+}
+
+/* ── Hero ──────────────────────────────────────────────────────────────── */
+
+.hero {
+  min-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  padding-block: 96px 64px;
+}
+
+.hero .logo-frame {
+  margin-bottom: 32px;
+  filter: drop-shadow(0 18px 36px rgba(26, 20, 16, 0.10));
+  animation: ink-bleed 1.8s var(--ease-bleed) both;
+  user-select: none;
+}
+
+.hero .logo-mark {
+  display: block;
+  width: clamp(160px, 28vw, 280px);
+  height: auto;
+  /* iOS app icons ship as full-square PNGs with the squircle mask applied
+     by the OS at runtime. Clip to ~22% radius here so the marketing site
+     icon matches the launcher tile users actually see. */
+  border-radius: 22%;
+}
+
+@keyframes ink-bleed {
+  0%   { opacity: 0; transform: scale(0.42) translateY(40px); filter: blur(32px); }
+  35%  { opacity: 0.6; }
+  100% { opacity: 1; transform: scale(1) translateY(0); filter: blur(0); }
+}
+
+.hero .brand {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 500;
+  font-size: clamp(56px, 8vw, 104px);
+  line-height: 1;
+  letter-spacing: -1.5px;
+  margin-bottom: 16px;
+  animation: rise 900ms 600ms var(--ease-paper) both;
+}
+
+.hero .tagline {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: clamp(20px, 2vw, 26px);
+  color: var(--ink-soft);
+  margin-bottom: 36px;
+  animation: rise 900ms 800ms var(--ease-paper) both;
+}
+
+.hero .manifest {
+  max-width: 36em;
+  font-size: 19px;
+  line-height: 1.7;
+  color: var(--ink-soft);
+  animation: rise 900ms 1000ms var(--ease-paper) both;
+}
+
+.hero .manifest em {
+  font-family: var(--font-display);
+  font-style: italic;
+  color: var(--ink);
+}
+
+@keyframes rise {
+  0%   { opacity: 0; transform: translateY(18px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Brush rule (hand-drawn divider) ───────────────────────────────────── */
+
+.brush-rule {
+  border: 0;
+  height: 28px;
+  margin: 0 auto;
+  max-width: 880px;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 28' preserveAspectRatio='none'><path d='M 12 14 Q 80 8, 180 14 T 360 16 T 540 12 T 720 15 T 900 13 T 988 14' fill='none' stroke='%231A1410' stroke-width='1.2' stroke-linecap='round' opacity='0.45'/></svg>");
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  background-position: center;
+}
+
+/* ── Section header — ceremonial Japanese numerals + small caps ─────── */
+
+.section-header {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  margin-bottom: 56px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--paper-edge);
+}
+
+.section-num {
+  font-family: var(--font-cjk);
+  font-size: 28px;
+  color: var(--red);
+  line-height: 1;
+}
+
+.section-label {
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+/* ── Quote section ─────────────────────────────────────────────────────── */
+
+.quote {
+  text-align: center;
+  padding-block: 96px;
+}
+
+.quote blockquote {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: clamp(26px, 3.4vw, 42px);
+  font-weight: 400;
+  line-height: 1.35;
+  max-width: 24em;
+  margin-inline: auto;
+  color: var(--ink);
+  text-wrap: balance;
+}
+
+.quote blockquote::before { content: "“"; color: var(--ink-faint); margin-right: 2px; }
+.quote blockquote::after  { content: "”"; color: var(--ink-faint); margin-left: 2px; }
+
+.quote cite {
+  display: block;
+  margin-top: 28px;
+  font-style: normal;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+/* ── Practice (feature cards) ─────────────────────────────────────────── */
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1px;
+  background: var(--paper-edge);
+  border: 1px solid var(--paper-edge);
+}
+
+.card {
+  background: var(--paper);
+  padding: 44px 32px 40px;
+  position: relative;
+  transition: background 320ms var(--ease-paper);
+}
+
+.card:hover { background: var(--paper-glow); }
+
+.card .kanji {
+  font-family: var(--font-cjk);
+  font-size: 56px;
+  color: var(--ink);
+  margin-bottom: 28px;
+  line-height: 1;
+  font-weight: 500;
+  display: inline-block;
+  transform-origin: 50% 80%;
+  transition: transform 460ms var(--ease-bleed);
+}
+
+.card:hover .kanji { transform: scale(1.08); }
+
+.card h3 {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 500;
+  font-style: italic;
+  margin-bottom: 12px;
+  color: var(--ink);
+}
+
+.card p {
+  font-size: 16px;
+  line-height: 1.65;
+  color: var(--ink-soft);
+}
+
+/* ── Sudoku grid preview ──────────────────────────────────────────────── */
+
+.grid-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 32px;
+}
+
+.sudoku {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px;
+  background: var(--ink);
+  width: min(380px, 90vw);
+  aspect-ratio: 1;
+  padding: 2px;
+  box-shadow:
+    0 1px 0 rgba(26, 20, 16, 0.06),
+    0 14px 40px rgba(26, 20, 16, 0.10),
+    0 4px 10px rgba(26, 20, 16, 0.06);
+}
+
+.sudoku .box {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: var(--paper-edge);
+}
+
+.sudoku .cell {
+  background: var(--paper-glow);
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: clamp(16px, 4vw, 22px);
+  color: var(--ink);
+  aspect-ratio: 1;
+}
+
+.sudoku .cell.user { color: var(--teal); }
+.sudoku .cell.empty { color: var(--ink-ghost); }
+
+.grid-caption {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 17px;
+  color: var(--ink-faint);
+  text-align: center;
+  max-width: 36em;
+}
+
+/* Aurora hover — a slow watercolour sweep on first hover, sumi-e style. */
+.sudoku { position: relative; overflow: hidden; }
+.sudoku::after {
+  content: "";
+  position: absolute;
+  inset: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(168, 52, 42, 0.18) 18%,
+    rgba(138, 107, 42, 0.18) 36%,
+    rgba(42, 90, 110, 0.18) 54%,
+    rgba(90, 122, 58, 0.14) 72%,
+    rgba(122, 90, 138, 0.14) 86%,
+    transparent 100%
+  );
+  mix-blend-mode: multiply;
+  transform: translateX(-110%);
+  pointer-events: none;
+  transition: transform 1400ms var(--ease-bleed);
+}
+
+.sudoku:hover::after { transform: translateX(110%); }
+
+/* ── The seasons — falling petals per palette ─────────────────────────── */
+
+.seasons-intro {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: clamp(20px, 2.2vw, 26px);
+  color: var(--ink-soft);
+  max-width: 38em;
+  margin-bottom: 56px;
+  line-height: 1.45;
+}
+
+.seasons {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: var(--paper-edge);
+  border: 1px solid var(--paper-edge);
+}
+
+@media (max-width: 980px) { .seasons { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px) { .seasons { grid-template-columns: 1fr; } }
+
+.season-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: var(--paper-warm);
+  overflow: hidden;
+}
+
+/* Each season tints its own paper — same gradient idea the in-app
+   SeasonPalette uses, just dialled down for the marketing surface. */
+.season-panel[data-season="spring"] .petal-field { background: linear-gradient(180deg, #FBF6ED 0%, #F8E8E8 100%); }
+.season-panel[data-season="summer"] .petal-field { background: linear-gradient(180deg, #F4ECE0 0%, #E5EBD9 100%); }
+.season-panel[data-season="autumn"] .petal-field { background: linear-gradient(180deg, #F4ECE0 0%, #E8D8C0 100%); }
+/* Winter — indigo wash, mirrors the app's SumiSeason.Winter paper tints
+   (paper #EEEEF8 → paperDeep #D8DAE8) so snow against cool blue reads
+   like the in-app season. */
+.season-panel[data-season="winter"] .petal-field { background: linear-gradient(180deg, #EEEEF8 0%, #C8D0E8 100%); }
+
+.petal-field {
+  position: relative;
+  height: 280px;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+@media (max-width: 560px) { .petal-field { height: 220px; } }
+
+.petal {
+  position: absolute;
+  top: 0;
+  pointer-events: none;
+  animation-name: petal-drift;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  will-change: transform, opacity;
+}
+
+.petal svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* translateY uses pixel values, NOT percentages — transform percentages are
+   resolved against the element's own dimensions (a 24px petal × 120% = 29px,
+   nowhere near the container floor). 360px easily clears both the desktop
+   field height (280px) and the mobile one (220px). */
+@keyframes petal-drift {
+  0%   { transform: translate3d(0, -40px, 0) rotate(0deg); opacity: 0; }
+  10%  { opacity: var(--petal-o, 0.7); }
+  50%  { transform: translate3d(var(--petal-sway, 24px), 160px, 0) rotate(var(--petal-spin, 180deg)); }
+  90%  { opacity: var(--petal-o, 0.7); }
+  100% { transform: translate3d(calc(var(--petal-sway, 24px) * -0.5), 360px, 0) rotate(calc(var(--petal-spin, 180deg) * 2)); opacity: 0; }
+}
+
+.season-meta {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 24px 20px;
+  border-top: 1px solid var(--paper-edge);
+  background: var(--paper);
+}
+
+.season-kanji {
+  font-family: var(--font-cjk);
+  font-weight: 500;
+  font-size: 52px;
+  line-height: 1;
+  color: var(--ink);
+  user-select: none;
+}
+
+.season-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.season-name {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 500;
+  font-size: 22px;
+  color: var(--ink);
+  line-height: 1;
+}
+
+.season-romaji {
+  font-family: var(--font-ui);
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.season-dots {
+  display: flex;
+  gap: 5px;
+  margin-top: 4px;
+}
+
+.season-dots span {
+  width: 12px;
+  height: 12px;
+  background: var(--c);
+  border: 1px solid rgba(26, 20, 16, 0.10);
+}
+
+
+/* ── Download CTAs ─────────────────────────────────────────────────────── */
+
+.cta-row {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 28px;
+}
+
+.cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  padding: 20px 32px;
+  background: var(--ink);
+  color: var(--paper);
+  text-decoration: none;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  position: relative;
+  transition:
+    transform 260ms var(--ease-paper),
+    box-shadow 260ms var(--ease-paper),
+    background 260ms var(--ease-paper);
+}
+
+.cta:hover {
+  transform: translate(-3px, -3px);
+  background: #000;
+  /* Solid offset shadow only appears on hover — like a stamp lifting from
+     paper. No misaligned ghost-border at rest. */
+  box-shadow: 5px 5px 0 var(--paper-edge);
+}
+
+/* The store button matching the visitor's device — a quiet resting offset
+   shadow so the right choice reads as primary without shouting. */
+.cta--target {
+  box-shadow: 4px 4px 0 var(--paper-edge);
+}
+.cta--target:hover {
+  box-shadow: 5px 5px 0 var(--paper-edge);
+}
+
+.cta .platform {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 20px;
+  font-weight: 500;
+  letter-spacing: -0.5px;
+  text-transform: none;
+  margin-left: 4px;
+}
+
+.cta-note {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 17px;
+  color: var(--ink-faint);
+}
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+
+footer {
+  border-top: 1px solid var(--paper-edge);
+  padding-block: 56px 80px;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: var(--ink-soft);
+  position: relative;
+  z-index: 2;
+}
+
+.footer-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr;
+  gap: 48px;
+  margin-bottom: 56px;
+}
+
+.footer-grid h4 {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--ink);
+  margin-bottom: 12px;
+}
+
+.footer-grid a {
+  color: var(--ink);
+  text-decoration: none;
+  border-bottom: 1px solid var(--paper-edge);
+  padding-bottom: 1px;
+  transition: border-color 200ms;
+  display: inline-block;
+}
+
+.footer-grid a:hover { border-color: var(--ink); }
+
+.footer-grid ul { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+
+.footer-coda {
+  text-align: center;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 22px;
+  color: var(--ink-faint);
+  padding-top: 32px;
+  border-top: 1px solid var(--paper-edge);
+}
+
+@media (max-width: 720px) {
+  .footer-grid { grid-template-columns: 1fr; gap: 32px; }
+}
+
+/* ── Article (privacy policy body) ─────────────────────────────────────── */
+
+.article {
+  max-width: 720px;
+  margin: 0 auto;
+  padding-block: 96px;
+}
+
+.article .article-meta {
+  font-family: var(--font-ui);
+  font-size: 11px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-bottom: 16px;
+}
+
+.article h1 {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 500;
+  font-size: clamp(40px, 6vw, 64px);
+  line-height: 1.05;
+  letter-spacing: -1px;
+  color: var(--ink);
+  margin-bottom: 32px;
+}
+
+.article .lede {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 22px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+  margin-bottom: 56px;
+  padding-bottom: 32px;
+  border-bottom: 1px solid var(--paper-edge);
+}
+
+.article h2 {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 500;
+  font-size: 28px;
+  color: var(--ink);
+  margin-top: 56px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+}
+
+.article h2 .num {
+  font-family: var(--font-cjk);
+  font-size: 22px;
+  color: var(--red);
+  font-style: normal;
+}
+
+.article p, .article li {
+  font-size: 18px;
+  line-height: 1.75;
+  color: var(--ink);
+  margin-bottom: 16px;
+}
+
+.article ul {
+  list-style: none;
+  padding-left: 0;
+  margin-bottom: 16px;
+}
+
+.article li {
+  padding-left: 24px;
+  position: relative;
+  margin-bottom: 12px;
+}
+
+.article li::before {
+  content: "—";
+  position: absolute;
+  left: 0;
+  color: var(--ink-faint);
+}
+
+.article a {
+  color: var(--ink);
+  text-decoration: none;
+  border-bottom: 1px solid var(--paper-edge);
+  transition: border-color 200ms;
+}
+
+.article a:hover { border-color: var(--ink); }
+
+.article strong { font-weight: 600; color: var(--ink); }
+
+.article hr {
+  border: 0;
+  height: 1px;
+  background: var(--paper-edge);
+  margin-block: 56px;
+}
+
+.article table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-block: 24px 32px;
+  font-size: 16px;
+}
+
+.article th, .article td {
+  text-align: left;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--paper-edge);
+}
+
+.article th {
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  background: var(--paper-warm);
+}
+
+.article td:first-child { color: var(--ink); }
+.article td:nth-child(2) { color: var(--ink-soft); }
+
+/* ── Brand bar (small back-link in privacy page) ─────────────────────── */
+
+.page-bar {
+  border-bottom: 1px solid var(--paper-edge);
+  padding-block: 22px;
+  position: relative;
+  z-index: 2;
+}
+
+.page-bar .container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.page-bar .brand-link {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 500;
+  font-size: 22px;
+  color: var(--ink);
+  text-decoration: none;
+  letter-spacing: -0.5px;
+}
+
+.page-bar .brand-link .mark {
+  font-family: var(--font-cjk);
+  font-style: normal;
+  font-size: 20px;
+  margin-right: 8px;
+  color: var(--ink);
+}
+
+.page-bar .back-link {
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  text-decoration: none;
+  transition: color 200ms;
+}
+
+.page-bar .back-link:hover { color: var(--ink); }
+
+/* ── Reduced motion ───────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
