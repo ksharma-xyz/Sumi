@@ -138,22 +138,34 @@ private fun SeasonChips(current: SumiSeason, onSelect: (SumiSeason) -> Unit) {
         verticalArrangement = Arrangement.spacedBy(Sumi.Space.s4),
     ) {
         SumiSeason.entries.forEach { season ->
-            SeasonChip(season = season, selected = season == current, onSelect = onSelect)
+            SeasonChip(
+                season = season,
+                selected = season == current,
+                onSelect = onSelect,
+                modifier = Modifier.weight(1f),
+            )
         }
     }
 }
 
 @Composable
-private fun SeasonChip(season: SumiSeason, selected: Boolean, onSelect: (SumiSeason) -> Unit) {
+private fun SeasonChip(
+    season: SumiSeason,
+    selected: Boolean,
+    onSelect: (SumiSeason) -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val accent = Sumi.Color.Season.forSeason(season).accent
-    val label = when (season) { SumiSeason.Spring -> "春 Spring"
+    val label = when (season) {
+        SumiSeason.Spring -> "春 Spring"
         SumiSeason.Summer -> "夏 Summer"
         SumiSeason.Autumn -> "秋 Autumn"
-        SumiSeason.Winter -> "冬 Winter" }
+        SumiSeason.Winter -> "冬 Winter"
+    }
     val src = remember { MutableInteractionSource() }
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.clickable(interactionSource = src, indication = null) { onSelect(season) },
+        modifier = modifier.clickable(interactionSource = src, indication = null) { onSelect(season) },
     ) {
         Box(
             modifier = Modifier
