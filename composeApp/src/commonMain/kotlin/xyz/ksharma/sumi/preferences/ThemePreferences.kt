@@ -16,4 +16,12 @@ interface ThemePreferences {
      */
     fun observeShowMistakes(): Flow<Boolean>
     suspend fun setShowMistakes(enabled: Boolean)
+
+    /**
+     * Whether board digits use a high-legibility sans typeface instead of the
+     * Cormorant serif numerals. Default false. Helps players who find the serif
+     * 1/4/7 ambiguous, and improves readability at a glance.
+     */
+    fun observeHighLegibility(): Flow<Boolean>
+    suspend fun setHighLegibility(enabled: Boolean)
 }

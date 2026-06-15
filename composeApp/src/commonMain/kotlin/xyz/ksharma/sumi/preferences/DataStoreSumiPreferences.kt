@@ -25,6 +25,7 @@ private val KEY_SEEN_ONBOARDING = booleanPreferencesKey("seen_onboarding")
 private val KEY_SEASON = stringPreferencesKey("season")
 private val KEY_HAPTICS = booleanPreferencesKey("haptics_enabled")
 private val KEY_SHOW_MISTAKES = booleanPreferencesKey("show_mistakes")
+private val KEY_HIGH_LEGIBILITY = booleanPreferencesKey("high_legibility")
 private val KEY_STREAK = intPreferencesKey("streak_count")
 private val KEY_BEST_STREAK = intPreferencesKey("best_streak")
 private val KEY_LAST_SOLVE_DAY = longPreferencesKey("last_solve_day")
@@ -232,6 +233,13 @@ class DataStoreSumiPreferences(
 
     override suspend fun setShowMistakes(enabled: Boolean) {
         store.edit { it[KEY_SHOW_MISTAKES] = enabled }
+    }
+
+    override fun observeHighLegibility(): Flow<Boolean> =
+        store.data.map { it[KEY_HIGH_LEGIBILITY] ?: false }
+
+    override suspend fun setHighLegibility(enabled: Boolean) {
+        store.edit { it[KEY_HIGH_LEGIBILITY] = enabled }
     }
 }
 

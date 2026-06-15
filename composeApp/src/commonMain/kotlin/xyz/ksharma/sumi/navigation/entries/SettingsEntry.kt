@@ -27,6 +27,7 @@ fun EntryProviderScope<NavKey>.SettingsEntry(navigator: SumiNavigator) {
         val currentSeason by themePrefs.observeSeason().collectAsState(initial = SumiSeason.Spring)
         val isHapticsEnabled by vm.isHapticsEnabled.collectAsState()
         val showMistakes by vm.showMistakes.collectAsState()
+        val highLegibility by vm.highLegibility.collectAsState()
         val isSimulatingPro by vm.isSimulatingPro.collectAsState()
         val isAdsEnabled by vm.isAdsEnabled.collectAsState()
         SettingsScreen(
@@ -36,10 +37,12 @@ fun EntryProviderScope<NavKey>.SettingsEntry(navigator: SumiNavigator) {
                 season = currentSeason,
                 hapticsEnabled = isHapticsEnabled,
                 showMistakes = showMistakes,
+                highLegibility = highLegibility,
             ),
             onSeasonSelect = { vm.setSeason(it) },
             onHapticsToggle = { vm.setHapticsEnabled(!isHapticsEnabled) },
             onShowMistakesToggle = { vm.setShowMistakes(!showMistakes) },
+            onHighLegibilityToggle = { vm.setHighLegibility(!highLegibility) },
             debugCallbacks = if (vm.isDebug) {
                 DebugCallbacks(
                     onResetOnboarding = { vm.resetOnboarding() },

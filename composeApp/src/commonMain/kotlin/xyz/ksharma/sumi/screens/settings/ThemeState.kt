@@ -6,4 +6,5 @@ data class ThemeState(
     val season: SumiSeason,
     val hapticsEnabled: Boolean,
     val showMistakes: Boolean,
+    val highLegibility: Boolean,
 )

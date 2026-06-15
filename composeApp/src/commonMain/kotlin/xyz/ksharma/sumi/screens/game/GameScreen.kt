@@ -106,6 +106,7 @@ fun GameScreen(
     bottomBanner: (@Composable () -> Unit)? = null,
     rewardedHintAvailable: Boolean = false,
     showMistakes: Boolean = true,
+    highLegibility: Boolean = false,
 ) {
     // A solve can take a long time with little screen interaction — keep the
     // display awake for the whole Game screen (auto-reverts on leave).
@@ -129,6 +130,7 @@ fun GameScreen(
                 bottomReservedHeight = if (bottomBanner != null) 64.dp else 0.dp,
                 rewardedHintAvailable = rewardedHintAvailable,
                 showMistakes = showMistakes,
+                highLegibility = highLegibility,
             )
         }
         // Subtle, sparse petals for row / column / 3x3 completions — they should
@@ -176,6 +178,7 @@ private fun GameBody(
     bottomReservedHeight: androidx.compose.ui.unit.Dp = 0.dp,
     rewardedHintAvailable: Boolean = false,
     showMistakes: Boolean = true,
+    highLegibility: Boolean = false,
 ) {
     Column(
         modifier = Modifier
@@ -224,6 +227,7 @@ private fun GameBody(
                         SumiBoard(
                             state = state,
                             cellSize = resolvedCellSize,
+                            highLegibility = highLegibility,
                             onCellTap = { r, c -> callbacks.onSelect(r, c) },
                         )
                     }

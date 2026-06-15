@@ -27,6 +27,9 @@ class SettingsViewModel(
     val showMistakes: StateFlow<Boolean> = themes.observeShowMistakes()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), true)
 
+    val highLegibility: StateFlow<Boolean> = themes.observeHighLegibility()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), false)
+
     val isSimulatingPro: StateFlow<Boolean> = debug.observeSimulatePro()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), false)
 
@@ -39,6 +42,7 @@ class SettingsViewModel(
     private val seasonWriter = latestOnlyFlow<SumiSeason>()
     private val hapticsWriter = latestOnlyFlow<Boolean>()
     private val showMistakesWriter = latestOnlyFlow<Boolean>()
+    private val highLegibilityWriter = latestOnlyFlow<Boolean>()
     private val simulateProWriter = latestOnlyFlow<Boolean>()
     private val adsEnabledWriter = latestOnlyFlow<Boolean>()
 
@@ -46,6 +50,7 @@ class SettingsViewModel(
         viewModelScope.launch { seasonWriter.collectLatest { themes.setSeason(it) } }
         viewModelScope.launch { hapticsWriter.collectLatest { themes.setHapticsEnabled(it) } }
         viewModelScope.launch { showMistakesWriter.collectLatest { themes.setShowMistakes(it) } }
+        viewModelScope.launch { highLegibilityWriter.collectLatest { themes.setHighLegibility(it) } }
         viewModelScope.launch { simulateProWriter.collectLatest { debug.setSimulatePro(it) } }
         viewModelScope.launch { adsEnabledWriter.collectLatest { debug.setAdsEnabled(it) } }
     }
@@ -53,6 +58,7 @@ class SettingsViewModel(
     fun setSeason(season: SumiSeason) { seasonWriter.tryEmit(season) }
     fun setHapticsEnabled(enabled: Boolean) { hapticsWriter.tryEmit(enabled) }
     fun setShowMistakes(enabled: Boolean) { showMistakesWriter.tryEmit(enabled) }
+    fun setHighLegibility(enabled: Boolean) { highLegibilityWriter.tryEmit(enabled) }
 
     fun resetOnboarding() = viewModelScope.launch { debug.resetOnboarding() }
 

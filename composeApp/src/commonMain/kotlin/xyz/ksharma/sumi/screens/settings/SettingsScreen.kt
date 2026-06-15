@@ -53,6 +53,7 @@ fun SettingsScreen(
     onSeasonSelect: (SumiSeason) -> Unit,
     onHapticsToggle: () -> Unit,
     onShowMistakesToggle: () -> Unit,
+    onHighLegibilityToggle: () -> Unit,
     debugCallbacks: DebugCallbacks?,
     modifier: Modifier = Modifier,
 ) {
@@ -97,6 +98,16 @@ fun SettingsScreen(
                         description = "Hide the running mistake counter on the game screen.",
                         checked = themeState.showMistakes,
                         onToggle = onShowMistakesToggle,
+                    )
+                }
+
+                Spacer(Modifier.height(Sumi.Space.s3))
+                SettingsPanel {
+                    SettingsToggleRow(
+                        label = "High-legibility numerals",
+                        description = "Use a clearer sans typeface for board digits.",
+                        checked = themeState.highLegibility,
+                        onToggle = onHighLegibilityToggle,
                     )
                 }
 

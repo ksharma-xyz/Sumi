@@ -34,6 +34,7 @@ import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -70,6 +71,7 @@ fun SumiBoard(
     modifier: Modifier = Modifier,
     cellSize: Dp = Sumi.Layout.cellSize,
     sweep: BoardSweep? = null,
+    highLegibility: Boolean = false,
     onCellTap: ((r: Int, c: Int) -> Unit)? = null,
 ) {
     val boardSize = cellSize * 9
@@ -117,7 +119,7 @@ fun SumiBoard(
             drawGridLines(px, ink)
         }
 
-        CellContents(state = state, cellSize = cellSize, ink = ink, teal = teal, errorRed = errorRed)
+        CellContents(state, cellSize, ink, teal, errorRed, highLegibility)
 
         SweepLayer(
             activeSweeps = activeSweeps,
@@ -200,6 +202,7 @@ private fun CellContents(
     ink: Color,
     teal: Color,
     errorRed: Color,
+    highLegibility: Boolean,
 ) {
     val errorCells = state.errorCells
     for (r in 0..8) {
@@ -213,7 +216,14 @@ private fun CellContents(
                 else -> teal
             }
             key(r, c) {
-                CellText(cell = cell, row = r, col = c, cellSize = cellSize, textColor = textColor)
+                CellText(
+                    cell = cell,
+                    row = r,
+                    col = c,
+                    cellSize = cellSize,
+                    textColor = textColor,
+                    highLegibility = highLegibility,
+                )
             }
         }
     }
@@ -226,6 +236,7 @@ private fun CellText(
     col: Int,
     cellSize: Dp,
     textColor: Color,
+    highLegibility: Boolean,
 ) {
     val alpha = remember { Animatable(0f) }
     val scale = remember { Animatable(1f) }
@@ -255,12 +266,12 @@ private fun CellText(
     if (cell.value != 0) {
         CellDigitLayout(
             cell = cell,
-            offsetX = offsetX,
-            offsetY = offsetY,
+            offset = DpOffset(offsetX, offsetY),
             cellSize = cellSize,
             textColor = textColor,
             alpha = alpha.value,
             scale = scale.value,
+            highLegibility = highLegibility,
         )
     } else if (cell.notes.isNotEmpty()) {
         NoteGrid(notes = cell.notes, cellSize = cellSize, offsetX = offsetX, offsetY = offsetY)
@@ -270,14 +281,21 @@ private fun CellText(
 @Composable
 private fun CellDigitLayout(
     cell: Cell,
-    offsetX: Dp,
-    offsetY: Dp,
+    offset: DpOffset,
     cellSize: Dp,
     textColor: Color,
     alpha: Float,
     scale: Float,
+    highLegibility: Boolean,
 ) {
     val digitSize = with(LocalDensity.current) { (cellSize * DIGIT_SIZE_RATIO).toSp() }
+    // High-legibility mode swaps the Cormorant serif numerals for the UI sans
+    // family (clearer 1/4/7); otherwise the board keeps its calligraphic numerals.
+    val baseStyle = if (highLegibility) {
+        SumiTheme.typography.numeral.copy(fontFamily = SumiTheme.typography.uiLabel.fontFamily)
+    } else {
+        SumiTheme.typography.numeral
+    }
     Layout(
         content = {
             Text(
@@ -289,13 +307,13 @@ private fun CellDigitLayout(
                 // fontSize/lineHeight overridden so the digit is sized from the cell and
                 // never scaled by the system font setting (see DIGIT_SIZE_RATIO).
                 style = if (cell.given) {
-                    SumiTheme.typography.numeral.copy(
+                    baseStyle.copy(
                         color = textColor.copy(alpha = alpha),
                         fontSize = digitSize,
                         lineHeight = digitSize,
                     )
                 } else {
-                    SumiTheme.typography.numeral.copy(
+                    baseStyle.copy(
                         color = textColor,
                         fontSize = digitSize,
                         lineHeight = digitSize,
@@ -316,8 +334,8 @@ private fun CellDigitLayout(
     ) { measurables, constraints ->
         val placeable = measurables[0].measure(constraints)
         layout(cellSize.roundToPx(), cellSize.roundToPx()) {
-            val x = offsetX.roundToPx() + (cellSize.roundToPx() - placeable.width) / 2
-            val y = offsetY.roundToPx() + (cellSize.roundToPx() - placeable.height) / 2
+            val x = offset.x.roundToPx() + (cellSize.roundToPx() - placeable.width) / 2
+            val y = offset.y.roundToPx() + (cellSize.roundToPx() - placeable.height) / 2
             placeable.placeRelative(x, y)
         }
     }
