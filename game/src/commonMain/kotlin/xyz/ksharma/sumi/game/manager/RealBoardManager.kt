@@ -43,6 +43,10 @@ class RealBoardManager(initialState: BoardState) : BoardManager {
         _state.value = _state.value.toggleNotes()
     }
 
+    override fun fillNotes() {
+        _state.value = _state.value.fillNotes()
+    }
+
     override fun tick(deltaMs: Long) {
         _state.value = _state.value.tick(deltaMs)
     }

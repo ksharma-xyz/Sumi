@@ -11,5 +11,6 @@ data class GameCallbacks(
     val onRedo: () -> Unit,
     val onHint: () -> Unit,
     val onToggleNotes: () -> Unit,
+    val onFillNotes: () -> Unit,
     val onNewPuzzle: () -> Unit,
 )

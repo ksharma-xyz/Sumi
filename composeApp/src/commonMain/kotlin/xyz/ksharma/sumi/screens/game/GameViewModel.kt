@@ -197,6 +197,10 @@ class GameViewModel(
         resetIdle()
         boardManager.toggleNotes()
     }
+    fun fillNotes() {
+        resetIdle()
+        boardManager.fillNotes()
+    }
 
     /** Called by GameEntry when the user pauses or resumes the game. */
     fun setPaused(value: Boolean) {

@@ -271,5 +271,9 @@ private fun buildGameCallbacks(
         ctx.haptic.tick()
         vm.toggleNotes()
     },
+    onFillNotes = {
+        ctx.haptic.confirm()
+        vm.fillNotes()
+    },
     onNewPuzzle = onNewPuzzle,
 )

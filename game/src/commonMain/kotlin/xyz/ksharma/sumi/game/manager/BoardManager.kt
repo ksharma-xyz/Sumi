@@ -14,5 +14,6 @@ interface BoardManager {
     fun hint(): Boolean
     fun addHints(count: Int)
     fun toggleNotes()
+    fun fillNotes()
     fun tick(deltaMs: Long)
 }

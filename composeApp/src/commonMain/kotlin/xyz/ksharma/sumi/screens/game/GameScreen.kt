@@ -4,9 +4,11 @@ package xyz.ksharma.sumi.screens.game
 
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -229,15 +231,7 @@ private fun GameBody(
             }
         }
         Spacer(Modifier.height(Sumi.Space.s4))
-        ToolsRow(
-            tools = listOf(
-                Tool(SumiIcons.Undo, "Undo", callbacks.onUndo, enabled = state.canUndo),
-                Tool(SumiIcons.Redo, "Redo", callbacks.onRedo, enabled = state.canRedo),
-                Tool(SumiIcons.Lantern, "Note", callbacks.onToggleNotes, active = state.notesMode),
-                Tool(SumiIcons.Erase, "Erase", callbacks.onErase),
-                Tool(SumiIcons.Sparkle, "Hint", callbacks.onHint),
-            ),
-        )
+        ToolsRow(tools = gameTools(state, callbacks))
         Spacer(Modifier.height(Sumi.Space.s3))
         NumberPad(state = state, onDigit = callbacks.onEnter)
     }
@@ -345,8 +339,25 @@ private data class Tool(
     val onClick: () -> Unit,
     val active: Boolean = false,
     val enabled: Boolean = true,
+    val onLongClick: (() -> Unit)? = null,
 )
 
+// Tool row for the game screen. Note long-press auto-fills pencil marks (one-shot).
+private fun gameTools(state: BoardState, callbacks: GameCallbacks): List<Tool> = listOf(
+    Tool(SumiIcons.Undo, "Undo", callbacks.onUndo, enabled = state.canUndo),
+    Tool(SumiIcons.Redo, "Redo", callbacks.onRedo, enabled = state.canRedo),
+    Tool(
+        icon = SumiIcons.Lantern,
+        label = "Note",
+        onClick = callbacks.onToggleNotes,
+        active = state.notesMode,
+        onLongClick = callbacks.onFillNotes,
+    ),
+    Tool(SumiIcons.Erase, "Erase", callbacks.onErase),
+    Tool(SumiIcons.Sparkle, "Hint", callbacks.onHint),
+)
+
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun ToolsRow(tools: List<Tool>) {
     Row(
@@ -360,11 +371,12 @@ private fun ToolsRow(tools: List<Tool>) {
                 verticalArrangement = Arrangement.spacedBy(5.dp),
                 modifier = Modifier
                     .minimumInteractiveComponentSize()
-                    .clickable(
+                    .combinedClickable(
                         interactionSource = src,
                         indication = null,
                         enabled = tool.enabled,
                         onClick = tool.onClick,
+                        onLongClick = tool.onLongClick,
                     ),
             ) {
                 Box(
