@@ -540,6 +540,30 @@ class BoardStateTest {
         assertTrue(digit in after.cells[pr][pc].notes, "non-peer notes must be preserved")
     }
 
+    // ── Fill notes (auto-candidates) ──────────────────────────────────────────
+
+    @Test
+    fun fillNotesPopulatesEmptyCellsWithLegalCandidates() {
+        val b = board
+        val filled = b.fillNotes()
+        for (r in 0..8) for (c in 0..8) {
+            val cell = filled.cells[r][c]
+            if (cell.value == 0 && !cell.given) {
+                assertTrue(cell.notes.isNotEmpty(), "empty cell ($r,$c) should receive candidates")
+                assertTrue(b.solution[r][c] in cell.notes, "candidates must include the solution digit")
+            }
+        }
+    }
+
+    @Test
+    fun fillNotesIsUndoable() {
+        val b = board
+        val filled = b.fillNotes()
+        assertTrue(filled.canUndo)
+        val back = filled.undo()
+        assertTrue(back.cells.all { row -> row.all { it.notes.isEmpty() } }, "undo must clear auto-filled notes")
+    }
+
     // ── Redo ──────────────────────────────────────────────────────────────────
 
     @Test

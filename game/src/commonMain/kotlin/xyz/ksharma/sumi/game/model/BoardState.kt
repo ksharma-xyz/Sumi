@@ -134,12 +134,9 @@ data class BoardState(
 
     fun hint(): BoardState {
         if (hintsRemaining <= 0) return this
-        val candidates = mutableListOf<Pair<Int, Int>>()
-        for (r in 0..8) for (c in 0..8) {
-            if (!cells[r][c].given && cells[r][c].value != solution[r][c]) candidates.add(r to c)
-        }
-        if (candidates.isEmpty()) return this
-        val (r, c) = candidates.random()
+        // Prefer a cell the player could deduce right now (naked/hidden single) so the
+        // hint teaches the next logical step; fall back to any unsolved cell otherwise.
+        val (r, c) = SudokuLogic.nextLogicalCell(this) ?: randomUnsolvedCell() ?: return this
         val newCells = updatedCells(r, c, cells[r][c].copy(value = solution[r][c], given = true, notes = emptySet()))
         val newHints = if (hintsRemaining == HINTS_UNLIMITED) HINTS_UNLIMITED else hintsRemaining - 1
         return copy(
@@ -148,6 +145,27 @@ data class BoardState(
             history = history + listOf(cells),
             future = emptyList(),
         )
+    }
+
+    private fun randomUnsolvedCell(): Pair<Int, Int>? {
+        val candidates = mutableListOf<Pair<Int, Int>>()
+        for (r in 0..8) for (c in 0..8) {
+            if (!cells[r][c].given && cells[r][c].value != solution[r][c]) candidates.add(r to c)
+        }
+        return candidates.randomOrNull()
+    }
+
+    /**
+     * Fills every empty (non-given) cell's pencil marks with its legal candidates — a one-shot
+     * "auto-notes" action. Undoable like any other move.
+     */
+    fun fillNotes(): BoardState {
+        val newCells = cells.mapIndexed { r, row ->
+            row.mapIndexed { c, cell ->
+                if (cell.value == 0 && !cell.given) cell.copy(notes = SudokuLogic.candidates(cells, r, c)) else cell
+            }
+        }
+        return copy(cells = newCells, history = history + listOf(cells), future = emptyList())
     }
 
     fun toggleNotes(): BoardState = copy(notesMode = !notesMode)
