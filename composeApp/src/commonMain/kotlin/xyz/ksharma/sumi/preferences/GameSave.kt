@@ -13,4 +13,7 @@ data class GameSave(
     // (e.g. "13" = notes 1 and 3), empty string = no notes. Defaults to "" so old
     // saves written before notes persistence load cleanly.
     val notes: String = "",
+    // Selected cell, -1 = none. Restored so resuming lands on the cell you left.
+    val selectedRow: Int = -1,
+    val selectedCol: Int = -1,
 )

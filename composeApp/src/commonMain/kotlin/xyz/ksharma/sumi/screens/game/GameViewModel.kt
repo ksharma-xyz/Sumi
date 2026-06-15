@@ -296,12 +296,14 @@ class GameViewModel(
             while (true) {
                 delay(TIMER_TICK_MS)
                 val current = _state.value
-                if (current.isComplete) continue
+                // Tick only while the puzzle is active and not paused (manual or auto-pause
+                // on background), so neither completion nor time away inflates the solve time.
+                if (current.isComplete || paused) continue
                 _elapsedMs.value += TIMER_TICK_MS
 
                 // Idle interstitial: only count idle time when the player can actually act
                 // — game in progress, not paused, no ad currently showing.
-                if (!paused && !_showIdleInterstitial.value) {
+                if (!_showIdleInterstitial.value) {
                     idleMs += TIMER_TICK_MS
                     if (idleMs >= IDLE_INTERSTITIAL_MS && adOrchestrator.mayShowInterstitial()) {
                         idleMs = 0L
@@ -330,6 +332,8 @@ class GameViewModel(
             hintsRemaining = state.hintsRemaining,
             puzzleSeed = currentSeed,
             notes = notes,
+            selectedRow = state.selected?.first ?: -1,
+            selectedCol = state.selected?.second ?: -1,
         )
     }
 
@@ -356,12 +360,17 @@ class GameViewModel(
                 }
             }
         }
+        val restoredSelection = if (save.selectedRow in 0 until BOARD_SIZE && save.selectedCol in 0 until BOARD_SIZE) {
+            save.selectedRow to save.selectedCol
+        } else {
+            null
+        }
         return fresh.copy(
             cells = restoredCells,
             mistakeCount = save.mistakeCount,
             moveCount = save.moveCount,
             hintsRemaining = save.hintsRemaining,
-            selected = null,
+            selected = restoredSelection,
             notesMode = false,
         )
     }

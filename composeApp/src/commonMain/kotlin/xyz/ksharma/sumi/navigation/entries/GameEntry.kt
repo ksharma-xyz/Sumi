@@ -13,6 +13,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
 import app.lexilabs.basic.ads.AdState
@@ -99,6 +101,16 @@ fun EntryProviderScope<NavKey>.GameEntry(navigator: SumiNavigator) {
         val digitFirst by themePrefs.observeDigitFirstInput().collectAsState(initial = false)
         val selectedDigit by vm.selectedDigit.collectAsState()
         val ctx = GameContext(HapticContext(haptic, hapticsEnabled), analytics)
+
+        // Auto-pause when the app is backgrounded so the clock freezes and the player
+        // returns to a paused board instead of a running timer. Skipped while one of our
+        // own ads is showing (those background the activity but aren't the player leaving).
+        LifecycleEventEffect(Lifecycle.Event.ON_STOP) {
+            if (!showIdleInterstitial && !showRewardedHintAd && !state.isComplete) {
+                paused = true
+                vm.setPaused(true)
+            }
+        }
 
         // Pre-load idle interstitial — see WinScreen comment for the rationale (basic-ads
         // crashes if InterstitialAd is composed before async load completes). Always called
