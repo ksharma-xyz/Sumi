@@ -27,6 +27,7 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.isTraversalGroup
 import androidx.compose.ui.semantics.onClick
@@ -34,7 +35,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import xyz.ksharma.sumi.game.model.BoardState
@@ -46,10 +46,23 @@ import xyz.ksharma.sumi.theme.SumiTokens as Sumi
 // cellSize changes (was hardcoded to 1.5dp / 0.5dp tied to the original 38dp
 // cell). At cellSize = 41dp these resolve to ~1.4dp / ~0.5dp, matching the
 // previous look; at larger cells they grow proportionally.
-private const val BOX_STROKE_RATIO = 0.035f
-private const val THIN_STROKE_RATIO = 0.012f
-private val BOX_STROKE_MIN = 1.dp
+private const val BOX_STROKE_RATIO = 0.05f
+private const val THIN_STROKE_RATIO = 0.014f
+private val BOX_STROKE_MIN = 1.5.dp
 private val THIN_STROKE_MIN = 0.5.dp
+
+// Grid line alphas (over the ink colour). The 3x3 box separators are near-opaque
+// and the inner cell lines lighter, so the nine boxes read clearly at a glance.
+private const val BOX_LINE_ALPHA = 0.92f
+private const val THIN_LINE_ALPHA = 0.32f
+
+// Board digit + pencil-mark sizes are a fraction of cellSize and converted
+// dp -> sp via LocalDensity so they IGNORE the system font-scale setting. The
+// board therefore keeps one fixed, legible glyph size no matter how large the
+// user's OS text size is. cellSize is capped at MAX_BOARD_WIDTH/9 upstream, so
+// these ratios also act as the maximum on tablets.
+private const val DIGIT_SIZE_RATIO = 0.60f
+private const val NOTE_SIZE_RATIO = 0.26f
 
 @Composable
 fun SumiBoard(
@@ -264,6 +277,7 @@ private fun CellDigitLayout(
     alpha: Float,
     scale: Float,
 ) {
+    val digitSize = with(LocalDensity.current) { (cellSize * DIGIT_SIZE_RATIO).toSp() }
     Layout(
         content = {
             Text(
@@ -272,10 +286,20 @@ private fun CellDigitLayout(
                 // are unambiguous (the previous handwriting font for player entries had
                 // near-identical 1/7 glyphs). The teal vs ink colour set by textColor is
                 // the affordance that still tells the user which cells they entered.
+                // fontSize/lineHeight overridden so the digit is sized from the cell and
+                // never scaled by the system font setting (see DIGIT_SIZE_RATIO).
                 style = if (cell.given) {
-                    SumiTheme.typography.numeral.copy(color = textColor.copy(alpha = alpha))
+                    SumiTheme.typography.numeral.copy(
+                        color = textColor.copy(alpha = alpha),
+                        fontSize = digitSize,
+                        lineHeight = digitSize,
+                    )
                 } else {
-                    SumiTheme.typography.numeral.copy(color = textColor)
+                    SumiTheme.typography.numeral.copy(
+                        color = textColor,
+                        fontSize = digitSize,
+                        lineHeight = digitSize,
+                    )
                 },
                 modifier = if (!cell.given) {
                     Modifier.graphicsLayer {
@@ -306,15 +330,20 @@ private fun NoteGrid(
     offsetX: Dp,
     offsetY: Dp,
 ) {
-    val noteColor = SumiTheme.colors.ink.copy(alpha = 0.45f)
+    val noteColor = SumiTheme.colors.ink.copy(alpha = 0.5f)
+    val noteSizeSp = with(LocalDensity.current) { (cellSize * NOTE_SIZE_RATIO).toSp() }
     Layout(
         content = {
             for (d in 1..9) {
                 if (d in notes) {
                     Text(
                         text = d.toString(),
+                        // Fixed (non-scaling) size from cellSize — bigger than before so
+                        // pencil marks stay legible, and no longer driven by the system
+                        // font setting that previously let them grow and clip.
                         style = SumiTheme.typography.hand.copy(
-                            fontSize = (cellSize.value * 0.28f).sp,
+                            fontSize = noteSizeSp,
+                            lineHeight = noteSizeSp,
                             color = noteColor,
                         ),
                     )
@@ -325,16 +354,18 @@ private fun NoteGrid(
         },
         modifier = Modifier,
     ) { measurables, _ ->
-        val noteSize = (cellSize.roundToPx() / 3)
-        val placeables = measurables.map {
-            it.measure(androidx.compose.ui.unit.Constraints.fixed(noteSize, noteSize))
-        }
-        layout(cellSize.roundToPx(), cellSize.roundToPx()) {
+        val cellPx = cellSize.roundToPx()
+        val subCell = cellPx / 3
+        // Measure each glyph at its natural size (unbounded) instead of forcing it
+        // into the sub-cell, then centre it in its 3x3 slot — so a larger note can
+        // never be clipped at the edges.
+        val placeables = measurables.map { it.measure(Constraints()) }
+        layout(cellPx, cellPx) {
             placeables.forEachIndexed { i, p ->
                 val nr = i / 3
                 val nc = i % 3
-                val x = offsetX.roundToPx() + nc * noteSize
-                val y = offsetY.roundToPx() + nr * noteSize
+                val x = offsetX.roundToPx() + nc * subCell + (subCell - p.width) / 2
+                val y = offsetY.roundToPx() + nr * subCell + (subCell - p.height) / 2
                 p.placeRelative(x, y)
             }
         }
@@ -409,7 +440,7 @@ private fun DrawScope.drawGridLines(px: Float, ink: Color) {
     for (i in 0..9) {
         val isBox = i % 3 == 0
         val strokeWidth = if (isBox) boxStroke else thinStroke
-        val color = ink.copy(alpha = if (isBox) 0.85f else 0.25f)
+        val color = ink.copy(alpha = if (isBox) BOX_LINE_ALPHA else THIN_LINE_ALPHA)
         val pos = when (i) {
             0 -> strokeWidth / 2f
             9 -> boardPx - strokeWidth / 2f

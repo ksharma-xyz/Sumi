@@ -288,6 +288,11 @@ class GameViewModel(
         val cells = state.cells
             .flatMap { row -> row.map { cell -> if (cell.given) 0 else cell.value } }
             .joinToString(",")
+        val notes = state.cells
+            .flatMap { row ->
+                row.map { cell -> if (cell.given) "" else cell.notes.sorted().joinToString("") }
+            }
+            .joinToString(";")
         return GameSave(
             epochDay = todayEpochDay(),
             cells = cells,
@@ -296,6 +301,7 @@ class GameViewModel(
             moveCount = state.moveCount,
             hintsRemaining = state.hintsRemaining,
             puzzleSeed = currentSeed,
+            notes = notes,
         )
     }
 
@@ -304,10 +310,22 @@ class GameViewModel(
     // Non-given cells use the saved user value (0 = empty).
     private fun restoreState(fresh: BoardState, save: GameSave): BoardState {
         val savedValues = save.cells.split(",").map { it.trim().toIntOrNull() ?: 0 }
+        val savedNotes = save.notes.split(";")
         val restoredCells = fresh.cells.mapIndexed { r, row ->
             row.mapIndexed { c, cell ->
-                if (cell.given) cell
-                else cell.copy(value = savedValues.getOrElse(r * BOARD_SIZE + c) { 0 })
+                if (cell.given) {
+                    cell
+                } else {
+                    val idx = r * BOARD_SIZE + c
+                    val value = savedValues.getOrElse(idx) { 0 }
+                    // A placed digit clears its notes, so only restore notes for empty cells.
+                    val notes = if (value == 0) {
+                        savedNotes.getOrElse(idx) { "" }.mapNotNull { it.digitToIntOrNull() }.toSet()
+                    } else {
+                        emptySet()
+                    }
+                    cell.copy(value = value, notes = notes)
+                }
             }
         }
         return fresh.copy(

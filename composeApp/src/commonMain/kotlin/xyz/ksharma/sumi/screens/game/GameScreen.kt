@@ -184,7 +184,7 @@ private fun GameBody(
             // Tight side margin so the grid (and number-pad tap targets) get
             // as much width as possible — easier to read / tap, better for
             // low vision. MAX_BOARD_WIDTH still caps it on tablets.
-            .padding(horizontal = Sumi.Space.s3)
+            .padding(horizontal = Sumi.Space.s2)
             .padding(bottom = bottomReservedHeight),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {

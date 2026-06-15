@@ -9,4 +9,8 @@ data class GameSave(
     val moveCount: Int = 0,
     val hintsRemaining: Int,
     val puzzleSeed: Long = 0L, // 0 = today's daily seed; non-zero = custom seed from fromSeed()
+    // 81 cells separated by ';'; each cell is its pencil-mark digits concatenated
+    // (e.g. "13" = notes 1 and 3), empty string = no notes. Defaults to "" so old
+    // saves written before notes persistence load cleanly.
+    val notes: String = "",
 )
