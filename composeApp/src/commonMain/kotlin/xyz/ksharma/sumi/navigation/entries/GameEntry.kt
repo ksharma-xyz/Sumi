@@ -83,6 +83,7 @@ fun EntryProviderScope<NavKey>.GameEntry(navigator: SumiNavigator) {
         // until we've actually kicked off generation for this route.
         var initStarted by remember(key) { mutableStateOf(false) }
         LaunchedEffect(key.difficulty) {
+            paused = false // new game is never paused — keep the overlay state in sync with the VM
             vm.init(diff, proHints = isPro)
             initStarted = true
             analytics.logGameStarted(key.difficulty)

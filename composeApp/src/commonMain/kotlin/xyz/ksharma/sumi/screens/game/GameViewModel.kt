@@ -120,6 +120,9 @@ class GameViewModel(
         _showIdleInterstitial.value = false
         _showRewardedHintAd.value = false
         _gameOver.value = false
+        // Reset pause — the ViewModel is reused across games, so a leftover paused=true
+        // (e.g. from auto-pause on background) would otherwise freeze the new game's timer.
+        paused = false
 
         // launchWithExceptionHandler so any failure in the generator / save IO
         // doesn't crash the app. Heavy work (puzzle generation — backtracking
