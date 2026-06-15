@@ -8,6 +8,7 @@ data class GameCallbacks(
     val onEnter: (Int) -> Unit,
     val onErase: () -> Unit,
     val onUndo: () -> Unit,
+    val onRedo: () -> Unit,
     val onHint: () -> Unit,
     val onToggleNotes: () -> Unit,
     val onNewPuzzle: () -> Unit,

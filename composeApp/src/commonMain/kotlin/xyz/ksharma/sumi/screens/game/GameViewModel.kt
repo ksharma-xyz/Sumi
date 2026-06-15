@@ -185,6 +185,10 @@ class GameViewModel(
         resetIdle()
         boardManager.undo()
     }
+    fun redo() {
+        resetIdle()
+        boardManager.redo()
+    }
     fun hint() {
         resetIdle()
         boardManager.hint()

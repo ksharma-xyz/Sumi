@@ -230,11 +230,13 @@ private fun GameBody(
         }
         Spacer(Modifier.height(Sumi.Space.s4))
         ToolsRow(
-            notesActive = state.notesMode,
-            onUndo = callbacks.onUndo,
-            onNote = callbacks.onToggleNotes,
-            onErase = callbacks.onErase,
-            onHint = callbacks.onHint,
+            tools = listOf(
+                Tool(SumiIcons.Undo, "Undo", callbacks.onUndo, enabled = state.canUndo),
+                Tool(SumiIcons.Redo, "Redo", callbacks.onRedo, enabled = state.canRedo),
+                Tool(SumiIcons.Lantern, "Note", callbacks.onToggleNotes, active = state.notesMode),
+                Tool(SumiIcons.Erase, "Erase", callbacks.onErase),
+                Tool(SumiIcons.Sparkle, "Hint", callbacks.onHint),
+            ),
         )
         Spacer(Modifier.height(Sumi.Space.s3))
         NumberPad(state = state, onDigit = callbacks.onEnter)
@@ -337,21 +339,16 @@ private fun MarksHintsRow(
     }
 }
 
+private data class Tool(
+    val icon: ImageVector,
+    val label: String,
+    val onClick: () -> Unit,
+    val active: Boolean = false,
+    val enabled: Boolean = true,
+)
+
 @Composable
-private fun ToolsRow(
-    notesActive: Boolean,
-    onUndo: () -> Unit,
-    onNote: () -> Unit,
-    onErase: () -> Unit,
-    onHint: () -> Unit,
-) {
-    data class Tool(val icon: ImageVector, val label: String, val onClick: () -> Unit, val active: Boolean = false)
-    val tools = listOf(
-        Tool(SumiIcons.Undo, "Undo", onUndo),
-        Tool(SumiIcons.Lantern, "Note", onNote, notesActive),
-        Tool(SumiIcons.Erase, "Erase", onErase),
-        Tool(SumiIcons.Sparkle, "Hint", onHint),
-    )
+private fun ToolsRow(tools: List<Tool>) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceAround,
@@ -363,7 +360,12 @@ private fun ToolsRow(
                 verticalArrangement = Arrangement.spacedBy(5.dp),
                 modifier = Modifier
                     .minimumInteractiveComponentSize()
-                    .clickable(interactionSource = src, indication = null, onClick = tool.onClick),
+                    .clickable(
+                        interactionSource = src,
+                        indication = null,
+                        enabled = tool.enabled,
+                        onClick = tool.onClick,
+                    ),
             ) {
                 Box(
                     modifier = Modifier
@@ -374,7 +376,11 @@ private fun ToolsRow(
                     SumiIcon(
                         icon = tool.icon,
                         contentDescription = tool.label,
-                        tint = if (tool.active) SumiTheme.colors.teal else SumiTheme.colors.ink,
+                        tint = when {
+                            !tool.enabled -> SumiTheme.colors.inkFaint
+                            tool.active -> SumiTheme.colors.teal
+                            else -> SumiTheme.colors.ink
+                        },
                         size = 20.dp,
                     )
                 }

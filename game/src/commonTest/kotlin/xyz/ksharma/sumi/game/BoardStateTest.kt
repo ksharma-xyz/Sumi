@@ -540,6 +540,43 @@ class BoardStateTest {
         assertTrue(digit in after.cells[pr][pc].notes, "non-peer notes must be preserved")
     }
 
+    // ── Redo ──────────────────────────────────────────────────────────────────
+
+    @Test
+    fun redoReplaysAnUndoneMove() {
+        val b = board
+        val (r, c) = findEmptyCell(b)
+        val correct = b.solution[r][c]
+        val entered = b.select(r, c).enter(correct)
+        assertTrue(entered.canUndo)
+        val undone = entered.undo()
+        assertEquals(0, undone.cells[r][c].value, "undo reverts the entry")
+        assertTrue(undone.canRedo)
+        val redone = undone.redo()
+        assertEquals(correct, redone.cells[r][c].value, "redo restores the entry")
+        assertFalse(redone.canRedo, "redo stack is empty after replaying")
+    }
+
+    @Test
+    fun newMoveClearsRedoStack() {
+        val b = board
+        val empties = allEmptyCells(b)
+        val (r1, c1) = empties[0]
+        val (r2, c2) = empties[1]
+        val undone = b.select(r1, c1).enter(b.solution[r1][c1]).undo()
+        assertTrue(undone.canRedo)
+        // A fresh entry must invalidate the redo stack (no branching).
+        val branched = undone.select(r2, c2).enter(b.solution[r2][c2])
+        assertFalse(branched.canRedo, "a new move must clear the redo stack")
+    }
+
+    @Test
+    fun redoIsNoOpWhenNothingToRedo() {
+        val b = board
+        assertFalse(b.canRedo)
+        assertEquals(b.cells, b.redo().cells, "redo with empty future is a no-op")
+    }
+
     // ── Multiple difficulties ─────────────────────────────────────────────────
 
     @Test

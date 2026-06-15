@@ -28,6 +28,7 @@ object SumiIcons {
     val Pause: ImageVector by lazy { strokeIcon("Pause", "M8 5v14M16 5v14") }
     val Play: ImageVector by lazy { strokeIcon("Play", "M7 5l12 7-12 7z") }
     val Undo: ImageVector by lazy { strokeIcon("Undo", "M9 14l-5-5 5-5", "M4 9h10a6 6 0 016 6") }
+    val Redo: ImageVector by lazy { strokeIcon("Redo", "M15 14l5-5-5-5", "M20 9h-10a6 6 0 00-6 6") }
     val Erase: ImageVector by lazy { strokeIcon("Erase", "M18 13l-6 6H7l-3-3 9-9 5 5z", "M9 9l5 5") }
     val Brush: ImageVector by lazy {
         strokeIcon("Brush", "M7 21c-2 0-3-1-3-3s2-3 4-3", "M8 15l8-10 3 3-10 8", "M14 7l3 3")

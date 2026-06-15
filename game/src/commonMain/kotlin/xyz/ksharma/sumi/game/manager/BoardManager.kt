@@ -10,6 +10,7 @@ interface BoardManager {
     fun enter(digit: Int)
     fun erase()
     fun undo()
+    fun redo()
     fun hint(): Boolean
     fun addHints(count: Int)
     fun toggleNotes()

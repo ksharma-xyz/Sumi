@@ -25,6 +25,10 @@ class RealBoardManager(initialState: BoardState) : BoardManager {
         _state.value = _state.value.undo()
     }
 
+    override fun redo() {
+        _state.value = _state.value.redo()
+    }
+
     override fun hint(): Boolean {
         val before = _state.value.hintsRemaining
         _state.value = _state.value.hint()

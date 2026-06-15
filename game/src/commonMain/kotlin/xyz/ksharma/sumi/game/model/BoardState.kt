@@ -14,7 +14,14 @@ data class BoardState(
     val difficulty: Difficulty,
     val solution: List<List<Int>>,
     private val history: List<List<List<Cell>>> = emptyList(),
+    private val future: List<List<List<Cell>>> = emptyList(),
 ) {
+    /** True when [undo] can step back, i.e. at least one move has been made. */
+    val canUndo: Boolean get() = history.isNotEmpty()
+
+    /** True when [redo] can replay a move that was undone. */
+    val canRedo: Boolean get() = future.isNotEmpty()
+
     companion object {
         const val DEFAULT_HINTS = 3
         const val HINTS_UNLIMITED = Int.MAX_VALUE
@@ -102,6 +109,7 @@ data class BoardState(
                 mistakeCount = if (incrementMistake) mistakeCount + 1 else mistakeCount,
                 moveCount = moveCount + 1,
                 history = history + listOf(cells),
+                future = emptyList(), // a fresh move invalidates the redo stack
             )
         }
     }
@@ -115,7 +123,13 @@ data class BoardState(
 
     fun undo(): BoardState {
         if (history.isEmpty()) return this
-        return copy(cells = history.last(), history = history.dropLast(1))
+        // Push the current grid onto the redo stack so it can be replayed.
+        return copy(cells = history.last(), history = history.dropLast(1), future = future + listOf(cells))
+    }
+
+    fun redo(): BoardState {
+        if (future.isEmpty()) return this
+        return copy(cells = future.last(), future = future.dropLast(1), history = history + listOf(cells))
     }
 
     fun hint(): BoardState {
@@ -128,7 +142,12 @@ data class BoardState(
         val (r, c) = candidates.random()
         val newCells = updatedCells(r, c, cells[r][c].copy(value = solution[r][c], given = true, notes = emptySet()))
         val newHints = if (hintsRemaining == HINTS_UNLIMITED) HINTS_UNLIMITED else hintsRemaining - 1
-        return copy(cells = newCells, hintsRemaining = newHints, history = history + listOf(cells))
+        return copy(
+            cells = newCells,
+            hintsRemaining = newHints,
+            history = history + listOf(cells),
+            future = emptyList(),
+        )
     }
 
     fun toggleNotes(): BoardState = copy(notesMode = !notesMode)
@@ -147,7 +166,7 @@ data class BoardState(
         if (isComplete) this else copy(elapsedMs = elapsedMs + deltaMs)
 
     private fun updateCell(row: Int, col: Int, cell: Cell): BoardState =
-        copy(cells = updatedCells(row, col, cell), history = history + listOf(cells))
+        copy(cells = updatedCells(row, col, cell), history = history + listOf(cells), future = emptyList())
 
     private fun updatedCells(row: Int, col: Int, cell: Cell): List<List<Cell>> =
         cells.mapIndexed { r, rowList ->

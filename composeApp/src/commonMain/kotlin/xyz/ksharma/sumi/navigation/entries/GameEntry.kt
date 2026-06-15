@@ -252,6 +252,10 @@ private fun buildGameCallbacks(
         ctx.haptic.tick()
         vm.undo()
     },
+    onRedo = {
+        ctx.haptic.tick()
+        vm.redo()
+    },
     onHint = {
         ctx.haptic.tick()
         if (state.hintsRemaining > 0) {
