@@ -249,7 +249,12 @@ private fun GameBody(
         Spacer(Modifier.height(Sumi.Space.s4))
         ToolsRow(tools = gameTools(state, callbacks))
         Spacer(Modifier.height(Sumi.Space.s3))
-        NumberPad(state = state, selectedDigit = selectedDigit, onDigit = callbacks.onEnter)
+        NumberPad(
+            state = state,
+            selectedDigit = selectedDigit,
+            highLegibility = highLegibility,
+            onDigit = callbacks.onEnter,
+        )
     }
 }
 
@@ -442,7 +447,16 @@ private fun ToolsRow(tools: List<Tool>) {
 }
 
 @Composable
-private fun NumberPad(state: BoardState, selectedDigit: Int?, onDigit: (Int) -> Unit) {
+private fun NumberPad(
+    state: BoardState,
+    selectedDigit: Int?,
+    highLegibility: Boolean,
+    onDigit: (Int) -> Unit,
+) {
+    // Match the board: high-legibility mode uses the UI sans family for the pad digits too.
+    val digitStyle = SumiTheme.typography.numeral.copy(fontSize = 26.sp).let {
+        if (highLegibility) it.copy(fontFamily = SumiTheme.typography.uiLabel.fontFamily) else it
+    }
     // Row uses IntrinsicSize.Min so the dividers stretch to whatever the
     // tallest number cell needs. Cells use intrinsic height (no aspectRatio
     // square constraint) so the remaining-count badge below the digit can
@@ -481,7 +495,7 @@ private fun NumberPad(state: BoardState, selectedDigit: Int?, onDigit: (Int) -> 
             ) {
                 Text(
                     text = n.toString(),
-                    style = SumiTheme.typography.numeral.copy(fontSize = 26.sp),
+                    style = digitStyle,
                     color = when {
                         armed -> SumiTheme.colors.teal
                         remaining > 0 -> SumiTheme.colors.ink

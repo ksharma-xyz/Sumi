@@ -122,7 +122,11 @@ fun EntryProviderScope<NavKey>.GameEntry(navigator: SumiNavigator) {
         // returns to a paused board instead of a running timer. Skipped while one of our
         // own ads is showing (those background the activity but aren't the player leaving).
         LifecycleEventEffect(Lifecycle.Event.ON_STOP) {
-            if (!showIdleInterstitial && !showRewardedHintAd && !state.isComplete) {
+            // Skip when we're leaving for the win / game-over screens (and while our own ads
+            // show) — otherwise the pause overlay flashes during that navigation.
+            val leavingForResult = state.isComplete || gameOver
+            val adShowing = showIdleInterstitial || showRewardedHintAd
+            if (!adShowing && !leavingForResult) {
                 paused = true
                 vm.setPaused(true)
             }
