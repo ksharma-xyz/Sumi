@@ -33,6 +33,9 @@ class SettingsViewModel(
     val strictConflicts: StateFlow<Boolean> = themes.observeStrictConflicts()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), false)
 
+    val digitFirstInput: StateFlow<Boolean> = themes.observeDigitFirstInput()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), false)
+
     val isSimulatingPro: StateFlow<Boolean> = debug.observeSimulatePro()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), false)
 
@@ -47,6 +50,7 @@ class SettingsViewModel(
     private val showMistakesWriter = latestOnlyFlow<Boolean>()
     private val highLegibilityWriter = latestOnlyFlow<Boolean>()
     private val strictConflictsWriter = latestOnlyFlow<Boolean>()
+    private val digitFirstWriter = latestOnlyFlow<Boolean>()
     private val simulateProWriter = latestOnlyFlow<Boolean>()
     private val adsEnabledWriter = latestOnlyFlow<Boolean>()
 
@@ -56,6 +60,7 @@ class SettingsViewModel(
         viewModelScope.launch { showMistakesWriter.collectLatest { themes.setShowMistakes(it) } }
         viewModelScope.launch { highLegibilityWriter.collectLatest { themes.setHighLegibility(it) } }
         viewModelScope.launch { strictConflictsWriter.collectLatest { themes.setStrictConflicts(it) } }
+        viewModelScope.launch { digitFirstWriter.collectLatest { themes.setDigitFirstInput(it) } }
         viewModelScope.launch { simulateProWriter.collectLatest { debug.setSimulatePro(it) } }
         viewModelScope.launch { adsEnabledWriter.collectLatest { debug.setAdsEnabled(it) } }
     }
@@ -65,6 +70,7 @@ class SettingsViewModel(
     fun setShowMistakes(enabled: Boolean) { showMistakesWriter.tryEmit(enabled) }
     fun setHighLegibility(enabled: Boolean) { highLegibilityWriter.tryEmit(enabled) }
     fun setStrictConflicts(enabled: Boolean) { strictConflictsWriter.tryEmit(enabled) }
+    fun setDigitFirstInput(enabled: Boolean) { digitFirstWriter.tryEmit(enabled) }
 
     fun resetOnboarding() = viewModelScope.launch { debug.resetOnboarding() }
 

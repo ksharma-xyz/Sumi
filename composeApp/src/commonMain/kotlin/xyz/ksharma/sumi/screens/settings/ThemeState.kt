@@ -8,4 +8,5 @@ data class ThemeState(
     val showMistakes: Boolean,
     val highLegibility: Boolean,
     val strictConflicts: Boolean,
+    val digitFirstInput: Boolean,
 )

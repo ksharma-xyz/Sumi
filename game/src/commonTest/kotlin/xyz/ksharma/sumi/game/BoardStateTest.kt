@@ -540,6 +540,26 @@ class BoardStateTest {
         assertTrue(digit in after.cells[pr][pc].notes, "non-peer notes must be preserved")
     }
 
+    // ── Digit-first placement (placeAt) ───────────────────────────────────────
+
+    @Test
+    fun placeAtPlacesDigitWithoutPriorSelection() {
+        val b = board
+        val (r, c) = findEmptyCell(b)
+        val correct = b.solution[r][c]
+        val placed = b.placeAt(r, c, correct)
+        assertEquals(correct, placed.cells[r][c].value)
+        assertEquals(r to c, placed.selected, "placeAt leaves the target cell selected")
+    }
+
+    @Test
+    fun placeAtIgnoresGivenCells() {
+        val b = board
+        val (r, c) = findGivenCell(b)
+        val placed = b.placeAt(r, c, 5)
+        assertEquals(b.cells[r][c].value, placed.cells[r][c].value, "given cells are immutable")
+    }
+
     // ── Conflict cells (rule violations) ──────────────────────────────────────
 
     @Test

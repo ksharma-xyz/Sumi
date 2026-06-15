@@ -35,4 +35,11 @@ interface ThemePreferences {
      */
     fun observeStrictConflicts(): Flow<Boolean>
     suspend fun setStrictConflicts(enabled: Boolean)
+
+    /**
+     * Input mode. Default false = cell-first (tap a cell, then a number). True = digit-first
+     * (tap a number to arm it, then tap cells to place it) — faster for filling many of one digit.
+     */
+    fun observeDigitFirstInput(): Flow<Boolean>
+    suspend fun setDigitFirstInput(enabled: Boolean)
 }

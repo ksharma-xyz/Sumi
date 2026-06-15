@@ -37,6 +37,13 @@ class GameViewModel(
     private val _state = MutableStateFlow(EMPTY_BOARD)
     val state: StateFlow<BoardState> = _state.asStateFlow()
 
+    /**
+     * The digit armed in digit-first input mode (pick a number, then tap cells to place it),
+     * or null when no digit is armed. The number pad highlights it; cell taps place it.
+     */
+    private val _selectedDigit = MutableStateFlow<Int?>(null)
+    val selectedDigit: StateFlow<Int?> = _selectedDigit.asStateFlow()
+
     private val _elapsedMs = MutableStateFlow(0L)
     val elapsedMs: StateFlow<Long> = _elapsedMs.asStateFlow()
 
@@ -176,6 +183,19 @@ class GameViewModel(
     fun enter(digit: Int) {
         resetIdle()
         boardManager.enter(digit)
+    }
+
+    /** Digit-first: arm a digit (or disarm it if it's already armed). */
+    fun selectDigit(digit: Int) {
+        resetIdle()
+        _selectedDigit.value = if (_selectedDigit.value == digit) null else digit
+    }
+
+    /** Digit-first: a cell was tapped — place the armed digit, or just select the cell. */
+    fun placeOrSelect(row: Int, col: Int) {
+        resetIdle()
+        val digit = _selectedDigit.value
+        if (digit != null) boardManager.placeAt(row, col, digit) else boardManager.select(row, col)
     }
     fun erase() {
         resetIdle()

@@ -96,6 +96,8 @@ fun EntryProviderScope<NavKey>.GameEntry(navigator: SumiNavigator) {
         val showMistakes by themePrefs.observeShowMistakes().collectAsState(initial = true)
         val highLegibility by themePrefs.observeHighLegibility().collectAsState(initial = false)
         val strictConflicts by themePrefs.observeStrictConflicts().collectAsState(initial = false)
+        val digitFirst by themePrefs.observeDigitFirstInput().collectAsState(initial = false)
+        val selectedDigit by vm.selectedDigit.collectAsState()
         val ctx = GameContext(HapticContext(haptic, hapticsEnabled), analytics)
 
         // Pre-load idle interstitial — see WinScreen comment for the rationale (basic-ads
@@ -156,6 +158,7 @@ fun EntryProviderScope<NavKey>.GameEntry(navigator: SumiNavigator) {
             showMistakes = showMistakes,
             highLegibility = highLegibility,
             strictConflicts = strictConflicts,
+            selectedDigit = if (digitFirst) selectedDigit else null,
             callbacks = buildGameCallbacks(
                 vm = vm,
                 ctx = ctx,
@@ -175,6 +178,8 @@ fun EntryProviderScope<NavKey>.GameEntry(navigator: SumiNavigator) {
                     vm.init(diff, fresh = true, proHints = isPro)
                 },
                 rewardedHintAvailable = !isPro && isAdsEnabled,
+                digitFirst = digitFirst,
+                selectedDigit = selectedDigit,
             ),
             bottomBanner = if (showBanner) {
                 @Composable {
@@ -231,23 +236,14 @@ private fun buildGameCallbacks(
     onResume: () -> Unit,
     onNewPuzzle: () -> Unit,
     rewardedHintAvailable: Boolean,
+    digitFirst: Boolean,
+    selectedDigit: Int?,
 ): GameCallbacks = GameCallbacks(
     onBack = { navigator.pop() },
     onPause = onPause,
     onResume = onResume,
-    onSelect = { r, c ->
-        ctx.haptic.tick()
-        vm.select(r, c)
-    },
-    onEnter = { digit ->
-        val sel = state.selected
-        when {
-            state.notesMode -> ctx.haptic.tick()
-            sel != null && digit == state.solution[sel.first][sel.second] -> ctx.haptic.confirm()
-            else -> ctx.haptic.error()
-        }
-        vm.enter(digit)
-    },
+    onSelect = onCellTap(vm, ctx, state, digitFirst, selectedDigit),
+    onEnter = onDigitTap(vm, ctx, state, digitFirst),
     onErase = {
         ctx.haptic.tick()
         vm.erase()
@@ -281,3 +277,46 @@ private fun buildGameCallbacks(
     },
     onNewPuzzle = onNewPuzzle,
 )
+
+// Cell tap: digit-first places the armed digit (haptic reflects the outcome); otherwise selects.
+private fun onCellTap(
+    vm: GameViewModel,
+    ctx: GameContext,
+    state: BoardState,
+    digitFirst: Boolean,
+    selectedDigit: Int?,
+): (Int, Int) -> Unit = { r, c ->
+    if (digitFirst) {
+        val d = selectedDigit
+        when {
+            d == null || state.cells[r][c].given -> ctx.haptic.tick()
+            d == state.solution[r][c] -> ctx.haptic.confirm()
+            else -> ctx.haptic.error()
+        }
+        vm.placeOrSelect(r, c)
+    } else {
+        ctx.haptic.tick()
+        vm.select(r, c)
+    }
+}
+
+// Number-pad tap: digit-first arms a digit; otherwise places it in the selected cell.
+private fun onDigitTap(
+    vm: GameViewModel,
+    ctx: GameContext,
+    state: BoardState,
+    digitFirst: Boolean,
+): (Int) -> Unit = { digit ->
+    if (digitFirst) {
+        ctx.haptic.tick()
+        vm.selectDigit(digit)
+    } else {
+        val sel = state.selected
+        when {
+            state.notesMode -> ctx.haptic.tick()
+            sel != null && digit == state.solution[sel.first][sel.second] -> ctx.haptic.confirm()
+            else -> ctx.haptic.error()
+        }
+        vm.enter(digit)
+    }
+}

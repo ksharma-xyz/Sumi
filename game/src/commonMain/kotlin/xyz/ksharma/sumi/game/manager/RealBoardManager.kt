@@ -17,6 +17,10 @@ class RealBoardManager(initialState: BoardState) : BoardManager {
         _state.value = _state.value.enter(digit)
     }
 
+    override fun placeAt(row: Int, col: Int, digit: Int) {
+        _state.value = _state.value.placeAt(row, col, digit)
+    }
+
     override fun erase() {
         _state.value = _state.value.erase()
     }

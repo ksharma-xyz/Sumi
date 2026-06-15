@@ -27,6 +27,7 @@ private val KEY_HAPTICS = booleanPreferencesKey("haptics_enabled")
 private val KEY_SHOW_MISTAKES = booleanPreferencesKey("show_mistakes")
 private val KEY_HIGH_LEGIBILITY = booleanPreferencesKey("high_legibility")
 private val KEY_STRICT_CONFLICTS = booleanPreferencesKey("strict_conflicts")
+private val KEY_DIGIT_FIRST = booleanPreferencesKey("digit_first_input")
 private val KEY_STREAK = intPreferencesKey("streak_count")
 private val KEY_BEST_STREAK = intPreferencesKey("best_streak")
 private val KEY_LAST_SOLVE_DAY = longPreferencesKey("last_solve_day")
@@ -248,6 +249,13 @@ class DataStoreSumiPreferences(
 
     override suspend fun setStrictConflicts(enabled: Boolean) {
         store.edit { it[KEY_STRICT_CONFLICTS] = enabled }
+    }
+
+    override fun observeDigitFirstInput(): Flow<Boolean> =
+        store.data.map { it[KEY_DIGIT_FIRST] ?: false }
+
+    override suspend fun setDigitFirstInput(enabled: Boolean) {
+        store.edit { it[KEY_DIGIT_FIRST] = enabled }
     }
 }
 

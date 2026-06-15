@@ -39,6 +39,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
@@ -108,6 +109,7 @@ fun GameScreen(
     showMistakes: Boolean = true,
     highLegibility: Boolean = false,
     strictConflicts: Boolean = false,
+    selectedDigit: Int? = null,
 ) {
     // A solve can take a long time with little screen interaction — keep the
     // display awake for the whole Game screen (auto-reverts on leave).
@@ -133,6 +135,7 @@ fun GameScreen(
                 showMistakes = showMistakes,
                 highLegibility = highLegibility,
                 strictConflicts = strictConflicts,
+                selectedDigit = selectedDigit,
             )
         }
         // Subtle, sparse petals for row / column / 3x3 completions — they should
@@ -182,6 +185,7 @@ private fun GameBody(
     showMistakes: Boolean = true,
     highLegibility: Boolean = false,
     strictConflicts: Boolean = false,
+    selectedDigit: Int? = null,
 ) {
     Column(
         modifier = Modifier
@@ -241,7 +245,7 @@ private fun GameBody(
         Spacer(Modifier.height(Sumi.Space.s4))
         ToolsRow(tools = gameTools(state, callbacks))
         Spacer(Modifier.height(Sumi.Space.s3))
-        NumberPad(state = state, onDigit = callbacks.onEnter)
+        NumberPad(state = state, selectedDigit = selectedDigit, onDigit = callbacks.onEnter)
     }
 }
 
@@ -419,7 +423,7 @@ private fun ToolsRow(tools: List<Tool>) {
 }
 
 @Composable
-private fun NumberPad(state: BoardState, onDigit: (Int) -> Unit) {
+private fun NumberPad(state: BoardState, selectedDigit: Int?, onDigit: (Int) -> Unit) {
     // Row uses IntrinsicSize.Min so the dividers stretch to whatever the
     // tallest number cell needs. Cells use intrinsic height (no aspectRatio
     // square constraint) so the remaining-count badge below the digit can
@@ -435,6 +439,7 @@ private fun NumberPad(state: BoardState, onDigit: (Int) -> Unit) {
         for (n in 1..9) {
             val src = remember { MutableInteractionSource() }
             val remaining = state.remainingCounts.getOrElse(n - 1) { 0 }
+            val armed = n == selectedDigit
             if (n > 1) {
                 Box(
                     modifier = Modifier
@@ -447,6 +452,9 @@ private fun NumberPad(state: BoardState, onDigit: (Int) -> Unit) {
                 modifier = Modifier
                     .weight(1f)
                     .minimumInteractiveComponentSize()
+                    // Armed digit (digit-first mode) gets a soft teal wash so it's clear
+                    // which number the next cell tap will place.
+                    .background(if (armed) SumiTheme.colors.teal.copy(alpha = 0.14f) else Color.Transparent)
                     .padding(vertical = Sumi.Space.s2)
                     .clickable(interactionSource = src, indication = null, enabled = remaining > 0) { onDigit(n) },
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -455,7 +463,11 @@ private fun NumberPad(state: BoardState, onDigit: (Int) -> Unit) {
                 Text(
                     text = n.toString(),
                     style = SumiTheme.typography.numeral.copy(fontSize = 26.sp),
-                    color = if (remaining > 0) SumiTheme.colors.ink else SumiTheme.colors.inkGhost,
+                    color = when {
+                        armed -> SumiTheme.colors.teal
+                        remaining > 0 -> SumiTheme.colors.ink
+                        else -> SumiTheme.colors.inkGhost
+                    },
                 )
                 Text(
                     text = if (remaining > 0) remaining.toString() else "",

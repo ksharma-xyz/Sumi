@@ -11,6 +11,7 @@ interface BoardManager {
 
     fun select(row: Int, col: Int)
     fun enter(digit: Int)
+    fun placeAt(row: Int, col: Int, digit: Int)
     fun erase()
     fun undo()
     fun redo()

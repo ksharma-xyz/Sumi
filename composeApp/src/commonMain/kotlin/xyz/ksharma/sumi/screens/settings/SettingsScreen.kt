@@ -55,6 +55,7 @@ fun SettingsScreen(
     onShowMistakesToggle: () -> Unit,
     onHighLegibilityToggle: () -> Unit,
     onStrictConflictsToggle: () -> Unit,
+    onDigitFirstToggle: () -> Unit,
     debugCallbacks: DebugCallbacks?,
     modifier: Modifier = Modifier,
 ) {
@@ -119,6 +120,16 @@ fun SettingsScreen(
                         description = "Highlight only rule conflicts, not wrong-vs-solution guesses.",
                         checked = themeState.strictConflicts,
                         onToggle = onStrictConflictsToggle,
+                    )
+                }
+
+                Spacer(Modifier.height(Sumi.Space.s3))
+                SettingsPanel {
+                    SettingsToggleRow(
+                        label = "Digit-first input",
+                        description = "Tap a number to arm it, then tap cells to place it.",
+                        checked = themeState.digitFirstInput,
+                        onToggle = onDigitFirstToggle,
                     )
                 }
 

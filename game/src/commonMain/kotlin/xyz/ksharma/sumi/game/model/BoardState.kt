@@ -142,6 +142,13 @@ data class BoardState(
         }
     }
 
+    /**
+     * Places [digit] at (row, col) regardless of the current selection — the digit-first input
+     * flow (pick a number, then tap cells). Selects the cell unconditionally (no toggle) and
+     * delegates to [enter], so notes mode, mistake counting, and peer-note stripping all apply.
+     */
+    fun placeAt(row: Int, col: Int, digit: Int): BoardState = copy(selected = row to col).enter(digit)
+
     fun erase(): BoardState {
         val (row, col) = selected ?: return this
         val cell = cells[row][col]
