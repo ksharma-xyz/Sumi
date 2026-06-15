@@ -7,4 +7,5 @@ data class ThemeState(
     val hapticsEnabled: Boolean,
     val showMistakes: Boolean,
     val highLegibility: Boolean,
+    val strictConflicts: Boolean,
 )

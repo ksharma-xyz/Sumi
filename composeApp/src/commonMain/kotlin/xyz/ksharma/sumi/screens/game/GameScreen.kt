@@ -107,6 +107,7 @@ fun GameScreen(
     rewardedHintAvailable: Boolean = false,
     showMistakes: Boolean = true,
     highLegibility: Boolean = false,
+    strictConflicts: Boolean = false,
 ) {
     // A solve can take a long time with little screen interaction — keep the
     // display awake for the whole Game screen (auto-reverts on leave).
@@ -131,6 +132,7 @@ fun GameScreen(
                 rewardedHintAvailable = rewardedHintAvailable,
                 showMistakes = showMistakes,
                 highLegibility = highLegibility,
+                strictConflicts = strictConflicts,
             )
         }
         // Subtle, sparse petals for row / column / 3x3 completions — they should
@@ -179,6 +181,7 @@ private fun GameBody(
     rewardedHintAvailable: Boolean = false,
     showMistakes: Boolean = true,
     highLegibility: Boolean = false,
+    strictConflicts: Boolean = false,
 ) {
     Column(
         modifier = Modifier
@@ -228,6 +231,7 @@ private fun GameBody(
                             state = state,
                             cellSize = resolvedCellSize,
                             highLegibility = highLegibility,
+                            strictConflicts = strictConflicts,
                             onCellTap = { r, c -> callbacks.onSelect(r, c) },
                         )
                     }

@@ -54,6 +54,7 @@ fun SettingsScreen(
     onHapticsToggle: () -> Unit,
     onShowMistakesToggle: () -> Unit,
     onHighLegibilityToggle: () -> Unit,
+    onStrictConflictsToggle: () -> Unit,
     debugCallbacks: DebugCallbacks?,
     modifier: Modifier = Modifier,
 ) {
@@ -108,6 +109,16 @@ fun SettingsScreen(
                         description = "Use a clearer sans typeface for board digits.",
                         checked = themeState.highLegibility,
                         onToggle = onHighLegibilityToggle,
+                    )
+                }
+
+                Spacer(Modifier.height(Sumi.Space.s3))
+                SettingsPanel {
+                    SettingsToggleRow(
+                        label = "Conflicts only",
+                        description = "Highlight only rule conflicts, not wrong-vs-solution guesses.",
+                        checked = themeState.strictConflicts,
+                        onToggle = onStrictConflictsToggle,
                     )
                 }
 

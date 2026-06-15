@@ -540,6 +540,27 @@ class BoardStateTest {
         assertTrue(digit in after.cells[pr][pc].notes, "non-peer notes must be preserved")
     }
 
+    // ── Conflict cells (rule violations) ──────────────────────────────────────
+
+    @Test
+    fun conflictCellsFlagsDuplicateInRow() {
+        val b = board
+        // Find two empty cells in the same row and enter the same digit in both.
+        val empties = allEmptyCells(b)
+        val (r, c1) = empties.first()
+        val c2 = (0..8).firstOrNull { it != c1 && b.cells[r][it].isEmpty }
+        assertNotNull(c2, "row needs a second empty cell")
+        val digit = (1..9).first { d -> (0..8).none { b.cells[r][it].value == d } }
+        val withDup = b.select(r, c1).enter(digit).select(r, c2).enter(digit)
+        assertTrue((r to c1) in withDup.conflictCells, "first duplicate must be a conflict")
+        assertTrue((r to c2) in withDup.conflictCells, "second duplicate must be a conflict")
+    }
+
+    @Test
+    fun conflictCellsEmptyWhenNoDuplicates() {
+        assertTrue(board.conflictCells.isEmpty(), "a fresh valid board has no rule conflicts")
+    }
+
     // ── Fill notes (auto-candidates) ──────────────────────────────────────────
 
     @Test

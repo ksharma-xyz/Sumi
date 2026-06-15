@@ -72,6 +72,7 @@ fun SumiBoard(
     cellSize: Dp = Sumi.Layout.cellSize,
     sweep: BoardSweep? = null,
     highLegibility: Boolean = false,
+    strictConflicts: Boolean = false,
     onCellTap: ((r: Int, c: Int) -> Unit)? = null,
 ) {
     val boardSize = cellSize * 9
@@ -89,7 +90,9 @@ fun SumiBoard(
     val selectionAlphas = if (SumiTheme.isDark) Sumi.Color.BoardSelection.Dark
     else Sumi.Color.BoardSelection.Light
     val selected = state.selected
-    val errorCells = state.errorCells
+    // Strict mode highlights only rule conflicts (no solution spoilers); default highlights
+    // every cell that differs from the solution.
+    val errorCells = if (strictConflicts) state.conflictCells else state.errorCells
 
     val activeSweeps = rememberHouseSweeps(state)
     val currentOnCellTap by rememberUpdatedState(onCellTap)
@@ -119,7 +122,7 @@ fun SumiBoard(
             drawGridLines(px, ink)
         }
 
-        CellContents(state, cellSize, ink, teal, errorRed, highLegibility)
+        CellContents(state, errorCells, cellSize, ink, teal, errorRed, highLegibility)
 
         SweepLayer(
             activeSweeps = activeSweeps,
@@ -198,13 +201,13 @@ private fun SweepLayer(
 @Composable
 private fun CellContents(
     state: BoardState,
+    errorCells: Set<Pair<Int, Int>>,
     cellSize: Dp,
     ink: Color,
     teal: Color,
     errorRed: Color,
     highLegibility: Boolean,
 ) {
-    val errorCells = state.errorCells
     for (r in 0..8) {
         for (c in 0..8) {
             val cell = state.cells[r][c]

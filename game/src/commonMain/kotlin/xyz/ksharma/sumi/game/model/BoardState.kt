@@ -36,6 +36,34 @@ data class BoardState(
             }
         }
 
+    /**
+     * Cells whose value duplicates another filled cell in the same row, column, or box —
+     * i.e. an actual Sudoku rule violation. Unlike [errorCells] this never reveals whether a
+     * digit matches the solution, so it powers a non-spoiling "conflicts only" highlight mode.
+     */
+    val conflictCells: Set<Pair<Int, Int>>
+        get() = buildSet {
+            for (r in 0..8) for (c in 0..8) {
+                val v = cells[r][c].value
+                if (v != 0 && hasUnitDuplicate(r, c, v)) add(r to c)
+            }
+        }
+
+    private fun hasUnitDuplicate(row: Int, col: Int, value: Int): Boolean {
+        for (i in 0..8) {
+            if (i != col && cells[row][i].value == value) return true
+            if (i != row && cells[i][col].value == value) return true
+        }
+        val br = (row / 3) * 3
+        val bc = (col / 3) * 3
+        for (dr in 0..2) for (dc in 0..2) {
+            val rr = br + dr
+            val cc = bc + dc
+            if ((rr != row || cc != col) && cells[rr][cc].value == value) return true
+        }
+        return false
+    }
+
     // Which rows are fully and correctly filled (all 9 cells match solution).
     val completedRows: Set<Int>
         get() = (0..8).filterTo(mutableSetOf()) { r ->

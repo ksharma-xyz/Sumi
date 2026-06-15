@@ -95,6 +95,7 @@ fun EntryProviderScope<NavKey>.GameEntry(navigator: SumiNavigator) {
         val hapticsEnabled by themePrefs.observeHapticsEnabled().collectAsState(initial = true)
         val showMistakes by themePrefs.observeShowMistakes().collectAsState(initial = true)
         val highLegibility by themePrefs.observeHighLegibility().collectAsState(initial = false)
+        val strictConflicts by themePrefs.observeStrictConflicts().collectAsState(initial = false)
         val ctx = GameContext(HapticContext(haptic, hapticsEnabled), analytics)
 
         // Pre-load idle interstitial — see WinScreen comment for the rationale (basic-ads
@@ -154,6 +155,7 @@ fun EntryProviderScope<NavKey>.GameEntry(navigator: SumiNavigator) {
             difficulty = diff,
             showMistakes = showMistakes,
             highLegibility = highLegibility,
+            strictConflicts = strictConflicts,
             callbacks = buildGameCallbacks(
                 vm = vm,
                 ctx = ctx,

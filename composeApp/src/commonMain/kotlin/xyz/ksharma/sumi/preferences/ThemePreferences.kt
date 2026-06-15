@@ -3,6 +3,9 @@ package xyz.ksharma.sumi.preferences
 import kotlinx.coroutines.flow.Flow
 import xyz.ksharma.sumi.theme.SumiSeason
 
+// Cohesive observe/set pairs for theme + gameplay-display preferences; splitting into
+// micro-interfaces per setting would add indirection without value (the impl is one class).
+@Suppress("TooManyFunctions")
 interface ThemePreferences {
     fun observeSeason(): Flow<SumiSeason>
     suspend fun setSeason(season: SumiSeason)
@@ -24,4 +27,12 @@ interface ThemePreferences {
      */
     fun observeHighLegibility(): Flow<Boolean>
     suspend fun setHighLegibility(enabled: Boolean)
+
+    /**
+     * When true, the board highlights only actual rule conflicts (a digit duplicated in a
+     * row/column/box) instead of every cell that differs from the solution. Default false —
+     * i.e. the board reveals wrong digits. Strict mode lets players guess without spoilers.
+     */
+    fun observeStrictConflicts(): Flow<Boolean>
+    suspend fun setStrictConflicts(enabled: Boolean)
 }

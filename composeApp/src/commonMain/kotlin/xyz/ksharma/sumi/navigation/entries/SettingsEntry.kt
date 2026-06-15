@@ -28,6 +28,7 @@ fun EntryProviderScope<NavKey>.SettingsEntry(navigator: SumiNavigator) {
         val isHapticsEnabled by vm.isHapticsEnabled.collectAsState()
         val showMistakes by vm.showMistakes.collectAsState()
         val highLegibility by vm.highLegibility.collectAsState()
+        val strictConflicts by vm.strictConflicts.collectAsState()
         val isSimulatingPro by vm.isSimulatingPro.collectAsState()
         val isAdsEnabled by vm.isAdsEnabled.collectAsState()
         SettingsScreen(
@@ -38,48 +39,57 @@ fun EntryProviderScope<NavKey>.SettingsEntry(navigator: SumiNavigator) {
                 hapticsEnabled = isHapticsEnabled,
                 showMistakes = showMistakes,
                 highLegibility = highLegibility,
+                strictConflicts = strictConflicts,
             ),
             onSeasonSelect = { vm.setSeason(it) },
             onHapticsToggle = { vm.setHapticsEnabled(!isHapticsEnabled) },
             onShowMistakesToggle = { vm.setShowMistakes(!showMistakes) },
             onHighLegibilityToggle = { vm.setHighLegibility(!highLegibility) },
+            onStrictConflictsToggle = { vm.setStrictConflicts(!strictConflicts) },
             debugCallbacks = if (vm.isDebug) {
-                DebugCallbacks(
-                    onResetOnboarding = { vm.resetOnboarding() },
-                    onClearStats = { vm.clearStats() },
-                    onClearSaves = { vm.clearGameSaves() },
-                    onClearAll = { vm.clearAll() },
-                    isSimulatingPro = isSimulatingPro,
-                    onToggleSimulatePro = { vm.toggleSimulatePro() },
-                    isAdsEnabled = isAdsEnabled,
-                    onToggleAdsEnabled = { vm.toggleAdsEnabled() },
-                    onSeedSampleStreak = { vm.seedSampleStreak() },
-                    onOpenSampleWin = {
-                        // Navigates to a sample Win screen with realistic stats + a real
-                        // solved puzzle so designers / reviewers can preview the result
-                        // page (and especially the share-image grid) on demand.
-                        navigator.goTo(
-                            WinRoute(
-                                elapsedMs = 7L * 60_000L + 12L * 1_000L, // 7:12
-                                mistakeCount = 2,
-                                moveCount = 41,
-                                difficulty = "Medium",
-                                // A known-valid 9×9 solution, row-major. Lets the
-                                // SudokuThumbnail render in the debug share preview.
-                                solution = "534678912" +
-                                    "672195348" +
-                                    "198342567" +
-                                    "859761423" +
-                                    "426853791" +
-                                    "713924856" +
-                                    "961537284" +
-                                    "287419635" +
-                                    "345286179",
-                            ),
-                        )
-                    },
-                )
-            } else null,
+                buildDebugCallbacks(vm, navigator, isSimulatingPro, isAdsEnabled)
+            } else {
+                null
+            },
         )
     }
 }
+
+private fun buildDebugCallbacks(
+    vm: SettingsViewModel,
+    navigator: SumiNavigator,
+    isSimulatingPro: Boolean,
+    isAdsEnabled: Boolean,
+): DebugCallbacks = DebugCallbacks(
+    onResetOnboarding = { vm.resetOnboarding() },
+    onClearStats = { vm.clearStats() },
+    onClearSaves = { vm.clearGameSaves() },
+    onClearAll = { vm.clearAll() },
+    isSimulatingPro = isSimulatingPro,
+    onToggleSimulatePro = { vm.toggleSimulatePro() },
+    isAdsEnabled = isAdsEnabled,
+    onToggleAdsEnabled = { vm.toggleAdsEnabled() },
+    onSeedSampleStreak = { vm.seedSampleStreak() },
+    onOpenSampleWin = {
+        // Navigates to a sample Win screen with realistic stats + a real solved puzzle so
+        // designers / reviewers can preview the result page (especially the share-image grid).
+        navigator.goTo(
+            WinRoute(
+                elapsedMs = 7L * 60_000L + 12L * 1_000L, // 7:12
+                mistakeCount = 2,
+                moveCount = 41,
+                difficulty = "Medium",
+                // A known-valid 9×9 solution, row-major. Lets the SudokuThumbnail render.
+                solution = "534678912" +
+                    "672195348" +
+                    "198342567" +
+                    "859761423" +
+                    "426853791" +
+                    "713924856" +
+                    "961537284" +
+                    "287419635" +
+                    "345286179",
+            ),
+        )
+    },
+)

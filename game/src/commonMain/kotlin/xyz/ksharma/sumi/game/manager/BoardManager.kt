@@ -3,6 +3,9 @@ package xyz.ksharma.sumi.game.manager
 import kotlinx.coroutines.flow.StateFlow
 import xyz.ksharma.sumi.game.model.BoardState
 
+// Cohesive command surface for one board — each method maps to a single player action.
+// Splitting it would scatter tightly-related operations across artificial interfaces.
+@Suppress("TooManyFunctions")
 interface BoardManager {
     val state: StateFlow<BoardState>
 
