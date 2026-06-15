@@ -505,6 +505,41 @@ class BoardStateTest {
         assertFalse(4 in without4.cells[r][c].notes, "Re-entering same note should remove it")
     }
 
+    // ── Auto-strip peer notes on digit entry ──────────────────────────────────
+
+    @Test
+    fun placingDigitStripsThatNoteFromUnitPeers() {
+        val b = board
+        val empties = allEmptyCells(b)
+        val (r, c) = empties.first()
+        val digit = b.solution[r][c]
+        val rowPeer = empties.firstOrNull { (pr, pc) -> pr == r && pc != c }
+        assertNotNull(rowPeer, "seed must leave a second empty cell in the row")
+        val (pr, pc) = rowPeer
+        // Seed `digit` as a pencil mark in the row peer, then place it in the target cell.
+        val seeded = b.toggleNotes().select(pr, pc).enter(digit).toggleNotes()
+        assertTrue(digit in seeded.cells[pr][pc].notes)
+        val after = seeded.select(r, c).enter(digit)
+        assertFalse(digit in after.cells[pr][pc].notes, "digit must be stripped from row-peer notes")
+    }
+
+    @Test
+    fun placingDigitKeepsNoteInNonPeerCells() {
+        val b = board
+        val empties = allEmptyCells(b)
+        val (r, c) = empties.first()
+        val digit = b.solution[r][c]
+        val nonPeer = empties.firstOrNull { (pr, pc) ->
+            pr != r && pc != c && !(pr / 3 == r / 3 && pc / 3 == c / 3)
+        }
+        assertNotNull(nonPeer, "seed must leave a non-peer empty cell")
+        val (pr, pc) = nonPeer
+        val seeded = b.toggleNotes().select(pr, pc).enter(digit).toggleNotes()
+        assertTrue(digit in seeded.cells[pr][pc].notes)
+        val after = seeded.select(r, c).enter(digit)
+        assertTrue(digit in after.cells[pr][pc].notes, "non-peer notes must be preserved")
+    }
+
     // ── Multiple difficulties ─────────────────────────────────────────────────
 
     @Test

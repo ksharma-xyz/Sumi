@@ -92,7 +92,11 @@ data class BoardState(
             val wasCorrect = cell.value == solution[row][col]
             val isWrong = digit != 0 && digit != solution[row][col]
             val incrementMistake = (wasEmpty || wasCorrect) && isWrong
-            val newCells = updatedCells(row, col, cell.copy(value = digit, notes = emptySet()))
+            // Placing a digit auto-clears that digit from the pencil marks of every
+            // peer (same row, column, or 3x3 box) — the manual note cleanup every
+            // serious Sudoku app does for you.
+            val placedCells = updatedCells(row, col, cell.copy(value = digit, notes = emptySet()))
+            val newCells = if (digit == 0) placedCells else stripNoteFromPeers(placedCells, row, col, digit)
             copy(
                 cells = newCells,
                 mistakeCount = if (incrementMistake) mistakeCount + 1 else mistakeCount,
@@ -149,5 +153,16 @@ data class BoardState(
         cells.mapIndexed { r, rowList ->
             if (r == row) rowList.mapIndexed { c, existing -> if (c == col) cell else existing }
             else rowList
+        }
+
+    // Removes [digit] from the notes of every cell that shares a unit (row, column,
+    // or box) with (row, col), leaving the placed cell itself untouched.
+    private fun stripNoteFromPeers(grid: List<List<Cell>>, row: Int, col: Int, digit: Int): List<List<Cell>> =
+        grid.mapIndexed { r, rowList ->
+            rowList.mapIndexed { c, existing ->
+                val isPeer = (r == row || c == col || (r / 3 == row / 3 && c / 3 == col / 3)) &&
+                    !(r == row && c == col)
+                if (isPeer && digit in existing.notes) existing.copy(notes = existing.notes - digit) else existing
+            }
         }
 }
