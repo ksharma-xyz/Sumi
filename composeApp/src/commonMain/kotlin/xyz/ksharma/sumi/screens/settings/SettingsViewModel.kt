@@ -36,6 +36,9 @@ class SettingsViewModel(
     val digitFirstInput: StateFlow<Boolean> = themes.observeDigitFirstInput()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), false)
 
+    val livesMode: StateFlow<Boolean> = themes.observeLivesMode()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), false)
+
     val isSimulatingPro: StateFlow<Boolean> = debug.observeSimulatePro()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), false)
 
@@ -51,6 +54,7 @@ class SettingsViewModel(
     private val highLegibilityWriter = latestOnlyFlow<Boolean>()
     private val strictConflictsWriter = latestOnlyFlow<Boolean>()
     private val digitFirstWriter = latestOnlyFlow<Boolean>()
+    private val livesModeWriter = latestOnlyFlow<Boolean>()
     private val simulateProWriter = latestOnlyFlow<Boolean>()
     private val adsEnabledWriter = latestOnlyFlow<Boolean>()
 
@@ -61,6 +65,7 @@ class SettingsViewModel(
         viewModelScope.launch { highLegibilityWriter.collectLatest { themes.setHighLegibility(it) } }
         viewModelScope.launch { strictConflictsWriter.collectLatest { themes.setStrictConflicts(it) } }
         viewModelScope.launch { digitFirstWriter.collectLatest { themes.setDigitFirstInput(it) } }
+        viewModelScope.launch { livesModeWriter.collectLatest { themes.setLivesMode(it) } }
         viewModelScope.launch { simulateProWriter.collectLatest { debug.setSimulatePro(it) } }
         viewModelScope.launch { adsEnabledWriter.collectLatest { debug.setAdsEnabled(it) } }
     }
@@ -71,6 +76,7 @@ class SettingsViewModel(
     fun setHighLegibility(enabled: Boolean) { highLegibilityWriter.tryEmit(enabled) }
     fun setStrictConflicts(enabled: Boolean) { strictConflictsWriter.tryEmit(enabled) }
     fun setDigitFirstInput(enabled: Boolean) { digitFirstWriter.tryEmit(enabled) }
+    fun setLivesMode(enabled: Boolean) { livesModeWriter.tryEmit(enabled) }
 
     fun resetOnboarding() = viewModelScope.launch { debug.resetOnboarding() }
 

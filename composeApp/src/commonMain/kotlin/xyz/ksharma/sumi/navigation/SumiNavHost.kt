@@ -11,6 +11,7 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.NavDisplay
 import xyz.ksharma.sumi.navigation.entries.DailyEntry
 import xyz.ksharma.sumi.navigation.entries.GameEntry
+import xyz.ksharma.sumi.navigation.entries.GameOverEntry
 import xyz.ksharma.sumi.navigation.entries.HomeEntry
 import xyz.ksharma.sumi.navigation.entries.LicensesEntry
 import xyz.ksharma.sumi.navigation.entries.OnboardingEntry
@@ -40,6 +41,7 @@ fun SumiNavHost(modifier: Modifier = Modifier) {
         StatsEntry(navigator)
         GameEntry(navigator)
         WinEntry(navigator)
+        GameOverEntry(navigator)
         ZenEntry(navigator)
         PaywallEntry(navigator)
         SettingsEntry(navigator)

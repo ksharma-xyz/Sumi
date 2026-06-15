@@ -56,6 +56,7 @@ fun SettingsScreen(
     onHighLegibilityToggle: () -> Unit,
     onStrictConflictsToggle: () -> Unit,
     onDigitFirstToggle: () -> Unit,
+    onLivesModeToggle: () -> Unit,
     debugCallbacks: DebugCallbacks?,
     modifier: Modifier = Modifier,
 ) {
@@ -130,6 +131,16 @@ fun SettingsScreen(
                         description = "Tap a number to arm it, then tap cells to place it.",
                         checked = themeState.digitFirstInput,
                         onToggle = onDigitFirstToggle,
+                    )
+                }
+
+                Spacer(Modifier.height(Sumi.Space.s3))
+                SettingsPanel {
+                    SettingsToggleRow(
+                        label = "Lives mode",
+                        description = "End the puzzle after a few mistakes for a tougher challenge.",
+                        checked = themeState.livesMode,
+                        onToggle = onLivesModeToggle,
                     )
                 }
 

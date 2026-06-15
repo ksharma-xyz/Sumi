@@ -34,6 +34,11 @@ data class GameRoute(
     val solution: String = "",
 ) : SumiRoute
 
+@Serializable data class GameOverRoute(
+    val difficulty: String = "Easy",
+    val elapsedMs: Long = 0L,
+) : SumiRoute
+
 // ── Utility ───────────────────────────────────────────────────────────────────
 @Serializable data object SettingsRoute : SumiRoute
 @Serializable data object LicensesRoute : SumiRoute

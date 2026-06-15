@@ -17,6 +17,7 @@ val sumiNavSerializationConfig = SavedStateConfiguration {
             subclass(ZenRoute::class, ZenRoute.serializer())
             subclass(GameRoute::class, GameRoute.serializer())
             subclass(WinRoute::class, WinRoute.serializer())
+            subclass(GameOverRoute::class, GameOverRoute.serializer())
             subclass(SettingsRoute::class, SettingsRoute.serializer())
             subclass(LicensesRoute::class, LicensesRoute.serializer())
         }

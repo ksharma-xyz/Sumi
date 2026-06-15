@@ -42,4 +42,11 @@ interface ThemePreferences {
      */
     fun observeDigitFirstInput(): Flow<Boolean>
     suspend fun setDigitFirstInput(enabled: Boolean)
+
+    /**
+     * Lives mode. Default false. When on, the puzzle ends after a fixed number of mistakes
+     * (a more competitive challenge), surfacing a game-over screen instead of running forever.
+     */
+    fun observeLivesMode(): Flow<Boolean>
+    suspend fun setLivesMode(enabled: Boolean)
 }

@@ -28,6 +28,9 @@ import xyz.ksharma.sumi.preferences.GameSaveRepository
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
+/** Mistakes allowed before a game ends in lives mode. */
+internal const val MAX_LIVES = 3
+
 class GameViewModel(
     private val puzzleRepository: PuzzleRepository,
     private val saveRepository: GameSaveRepository,
@@ -43,6 +46,14 @@ class GameViewModel(
      */
     private val _selectedDigit = MutableStateFlow<Int?>(null)
     val selectedDigit: StateFlow<Int?> = _selectedDigit.asStateFlow()
+
+    /** Fires `true` in lives mode once mistakes reach [MAX_LIVES]. The Game entry navigates to game-over. */
+    private val _gameOver = MutableStateFlow(false)
+    val gameOver: StateFlow<Boolean> = _gameOver.asStateFlow()
+
+    // Whether the mistake-limit (lives) rule is active for this game. Read live in startSync so a
+    // mid-game Settings toggle takes effect, set from the Game entry via setLivesEnabled.
+    private var livesEnabled = false
 
     private val _elapsedMs = MutableStateFlow(0L)
     val elapsedMs: StateFlow<Long> = _elapsedMs.asStateFlow()
@@ -108,6 +119,7 @@ class GameViewModel(
         idleMs = 0L
         _showIdleInterstitial.value = false
         _showRewardedHintAd.value = false
+        _gameOver.value = false
 
         // launchWithExceptionHandler so any failure in the generator / save IO
         // doesn't crash the app. Heavy work (puzzle generation — backtracking
@@ -183,6 +195,11 @@ class GameViewModel(
     fun enter(digit: Int) {
         resetIdle()
         boardManager.enter(digit)
+    }
+
+    /** Enable/disable the mistake-limit rule for the current game (driven by the Settings toggle). */
+    fun setLivesEnabled(enabled: Boolean) {
+        livesEnabled = enabled
     }
 
     /** Digit-first: arm a digit (or disarm it if it's already armed). */
@@ -278,6 +295,13 @@ class GameViewModel(
                 if (newState.isComplete) {
                     // Puzzle solved — clear the save slot so there's nothing stale to resume.
                     launch { saveRepository.clearSave(currentDifficulty) }
+                } else if (livesEnabled && newState.mistakeCount >= MAX_LIVES) {
+                    // Out of lives. Clear the save FIRST (awaited, so reopening the difficulty
+                    // starts fresh instead of bouncing straight back to game-over), then signal.
+                    if (!_gameOver.value) {
+                        saveRepository.clearSave(currentDifficulty)
+                        _gameOver.value = true
+                    }
                 } else {
                     // Save on EVERY state change — including ones where the user has
                     // no moves entered (undo / erase clearing the board). The previous

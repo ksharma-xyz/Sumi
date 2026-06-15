@@ -31,6 +31,7 @@ import xyz.ksharma.sumi.game.model.BoardState
 import xyz.ksharma.sumi.game.model.Difficulty
 import xyz.ksharma.sumi.haptic.HapticEngine
 import xyz.ksharma.sumi.haptic.rememberHapticEngine
+import xyz.ksharma.sumi.navigation.GameOverRoute
 import xyz.ksharma.sumi.navigation.GameRoute
 import xyz.ksharma.sumi.navigation.HomeRoute
 import xyz.ksharma.sumi.navigation.SumiNavigator
@@ -99,8 +100,22 @@ fun EntryProviderScope<NavKey>.GameEntry(navigator: SumiNavigator) {
         val highLegibility by themePrefs.observeHighLegibility().collectAsState(initial = false)
         val strictConflicts by themePrefs.observeStrictConflicts().collectAsState(initial = false)
         val digitFirst by themePrefs.observeDigitFirstInput().collectAsState(initial = false)
+        val livesMode by themePrefs.observeLivesMode().collectAsState(initial = false)
         val selectedDigit by vm.selectedDigit.collectAsState()
+        val gameOver by vm.gameOver.collectAsState()
         val ctx = GameContext(HapticContext(haptic, hapticsEnabled), analytics)
+
+        // Keep the VM's lives rule in sync with the setting (so a mid-game toggle applies).
+        LaunchedEffect(livesMode) { vm.setLivesEnabled(livesMode) }
+
+        // Out of lives → game over. resetRoot(Home) first so back from game-over goes Home,
+        // not back onto the dead board (mirrors the win flow).
+        LaunchedEffect(gameOver) {
+            if (gameOver) {
+                navigator.resetRoot(HomeRoute)
+                navigator.goTo(GameOverRoute(difficulty = key.difficulty, elapsedMs = elapsedMs))
+            }
+        }
 
         // Auto-pause when the app is backgrounded so the clock freezes and the player
         // returns to a paused board instead of a running timer. Skipped while one of our
@@ -171,6 +186,7 @@ fun EntryProviderScope<NavKey>.GameEntry(navigator: SumiNavigator) {
             highLegibility = highLegibility,
             strictConflicts = strictConflicts,
             selectedDigit = if (digitFirst) selectedDigit else null,
+            livesMode = livesMode,
             callbacks = buildGameCallbacks(
                 vm = vm,
                 ctx = ctx,

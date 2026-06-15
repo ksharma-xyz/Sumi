@@ -30,6 +30,7 @@ fun EntryProviderScope<NavKey>.SettingsEntry(navigator: SumiNavigator) {
         val highLegibility by vm.highLegibility.collectAsState()
         val strictConflicts by vm.strictConflicts.collectAsState()
         val digitFirstInput by vm.digitFirstInput.collectAsState()
+        val livesMode by vm.livesMode.collectAsState()
         val isSimulatingPro by vm.isSimulatingPro.collectAsState()
         val isAdsEnabled by vm.isAdsEnabled.collectAsState()
         SettingsScreen(
@@ -42,6 +43,7 @@ fun EntryProviderScope<NavKey>.SettingsEntry(navigator: SumiNavigator) {
                 highLegibility = highLegibility,
                 strictConflicts = strictConflicts,
                 digitFirstInput = digitFirstInput,
+                livesMode = livesMode,
             ),
             onSeasonSelect = { vm.setSeason(it) },
             onHapticsToggle = { vm.setHapticsEnabled(!isHapticsEnabled) },
@@ -49,6 +51,7 @@ fun EntryProviderScope<NavKey>.SettingsEntry(navigator: SumiNavigator) {
             onHighLegibilityToggle = { vm.setHighLegibility(!highLegibility) },
             onStrictConflictsToggle = { vm.setStrictConflicts(!strictConflicts) },
             onDigitFirstToggle = { vm.setDigitFirstInput(!digitFirstInput) },
+            onLivesModeToggle = { vm.setLivesMode(!livesMode) },
             debugCallbacks = if (vm.isDebug) {
                 buildDebugCallbacks(vm, navigator, isSimulatingPro, isAdsEnabled)
             } else {

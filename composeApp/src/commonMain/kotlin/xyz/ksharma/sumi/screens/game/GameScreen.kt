@@ -110,6 +110,7 @@ fun GameScreen(
     highLegibility: Boolean = false,
     strictConflicts: Boolean = false,
     selectedDigit: Int? = null,
+    livesMode: Boolean = false,
 ) {
     // A solve can take a long time with little screen interaction — keep the
     // display awake for the whole Game screen (auto-reverts on leave).
@@ -136,6 +137,7 @@ fun GameScreen(
                 highLegibility = highLegibility,
                 strictConflicts = strictConflicts,
                 selectedDigit = selectedDigit,
+                livesMode = livesMode,
             )
         }
         // Subtle, sparse petals for row / column / 3x3 completions — they should
@@ -186,6 +188,7 @@ private fun GameBody(
     highLegibility: Boolean = false,
     strictConflicts: Boolean = false,
     selectedDigit: Int? = null,
+    livesMode: Boolean = false,
 ) {
     Column(
         modifier = Modifier
@@ -207,6 +210,7 @@ private fun GameBody(
             mistakeCount = state.mistakeCount,
             hintsRemaining = state.hintsRemaining,
             showMistakes = showMistakes,
+            livesMode = livesMode,
             rewardedHintAvailable = rewardedHintAvailable,
         )
         Spacer(Modifier.height(Sumi.Space.s3))
@@ -306,14 +310,29 @@ private fun MarksHintsRow(
     mistakeCount: Int,
     hintsRemaining: Int,
     showMistakes: Boolean,
+    livesMode: Boolean = false,
     rewardedHintAvailable: Boolean = false,
 ) {
+    // In lives mode the remaining lives always show (they decide the game); otherwise the
+    // mistake count shows only when the player has opted into it.
+    val showLeft = livesMode || showMistakes
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = if (showMistakes) Arrangement.SpaceBetween else Arrangement.End,
+        horizontalArrangement = if (showLeft) Arrangement.SpaceBetween else Arrangement.End,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        if (showMistakes) {
+        if (livesMode) {
+            val livesLeft = (MAX_LIVES - mistakeCount).coerceAtLeast(0)
+            Text(
+                text = buildAnnotatedString {
+                    withStyle(SpanStyle(color = SumiTheme.colors.inkSoft)) { append("LIVES ") }
+                    withStyle(SpanStyle(color = SumiTheme.colors.error, fontWeight = FontWeight.Bold)) {
+                        append("$livesLeft")
+                    }
+                },
+                style = SumiTheme.typography.uiMeta.copy(letterSpacing = 1.5.sp),
+            )
+        } else if (showMistakes) {
             Text(
                 text = buildAnnotatedString {
                     withStyle(SpanStyle(color = SumiTheme.colors.inkSoft)) { append("MISTAKES ") }

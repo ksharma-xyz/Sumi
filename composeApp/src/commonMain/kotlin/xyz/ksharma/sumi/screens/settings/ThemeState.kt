@@ -9,4 +9,5 @@ data class ThemeState(
     val highLegibility: Boolean,
     val strictConflicts: Boolean,
     val digitFirstInput: Boolean,
+    val livesMode: Boolean,
 )
