@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import xyz.ksharma.sumi.design.board.BoardEntrance
 import xyz.ksharma.sumi.preferences.DebugPreferences
 import xyz.ksharma.sumi.preferences.GameSaveRepository
 import xyz.ksharma.sumi.preferences.ThemePreferences
@@ -45,6 +46,9 @@ class SettingsViewModel(
     val isAdsEnabled: StateFlow<Boolean> = debug.observeAdsEnabled()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), true)
 
+    val boardEntrance: StateFlow<BoardEntrance> = debug.observeBoardEntrance()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), BoardEntrance.DEFAULT)
+
     // Per-setter SharedFlow + collectLatest — collapses rapid taps so we never
     // launch one coroutine per click. Each setter just tryEmit's the latest
     // value; one long-running collector below funnels them to DataStore.
@@ -57,6 +61,7 @@ class SettingsViewModel(
     private val livesModeWriter = latestOnlyFlow<Boolean>()
     private val simulateProWriter = latestOnlyFlow<Boolean>()
     private val adsEnabledWriter = latestOnlyFlow<Boolean>()
+    private val boardEntranceWriter = latestOnlyFlow<BoardEntrance>()
 
     init {
         viewModelScope.launch { seasonWriter.collectLatest { themes.setSeason(it) } }
@@ -68,6 +73,7 @@ class SettingsViewModel(
         viewModelScope.launch { livesModeWriter.collectLatest { themes.setLivesMode(it) } }
         viewModelScope.launch { simulateProWriter.collectLatest { debug.setSimulatePro(it) } }
         viewModelScope.launch { adsEnabledWriter.collectLatest { debug.setAdsEnabled(it) } }
+        viewModelScope.launch { boardEntranceWriter.collectLatest { debug.setBoardEntrance(it) } }
     }
 
     fun setSeason(season: SumiSeason) { seasonWriter.tryEmit(season) }
@@ -93,6 +99,7 @@ class SettingsViewModel(
 
     fun toggleSimulatePro() { simulateProWriter.tryEmit(!isSimulatingPro.value) }
     fun toggleAdsEnabled() { adsEnabledWriter.tryEmit(!isAdsEnabled.value) }
+    fun setBoardEntrance(entrance: BoardEntrance) { boardEntranceWriter.tryEmit(entrance) }
 }
 
 /** Buffer-1 / drop-oldest SharedFlow — rapid taps collapse to the latest value. */

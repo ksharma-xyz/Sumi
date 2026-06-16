@@ -51,6 +51,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import xyz.ksharma.sumi.design.board.BoardEntrance
 import xyz.ksharma.sumi.design.board.SumiBoard
 import xyz.ksharma.sumi.design.components.PetalBurstConfig
 import xyz.ksharma.sumi.design.components.SumiIcon
@@ -111,6 +112,7 @@ fun GameScreen(
     strictConflicts: Boolean = false,
     selectedDigit: Int? = null,
     livesMode: Boolean = false,
+    boardEntrance: BoardEntrance = BoardEntrance.None,
 ) {
     // A solve can take a long time with little screen interaction — keep the
     // display awake for the whole Game screen (auto-reverts on leave).
@@ -138,6 +140,7 @@ fun GameScreen(
                 strictConflicts = strictConflicts,
                 selectedDigit = selectedDigit,
                 livesMode = livesMode,
+                boardEntrance = boardEntrance,
             )
         }
         // Subtle, sparse petals for row / column / 3x3 completions — they should
@@ -189,6 +192,7 @@ private fun GameBody(
     strictConflicts: Boolean = false,
     selectedDigit: Int? = null,
     livesMode: Boolean = false,
+    boardEntrance: BoardEntrance = BoardEntrance.None,
 ) {
     Column(
         modifier = Modifier
@@ -227,11 +231,13 @@ private fun GameBody(
             // pad never jump when the grid arrives. The grid itself fades in
             // from the blank paper once the puzzle is ready.
             Box(modifier = Modifier.size(resolvedCellSize * 9), contentAlignment = Alignment.Center) {
+                // With the ink-bloom entrance, the per-cell bloom IS the reveal — fade the
+                // container in fast so the diagonal pop reads instead of being washed out by
+                // a slow uniform crossfade. Otherwise keep the slow, calm grid fade.
+                val boardFadeMs = if (boardEntrance == BoardEntrance.InkBloom) 140 else 620
                 Crossfade(
                     targetState = boardReady,
-                    // Slow, calm reveal — the grid eases in rather than
-                    // snapping. Matches the zen pacing of the rest of the app.
-                    animationSpec = tween(620, easing = Sumi.Ease.paper),
+                    animationSpec = tween(boardFadeMs, easing = Sumi.Ease.paper),
                     label = "boardFade",
                 ) { ready ->
                     if (ready) {
@@ -240,6 +246,7 @@ private fun GameBody(
                             cellSize = resolvedCellSize,
                             highLegibility = highLegibility,
                             strictConflicts = strictConflicts,
+                            entrance = boardEntrance,
                             onCellTap = { r, c -> callbacks.onSelect(r, c) },
                         )
                     }

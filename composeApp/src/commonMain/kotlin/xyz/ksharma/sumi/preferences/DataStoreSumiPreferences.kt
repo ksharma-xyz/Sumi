@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import xyz.ksharma.sumi.design.board.BoardEntrance
 import xyz.ksharma.sumi.theme.SumiSeason
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
@@ -50,6 +51,7 @@ private const val WEEK_WINDOW_DAYS = 7L
 private const val RECENT_TIMES_CAP = 30
 private val KEY_DEBUG_SIMULATE_PRO = booleanPreferencesKey("debug_simulate_pro")
 private val KEY_DEBUG_ADS_ENABLED = booleanPreferencesKey("debug_ads_enabled")
+private val KEY_DEBUG_BOARD_ENTRANCE = stringPreferencesKey("debug_board_entrance")
 private val KEY_IS_PRO = booleanPreferencesKey("is_pro")
 
 class DataStoreSumiPreferences(
@@ -213,6 +215,13 @@ class DataStoreSumiPreferences(
 
     override suspend fun setAdsEnabled(enabled: Boolean) {
         store.edit { it[KEY_DEBUG_ADS_ENABLED] = enabled }
+    }
+
+    override fun observeBoardEntrance(): Flow<BoardEntrance> =
+        store.data.map { BoardEntrance.fromName(it[KEY_DEBUG_BOARD_ENTRANCE]) }
+
+    override suspend fun setBoardEntrance(entrance: BoardEntrance) {
+        store.edit { it[KEY_DEBUG_BOARD_ENTRANCE] = entrance.name }
     }
 
     override fun observeSeason(): Flow<SumiSeason> = store.data.map { prefs ->

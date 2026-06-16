@@ -1,7 +1,9 @@
 package xyz.ksharma.sumi.preferences
 
 import kotlinx.coroutines.flow.Flow
+import xyz.ksharma.sumi.design.board.BoardEntrance
 
+@Suppress("TooManyFunctions")
 interface DebugPreferences {
     suspend fun resetOnboarding()
     suspend fun clearStats()
@@ -12,6 +14,10 @@ interface DebugPreferences {
 
     fun observeAdsEnabled(): Flow<Boolean>
     suspend fun setAdsEnabled(enabled: Boolean)
+
+    /** Debug-only: which board entrance animation to play (see [BoardEntrance]). */
+    fun observeBoardEntrance(): Flow<BoardEntrance>
+    suspend fun setBoardEntrance(entrance: BoardEntrance)
 
     /**
      * Pre-fills streak / total / last-N-days as if the player had been solving for

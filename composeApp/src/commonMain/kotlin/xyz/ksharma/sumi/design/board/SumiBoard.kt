@@ -3,6 +3,7 @@
 package xyz.ksharma.sumi.design.board
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
@@ -36,6 +37,7 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.util.lerp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import xyz.ksharma.sumi.game.model.BoardState
@@ -70,6 +72,84 @@ private const val NOTE_SIZE_RATIO = 0.30f
 // area and never touch the cell border, even at the larger NOTE_SIZE_RATIO.
 private const val NOTE_AREA_INSET_RATIO = 0.07f
 
+// Ink-bloom entrance tuning. The reveal sweeps along the top-left -> bottom-right
+// diagonal (cells share a wave position by row+col, which runs 0..16). SPREAD is
+// the fraction of the timeline the wave front travels across; RAMP is how long a
+// single cell takes to bloom. SPREAD + RAMP == 1 so the last diagonal reaches
+// full bloom exactly as the animation ends.
+private const val ENTRANCE_MS = 820
+private const val ENTRANCE_SPREAD = 0.62f // fraction of timeline the wave front travels
+private const val ENTRANCE_RAMP = 0.38f // how long one cell takes to bloom (SPREAD + RAMP == 1)
+private const val ENTRANCE_BLOOM_SCALE = 0.2f // each cell grows from this to 1.0 (with overshoot)
+private const val MAX_DIAGONAL = 16f // (row 8 + col 8)
+
+// easeOutBack overshoot constants — the cell scales past 1.0 then settles, giving
+// each digit an ink-stamp "pop" as it lands. OVERSHOOT controls how far past 1.0.
+private const val BACK_OVERSHOOT = 1.9f
+
+/**
+ * Per-cell linear reveal in [0,1] for the ink-bloom entrance: 0 = not yet revealed,
+ * 1 = fully revealed. Derived from the board-wide [progress] and the cell's diagonal
+ * position so the reveal washes across top-left -> bottom-right. Easing (alpha vs the
+ * overshoot scale pop) is applied by the caller. Returns 1 (no-op) past the wave.
+ */
+private fun entranceReveal(progress: Float, row: Int, col: Int): Float {
+    val diagNorm = (row + col) / MAX_DIAGONAL
+    return ((progress - diagNorm * ENTRANCE_SPREAD) / ENTRANCE_RAMP).coerceIn(0f, 1f)
+}
+
+/** easeOutBack — overshoots past 1.0 then settles back, for an ink-stamp pop. */
+private fun easeOutBack(x: Float): Float {
+    val c1 = BACK_OVERSHOOT
+    val c3 = c1 + 1f
+    val t = x - 1f
+    return 1f + c3 * t * t * t + c1 * t * t
+}
+
+/**
+ * Drives the ink-bloom reveal, returning the board-wide progress in [0,1]. Starts
+ * (and stays) at 1 for the no-op entrance so non-blooming boards skip the animation.
+ * SumiBoard is composed fresh each time the board becomes visible (it lives inside
+ * GameBody's boardReady Crossfade), so the reveal replays on every board open.
+ */
+@Composable
+private fun rememberEntranceProgress(entrance: BoardEntrance): Float {
+    val progress = remember { Animatable(if (entrance == BoardEntrance.InkBloom) 0f else 1f) }
+    LaunchedEffect(entrance) {
+        if (entrance == BoardEntrance.InkBloom) {
+            progress.snapTo(0f)
+            progress.animateTo(1f, animationSpec = tween(ENTRANCE_MS, easing = LinearEasing))
+        } else {
+            progress.snapTo(1f)
+        }
+    }
+    return progress.value
+}
+
+// Resolved board colours + selection alphas + aurora tone for the current theme.
+private data class BoardPaint(
+    val cellColors: CellColors,
+    val ink: Color,
+    val selectionAlphas: xyz.ksharma.sumi.theme.BoardSelectionAlphas,
+    val tone: AuroraTone,
+)
+
+@Composable
+private fun rememberBoardPaint(): BoardPaint {
+    val colors = SumiTheme.colors
+    // colors.red is the muted calligraphy red (selection wash + sumi chop seal).
+    // colors.error is the bold red used SPECIFICALLY for wrong-digit signalling so
+    // it reads at a glance regardless of theme. Mode-aware selection-wash alphas —
+    // dark paper needs hotter values to read.
+    return BoardPaint(
+        cellColors = CellColors(colors.ink, colors.teal, colors.red, colors.error),
+        ink = colors.ink,
+        selectionAlphas = if (SumiTheme.isDark) Sumi.Color.BoardSelection.Dark
+        else Sumi.Color.BoardSelection.Light,
+        tone = if (SumiTheme.isDark) AuroraTone.Night else AuroraTone.Paper,
+    )
+}
+
 @Composable
 fun SumiBoard(
     state: BoardState,
@@ -78,22 +158,12 @@ fun SumiBoard(
     sweep: BoardSweep? = null,
     highLegibility: Boolean = false,
     strictConflicts: Boolean = false,
+    entrance: BoardEntrance = BoardEntrance.None,
     onCellTap: ((r: Int, c: Int) -> Unit)? = null,
 ) {
     val boardSize = cellSize * 9
-    val colors = SumiTheme.colors
-    val ink = colors.ink
-    val teal = colors.teal
-    // colors.red is the muted calligraphy red — used for selection wash + the
-    // sumi chop seal aesthetic. colors.error is the bold red (identical in
-    // light + dark) — used SPECIFICALLY for wrong-digit signalling so it
-    // reads at a glance regardless of theme.
-    val red = colors.red
-    val errorRed = colors.error
-    val tone = if (SumiTheme.isDark) AuroraTone.Night else AuroraTone.Paper
-    // Mode-aware selection-wash alphas — dark paper needs hotter values to read.
-    val selectionAlphas = if (SumiTheme.isDark) Sumi.Color.BoardSelection.Dark
-    else Sumi.Color.BoardSelection.Light
+    val entranceProgress = rememberEntranceProgress(entrance)
+    val paint = rememberBoardPaint()
     val selected = state.selected
     // Strict mode highlights only rule conflicts (no solution spoilers); default highlights
     // every cell that differs from the solution.
@@ -116,25 +186,26 @@ fun SumiBoard(
                 },
         ) {
             val px = cellSize.toPx()
-            drawCellBackgrounds(
-                state,
-                selected,
-                errorCells,
-                px,
-                CellColors(ink, teal, red, errorRed),
-                selectionAlphas,
-            )
-            drawGridLines(px, ink)
+            drawCellBackgrounds(state, selected, errorCells, px, paint.cellColors, paint.selectionAlphas)
+            drawGridLines(px, paint.ink)
         }
 
-        CellContents(state, errorCells, cellSize, ink, teal, errorRed, highLegibility)
+        CellContents(
+            state,
+            errorCells,
+            cellSize,
+            paint.cellColors,
+            highLegibility,
+            entrance,
+            entranceProgress,
+        )
 
         SweepLayer(
             activeSweeps = activeSweeps,
             externalSweep = sweep,
             cellSize = cellSize,
             boardSize = boardSize,
-            tone = tone,
+            tone = paint.tone,
         )
         CellA11yGrid(
             state = state,
@@ -208,10 +279,10 @@ private fun CellContents(
     state: BoardState,
     errorCells: Set<Pair<Int, Int>>,
     cellSize: Dp,
-    ink: Color,
-    teal: Color,
-    errorRed: Color,
+    colors: CellColors,
     highLegibility: Boolean,
+    entrance: BoardEntrance,
+    entranceProgress: Float,
 ) {
     for (r in 0..8) {
         for (c in 0..8) {
@@ -219,9 +290,16 @@ private fun CellContents(
             if (cell.value == 0 && cell.notes.isEmpty()) continue
             val isError = (r to c) in errorCells
             val textColor = when {
-                isError -> errorRed
-                cell.given -> ink
-                else -> teal
+                isError -> colors.errorRed
+                cell.given -> colors.ink
+                else -> colors.teal
+            }
+            // 1f for the no-op entrance — the reveal multiplies straight through without
+            // changing the existing per-cell fade.
+            val reveal = if (entrance == BoardEntrance.InkBloom) {
+                entranceReveal(entranceProgress, r, c)
+            } else {
+                1f
             }
             key(r, c) {
                 CellText(
@@ -231,6 +309,7 @@ private fun CellContents(
                     cellSize = cellSize,
                     textColor = textColor,
                     highLegibility = highLegibility,
+                    entranceReveal = reveal,
                 )
             }
         }
@@ -245,6 +324,7 @@ private fun CellText(
     cellSize: Dp,
     textColor: Color,
     highLegibility: Boolean,
+    entranceReveal: Float,
 ) {
     val alpha = remember { Animatable(0f) }
     val scale = remember { Animatable(1f) }
@@ -271,18 +351,32 @@ private fun CellText(
     val offsetX = cellSize * col
     val offsetY = cellSize * row
 
+    // Fold the ink-bloom reveal into the per-cell fade/scale. entranceReveal is 1 for
+    // the no-op entrance, so both reduce to the previous behaviour. Alpha uses the paper
+    // ease (soft ink soak); scale uses easeOutBack so the digit overshoots then settles
+    // like an ink stamp. Givens have no per-placement scale (scale == 1), so the bloom
+    // is their only scale source.
+    val effAlpha = alpha.value * Sumi.Ease.paper.transform(entranceReveal)
+    val effScale = scale.value * lerp(ENTRANCE_BLOOM_SCALE, 1f, easeOutBack(entranceReveal))
+
     if (cell.value != 0) {
         CellDigitLayout(
             cell = cell,
             offset = DpOffset(offsetX, offsetY),
             cellSize = cellSize,
             textColor = textColor,
-            alpha = alpha.value,
-            scale = scale.value,
+            alpha = effAlpha,
+            scale = effScale,
             highLegibility = highLegibility,
         )
     } else if (cell.notes.isNotEmpty()) {
-        NoteGrid(notes = cell.notes, cellSize = cellSize, offsetX = offsetX, offsetY = offsetY)
+        NoteGrid(
+            notes = cell.notes,
+            cellSize = cellSize,
+            offsetX = offsetX,
+            offsetY = offsetY,
+            entranceReveal = entranceReveal,
+        )
     }
 }
 
@@ -314,27 +408,17 @@ private fun CellDigitLayout(
                 // the affordance that still tells the user which cells they entered.
                 // fontSize/lineHeight overridden so the digit is sized from the cell and
                 // never scaled by the system font setting (see DIGIT_SIZE_RATIO).
-                style = if (cell.given) {
-                    baseStyle.copy(
-                        color = textColor.copy(alpha = alpha),
-                        fontSize = digitSize,
-                        lineHeight = digitSize,
-                    )
-                } else {
-                    baseStyle.copy(
-                        color = textColor,
-                        fontSize = digitSize,
-                        lineHeight = digitSize,
-                    )
-                },
-                modifier = if (!cell.given) {
-                    Modifier.graphicsLayer {
-                        scaleX = scale
-                        scaleY = scale
-                        this.alpha = alpha
-                    }
-                } else {
-                    Modifier
+                // Alpha + scale are driven entirely through graphicsLayer (for both given
+                // and player digits) so the bloom scale applies uniformly.
+                style = baseStyle.copy(
+                    color = textColor,
+                    fontSize = digitSize,
+                    lineHeight = digitSize,
+                ),
+                modifier = Modifier.graphicsLayer {
+                    scaleX = scale
+                    scaleY = scale
+                    this.alpha = alpha
                 },
             )
         },
@@ -355,9 +439,14 @@ private fun NoteGrid(
     cellSize: Dp,
     offsetX: Dp,
     offsetY: Dp,
+    entranceReveal: Float,
 ) {
     val noteColor = SumiTheme.colors.ink.copy(alpha = 0.5f)
     val noteSizeSp = with(LocalDensity.current) { (cellSize * NOTE_SIZE_RATIO).toSp() }
+    // Restored notes bloom in with the rest of the board on the ink-bloom entrance
+    // (reveal is 1 otherwise, so this is a no-op during normal play).
+    val noteScale = lerp(ENTRANCE_BLOOM_SCALE, 1f, easeOutBack(entranceReveal))
+    val noteAlpha = Sumi.Ease.paper.transform(entranceReveal)
     Layout(
         content = {
             for (d in 1..9) {
@@ -372,6 +461,11 @@ private fun NoteGrid(
                             lineHeight = noteSizeSp,
                             color = noteColor,
                         ),
+                        modifier = Modifier.graphicsLayer {
+                            scaleX = noteScale
+                            scaleY = noteScale
+                            this.alpha = noteAlpha
+                        },
                     )
                 } else {
                     Box(modifier = Modifier)

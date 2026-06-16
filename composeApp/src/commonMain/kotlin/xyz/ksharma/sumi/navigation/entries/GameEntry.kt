@@ -27,6 +27,7 @@ import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import xyz.ksharma.sumi.ads.AdUnits
 import xyz.ksharma.sumi.analytics.SumiAnalytics
+import xyz.ksharma.sumi.design.board.BoardEntrance
 import xyz.ksharma.sumi.game.model.BoardState
 import xyz.ksharma.sumi.game.model.Difficulty
 import xyz.ksharma.sumi.haptic.HapticEngine
@@ -73,6 +74,7 @@ fun EntryProviderScope<NavKey>.GameEntry(navigator: SumiNavigator) {
         val diff = Difficulty.entries.firstOrNull { it.name == key.difficulty } ?: Difficulty.Medium
         val isPro by proRepo.isPro().collectAsState(initial = false)
         val isAdsEnabled by debugPrefs.observeAdsEnabled().collectAsState(initial = true)
+        val boardEntrance by debugPrefs.observeBoardEntrance().collectAsState(initial = BoardEntrance.DEFAULT)
         // Manual pause — the only thing that shows the resume overlay. Set solely by the
         // pause button (onPause/onResume below), never by lifecycle/background events.
         var paused by rememberSaveable { mutableStateOf(false) }
@@ -208,6 +210,7 @@ fun EntryProviderScope<NavKey>.GameEntry(navigator: SumiNavigator) {
             strictConflicts = strictConflicts,
             selectedDigit = if (digitFirst) selectedDigit else null,
             livesMode = livesMode,
+            boardEntrance = boardEntrance,
             callbacks = buildGameCallbacks(
                 vm = vm,
                 ctx = ctx,

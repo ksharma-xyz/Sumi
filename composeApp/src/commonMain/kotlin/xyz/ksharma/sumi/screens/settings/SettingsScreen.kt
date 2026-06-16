@@ -252,6 +252,20 @@ private fun DebugSection(callbacks: DebugCallbacks) {
             )
         }
         Spacer(Modifier.height(Sumi.Space.s4))
+        SettingsPanel {
+            SettingsRow(
+                label = "Board entrance",
+                description = "Animation when a puzzle first appears. Tap to cycle.",
+            )
+            Spacer(Modifier.height(Sumi.Space.s3))
+            SumiTextButton(
+                text = callbacks.boardEntrance.label,
+                onClick = callbacks.onCycleBoardEntrance,
+                variant = SumiButtonVariant.Ghost,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+        Spacer(Modifier.height(Sumi.Space.s4))
         DebugItem(
             label = "Seed: 5-day streak",
             description = "Marks the last 5 days as solved + 20 total puzzles. For QA of Stats / Daily / Win.",

@@ -7,6 +7,7 @@ import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
+import xyz.ksharma.sumi.design.board.BoardEntrance
 import xyz.ksharma.sumi.navigation.LicensesRoute
 import xyz.ksharma.sumi.navigation.SettingsRoute
 import xyz.ksharma.sumi.navigation.SumiNavigator
@@ -33,6 +34,7 @@ fun EntryProviderScope<NavKey>.SettingsEntry(navigator: SumiNavigator) {
         val livesMode by vm.livesMode.collectAsState()
         val isSimulatingPro by vm.isSimulatingPro.collectAsState()
         val isAdsEnabled by vm.isAdsEnabled.collectAsState()
+        val boardEntrance by vm.boardEntrance.collectAsState()
         SettingsScreen(
             onBack = { navigator.pop() },
             onLicenses = { navigator.goTo(LicensesRoute) },
@@ -53,7 +55,7 @@ fun EntryProviderScope<NavKey>.SettingsEntry(navigator: SumiNavigator) {
             onDigitFirstToggle = { vm.setDigitFirstInput(!digitFirstInput) },
             onLivesModeToggle = { vm.setLivesMode(!livesMode) },
             debugCallbacks = if (vm.isDebug) {
-                buildDebugCallbacks(vm, navigator, isSimulatingPro, isAdsEnabled)
+                buildDebugCallbacks(vm, navigator, isSimulatingPro, isAdsEnabled, boardEntrance)
             } else {
                 null
             },
@@ -66,6 +68,7 @@ private fun buildDebugCallbacks(
     navigator: SumiNavigator,
     isSimulatingPro: Boolean,
     isAdsEnabled: Boolean,
+    boardEntrance: BoardEntrance,
 ): DebugCallbacks = DebugCallbacks(
     onResetOnboarding = { vm.resetOnboarding() },
     onClearStats = { vm.clearStats() },
@@ -75,6 +78,11 @@ private fun buildDebugCallbacks(
     onToggleSimulatePro = { vm.toggleSimulatePro() },
     isAdsEnabled = isAdsEnabled,
     onToggleAdsEnabled = { vm.toggleAdsEnabled() },
+    boardEntrance = boardEntrance,
+    onCycleBoardEntrance = {
+        val next = BoardEntrance.entries[(boardEntrance.ordinal + 1) % BoardEntrance.entries.size]
+        vm.setBoardEntrance(next)
+    },
     onSeedSampleStreak = { vm.seedSampleStreak() },
     onOpenSampleWin = {
         // Navigates to a sample Win screen with realistic stats + a real solved puzzle so

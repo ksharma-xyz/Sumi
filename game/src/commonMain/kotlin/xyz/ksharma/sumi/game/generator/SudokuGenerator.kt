@@ -41,17 +41,39 @@ object SudokuGenerator {
         return false
     }
 
+    // Counts solutions up to [limit] (we only ever need to know "exactly one").
+    // Uses the MRV heuristic — branch on the empty cell with the FEWEST legal
+    // candidates — which prunes the backtracking tree by orders of magnitude
+    // versus always taking the first empty cell (Master generation: ~1s -> ~tens
+    // of ms). This only affects search speed, never the count returned, so the
+    // generated puzzles stay byte-identical per seed (saves remain reproducible).
     private fun countSolutions(board: IntArray, limit: Int): Int {
-        val pos = board.indexOfFirst { it == 0 }
-        if (pos == -1) return 1
-        val row = pos / 9
-        val col = pos % 9
+        // Find the most-constrained empty cell.
+        var bestPos = -1
+        var bestCount = 10
+        for (i in 0..80) {
+            if (board[i] != 0) continue
+            var candidates = 0
+            val row = i / 9
+            val col = i % 9
+            for (d in 1..9) if (isValid(board, row, col, d)) candidates++
+            if (candidates < bestCount) {
+                bestCount = candidates
+                bestPos = i
+                if (candidates <= 1) break // can't do better than 0/1 — stop scanning
+            }
+        }
+        if (bestPos == -1) return 1 // no empty cells left — a complete solution
+        if (bestCount == 0) return 0 // a cell with no legal digit — dead end
+
+        val row = bestPos / 9
+        val col = bestPos % 9
         var count = 0
         for (d in 1..9) {
             if (isValid(board, row, col, d)) {
-                board[pos] = d
+                board[bestPos] = d
                 count += countSolutions(board, limit)
-                board[pos] = 0
+                board[bestPos] = 0
                 if (count >= limit) return count
             }
         }
