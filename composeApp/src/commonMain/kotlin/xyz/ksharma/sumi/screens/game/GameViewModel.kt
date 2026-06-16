@@ -318,6 +318,13 @@ class GameViewModel(
         }
     }
 
+    // Harder boards (fewer givens) earn a longer idle window so deep thinking
+    // isn't broken by an interstitial. See IDLE_INTERSTITIAL_* constants.
+    private fun idleInterstitialThresholdMs(): Long = when (currentDifficulty) {
+        Difficulty.Hard, Difficulty.Master, Difficulty.Edo -> IDLE_INTERSTITIAL_HARD_MS
+        Difficulty.Easy, Difficulty.Medium -> IDLE_INTERSTITIAL_MS
+    }
+
     private fun startTimer() {
         timerJob = viewModelScope.launch {
             while (true) {
@@ -332,7 +339,7 @@ class GameViewModel(
                 // — game in progress, not paused, no ad currently showing.
                 if (!_showIdleInterstitial.value) {
                     idleMs += TIMER_TICK_MS
-                    if (idleMs >= IDLE_INTERSTITIAL_MS && adOrchestrator.mayShowInterstitial()) {
+                    if (idleMs >= idleInterstitialThresholdMs() && adOrchestrator.mayShowInterstitial()) {
                         idleMs = 0L
                         _showIdleInterstitial.value = true
                     }
@@ -418,9 +425,12 @@ class GameViewModel(
 
     private companion object {
         const val TIMER_TICK_MS = 1000L
-        // Show an interstitial after 90s of zero input on the Game screen — only when the
-        // orchestrator's frequency cap allows. Reset on every user action.
+        // Show an interstitial after this many ms of zero input on the Game screen — only
+        // when the orchestrator's frequency cap allows. Reset on every user action.
+        // Harder boards get a longer window so a player thinking through a tough cell
+        // isn't interrupted (Hard / Master / Edo => 120s, everything else => 90s).
         const val IDLE_INTERSTITIAL_MS = 90_000L
+        const val IDLE_INTERSTITIAL_HARD_MS = 120_000L
         const val BOARD_SIZE = 9
         // solution uses 1 (not 0) so isComplete = (0 == 1) = false before init() fires.
         // A solution of all-zeros would make isComplete immediately true and trigger Win navigation.

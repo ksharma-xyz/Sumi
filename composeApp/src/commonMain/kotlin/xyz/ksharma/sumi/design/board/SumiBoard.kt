@@ -63,7 +63,12 @@ private const val THIN_LINE_ALPHA = 0.32f
 // user's OS text size is. cellSize is capped at MAX_BOARD_WIDTH/9 upstream, so
 // these ratios also act as the maximum on tablets.
 private const val DIGIT_SIZE_RATIO = 0.60f
-private const val NOTE_SIZE_RATIO = 0.26f
+private const val NOTE_SIZE_RATIO = 0.30f
+
+// Inset (per side, as a fraction of cellSize) reserved as a margin around the
+// 3x3 pencil-mark grid so the outer notes are centred inside a slightly smaller
+// area and never touch the cell border, even at the larger NOTE_SIZE_RATIO.
+private const val NOTE_AREA_INSET_RATIO = 0.07f
 
 @Composable
 fun SumiBoard(
@@ -376,7 +381,11 @@ private fun NoteGrid(
         modifier = Modifier,
     ) { measurables, _ ->
         val cellPx = cellSize.roundToPx()
-        val subCell = cellPx / 3
+        // Reserve a small margin on every side so the 3x3 note grid sits inside the
+        // cell and the outer notes never touch the border (see NOTE_AREA_INSET_RATIO).
+        val inset = (cellSize * NOTE_AREA_INSET_RATIO).roundToPx()
+        val areaPx = cellPx - inset * 2
+        val subCell = areaPx / 3
         // Measure each glyph at its natural size (unbounded) instead of forcing it
         // into the sub-cell, then centre it in its 3x3 slot — so a larger note can
         // never be clipped at the edges.
@@ -385,8 +394,8 @@ private fun NoteGrid(
             placeables.forEachIndexed { i, p ->
                 val nr = i / 3
                 val nc = i % 3
-                val x = offsetX.roundToPx() + nc * subCell + (subCell - p.width) / 2
-                val y = offsetY.roundToPx() + nr * subCell + (subCell - p.height) / 2
+                val x = offsetX.roundToPx() + inset + nc * subCell + (subCell - p.width) / 2
+                val y = offsetY.roundToPx() + inset + nr * subCell + (subCell - p.height) / 2
                 p.placeRelative(x, y)
             }
         }
