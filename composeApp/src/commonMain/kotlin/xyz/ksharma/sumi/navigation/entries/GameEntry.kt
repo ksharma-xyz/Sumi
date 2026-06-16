@@ -73,7 +73,13 @@ fun EntryProviderScope<NavKey>.GameEntry(navigator: SumiNavigator) {
         val diff = Difficulty.entries.firstOrNull { it.name == key.difficulty } ?: Difficulty.Medium
         val isPro by proRepo.isPro().collectAsState(initial = false)
         val isAdsEnabled by debugPrefs.observeAdsEnabled().collectAsState(initial = true)
+        // Manual pause — the only thing that shows the resume overlay. Set solely by the
+        // pause button (onPause/onResume below), never by lifecycle/background events.
         var paused by rememberSaveable { mutableStateOf(false) }
+        // Auto-pause — freezes the timer while the app is backgrounded so time away doesn't
+        // count, but shows NO overlay and auto-resumes on return. Kept separate from `paused`
+        // so leaving the app / navigating home never flashes the resume UI.
+        var autoPaused by rememberSaveable { mutableStateOf(false) }
 
         // Gate the board on init having started *for this entry*. The first
         // composition runs before the LaunchedEffect below fires vm.init(), so
@@ -84,6 +90,7 @@ fun EntryProviderScope<NavKey>.GameEntry(navigator: SumiNavigator) {
         var initStarted by remember(key) { mutableStateOf(false) }
         LaunchedEffect(key.difficulty) {
             paused = false // new game is never paused — keep the overlay state in sync with the VM
+            autoPaused = false
             vm.init(diff, proHints = isPro)
             initStarted = true
             analytics.logGameStarted(key.difficulty)
@@ -118,17 +125,26 @@ fun EntryProviderScope<NavKey>.GameEntry(navigator: SumiNavigator) {
             }
         }
 
-        // Auto-pause when the app is backgrounded so the clock freezes and the player
-        // returns to a paused board instead of a running timer. Skipped while one of our
-        // own ads is showing (those background the activity but aren't the player leaving).
+        // Auto-pause when the app is backgrounded so the clock freezes and time away doesn't
+        // count against the solve. This freezes the TIMER ONLY — it shows no overlay and is
+        // undone automatically on ON_START. The resume overlay is reserved for a manual pause.
+        // Skipped while one of our own ads is showing (those background the activity but aren't
+        // the player leaving) and when already manually paused.
         LifecycleEventEffect(Lifecycle.Event.ON_STOP) {
-            // Skip when we're leaving for the win / game-over screens (and while our own ads
-            // show) — otherwise the pause overlay flashes during that navigation.
             val leavingForResult = state.isComplete || gameOver
             val adShowing = showIdleInterstitial || showRewardedHintAd
-            if (!adShowing && !leavingForResult) {
-                paused = true
+            if (!adShowing && !leavingForResult && !paused) {
+                autoPaused = true
                 vm.setPaused(true)
+            }
+        }
+
+        // Returning to the foreground — silently unfreeze the timer if we auto-paused. A manual
+        // pause (paused == true) is left untouched so the player still sees the resume overlay.
+        LifecycleEventEffect(Lifecycle.Event.ON_START) {
+            if (autoPaused) {
+                autoPaused = false
+                if (!paused) vm.setPaused(false)
             }
         }
 
