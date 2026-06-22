@@ -7,19 +7,16 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.flow.first
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
 import xyz.ksharma.sumi.game.model.Difficulty
-import kotlin.time.Clock
-import kotlin.time.ExperimentalTime
 
 class DataStoreGameSaveRepository(private val store: DataStore<Preferences>) : GameSaveRepository {
 
     override suspend fun loadSave(difficulty: Difficulty): GameSave? {
         val prefs = store.data.first()
         val slot = difficulty.slot
+        // An in-progress game persists until it's finished or replaced via "New Puzzle" —
+        // no date comparison, so returning after several days resumes the same board.
         val day = prefs[slot.dayKey] ?: return null
-        if (day != todayEpochDay()) return null // stale — daily puzzle has rolled over
         return GameSave(
             epochDay = day,
             cells = prefs[slot.cellsKey] ?: return null,
@@ -85,11 +82,4 @@ private class SaveSlot(private val diff: String) {
     val notesKey = stringPreferencesKey("save_${diff}_notes")
     val selectedRowKey = intPreferencesKey("save_${diff}_sel_row")
     val selectedColKey = intPreferencesKey("save_${diff}_sel_col")
-}
-
-@OptIn(ExperimentalTime::class)
-private fun todayEpochDay(): Long {
-    val now = Clock.System.now()
-    val local = now.toLocalDateTime(TimeZone.currentSystemDefault())
-    return local.date.toEpochDays()
 }
