@@ -30,6 +30,10 @@ site/
 keystore.jks
 *.jks
 
+# Local CI/CD secrets setup notes — never commit, contains no secrets itself but
+# is a checklist for adding them
+CICD_SECRETS_SETUP.md
+
 # Fastlane — generated build artifacts and report HTML
 iosApp/build/
 iosApp/fastlane/report.xml
