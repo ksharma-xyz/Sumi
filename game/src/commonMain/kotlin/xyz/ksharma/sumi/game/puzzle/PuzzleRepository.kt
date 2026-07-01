@@ -15,4 +15,11 @@ interface PuzzleRepository {
     suspend fun daily(difficulty: Difficulty = Difficulty.Medium): BoardState
     suspend fun getOptions(difficulty: Difficulty, count: Int = 3): List<BoardState>
     suspend fun fromSeed(difficulty: Difficulty, seed: Long): BoardState
+
+    /**
+     * The deterministic seed for today's daily puzzle (one per UTC day). Cheap clock
+     * math — no generation — so it is non-suspend. Persisting this concrete seed lets a
+     * resumed daily game be rebuilt with [fromSeed] on any later day.
+     */
+    fun dailySeed(): Long
 }

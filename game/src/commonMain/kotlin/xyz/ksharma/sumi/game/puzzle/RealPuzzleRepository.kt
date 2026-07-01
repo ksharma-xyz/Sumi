@@ -80,7 +80,7 @@ class RealPuzzleRepository : PuzzleRepository {
         seed xor (DIFFICULTY_SALT * (difficulty.ordinal + 1).toLong())
 
     /** Days-since-epoch — the seed flips once per UTC day so each day has its own daily puzzle. */
-    private fun dailySeed(): Long {
+    override fun dailySeed(): Long {
         val days = Clock.System.now().toEpochMilliseconds() / MILLIS_PER_DAY
         return days.absoluteValue
     }

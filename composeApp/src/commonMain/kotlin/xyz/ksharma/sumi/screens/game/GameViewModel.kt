@@ -144,13 +144,12 @@ class GameViewModel(
                     save = null
                 } else {
                     val loadedSave = saveRepository.loadSave(difficulty)
-                    if (loadedSave != null && loadedSave.puzzleSeed != 0L) {
-                        currentSeed = loadedSave.puzzleSeed
-                        freshPuzzle = puzzleRepository.fromSeed(difficulty, currentSeed)
-                    } else {
-                        currentSeed = 0L
-                        freshPuzzle = puzzleRepository.daily(difficulty)
-                    }
+                    // Legacy saves (seed 0) and the no-save case fall back to today's
+                    // daily seed. buildSave persists this concrete seed, so the game can
+                    // be rebuilt with fromSeed and resumes on any later day instead of
+                    // being replaced by a freshly-rolled daily puzzle.
+                    currentSeed = loadedSave?.puzzleSeed?.takeIf { it != 0L } ?: puzzleRepository.dailySeed()
+                    freshPuzzle = puzzleRepository.fromSeed(difficulty, currentSeed)
                     save = loadedSave
                 }
 
