@@ -96,14 +96,20 @@ jobs:
           grep "versionName" androidApp/build.gradle.kts
 
       - name: Bump MARKETING_VERSION in Config.xcconfig
-        # NOTE: iosApp/iosApp/Info.plist has GENERATE_INFOPLIST_FILE=YES, so Xcode
-        # generates CFBundleShortVersionString at build time from MARKETING_VERSION
-        # here — patching Info.plist directly (the old approach) is a no-op because
-        # that key doesn't exist in the on-disk plist at all. Fastfile's build_release
-        # lane reads this file and passes it via xcargs, overriding any Xcode default.
         run: |
-          sed -i 's/MARKETING_VERSION=.*/MARKETING_VERSION=${{ steps.next.outputs.next }}/' iosApp/Configuration/Config.xcconfig
-          grep "MARKETING_VERSION" iosApp/Configuration/Config.xcconfig
+          # iOS version source of truth is MARKETING_VERSION in Config.xcconfig.
+          # iosApp/iosApp/Info.plist has GENERATE_INFOPLIST_FILE=YES, so Xcode generates
+          # CFBundleShortVersionString at build time from this value — patching Info.plist
+          # directly (the old approach here) was a no-op because that key doesn't exist
+          # in the on-disk plist at all. Fastfile's build_release lane reads this file and
+          # passes it via xcargs, overriding any Xcode default.
+          FILE="iosApp/Configuration/Config.xcconfig"
+          if ! grep -q '^MARKETING_VERSION=' "$FILE"; then
+            echo "::error::MARKETING_VERSION not found in ${FILE}"
+            exit 1
+          fi
+          sed -i 's/^MARKETING_VERSION=.*/MARKETING_VERSION=${{ steps.next.outputs.next }}/' "$FILE"
+          grep '^MARKETING_VERSION=' "$FILE"
 
       - name: Commit and push version bump to main
         run: |
