@@ -2,132 +2,271 @@
 
 > **TODO for the repo owner.** GitHub Actions workflows in `.github/workflows/` are
 > committed and ready, but they fail until the secrets and variables below are added.
-> This is a one-time setup. Work top-down: do **Tier 1** first to get PR checks green,
-> then the rest when you need distribution.
+> One-time setup. Do steps in order — each step is a click-path to get a value, then
+> a command that uploads it straight to GitHub via `gh`. No manual pasting into the
+> GitHub UI needed.
 
-## Where things go in GitHub
+## Before you start
 
-| Type | Location in GitHub UI |
-|---|---|
-| **Secrets** (encrypted, e.g. keys, passwords, JSON) | Repo → **Settings → Secrets and variables → Actions → Secrets** tab → *New repository secret* |
-| **Variables** (plain text, e.g. counters, team id) | Repo → **Settings → Secrets and variables → Actions → Variables** tab → *New repository variable* |
-| **Environment** named `Firebase` | Repo → **Settings → Environments**. Several jobs declare `environment: Firebase`. Referencing it auto-creates it on first run, so you don't have to pre-create it. Repository-level secrets are visible to those jobs too — **adding everything at the repository level (above) is sufficient.** Only use environment secrets if you later want approval/protection rules. |
+a) Open Terminal.
+b) Run:
+```bash
+cd /Users/ksharma/code/apps/Sumi
+gh auth status
+```
+c) Confirm it says you're logged in to `ksharma-xyz/Sumi` (or GitHub generally).
+d) Run:
+```bash
+gh secret list
+gh variable list
+```
+e) Both should print nothing right now — that's the starting point.
 
-After adding everything, re-run the failed workflow from the **Actions** tab (or push a new commit) — there is no CLI command needed; GitHub injects them automatically.
+Environment `Firebase` already exists on the repo — nothing to create there.
 
 ---
 
-## Tier 1 — minimum to make PR checks pass
+## Tier 1 — makes PR checks pass
 
-The `Sumi App CI` workflow (`build.yml`) runs on every PR to `main`. Its jobs:
+### Step 1 — `FIREBASE_GOOGLE_SERVICES_JSON_DEBUG`
+a) Go to https://console.firebase.google.com
+b) Click your Sumi project.
+c) Click the gear icon (top left) → **Project settings**.
+d) Scroll to **Your apps**, find the Android app with package name `xyz.ksharma.sumi.debug`.
+e) Click that app, click **google-services.json** to download it.
+f) In Terminal, run (adjust path if it downloaded somewhere else):
+```bash
+base64 -i ~/Downloads/google-services.json | tr -d '\n' | gh secret set FIREBASE_GOOGLE_SERVICES_JSON_DEBUG
+```
+g) Rename or move that file out of `~/Downloads` now (so step 2 doesn't overwrite it).
 
-- `code-quality` (detekt) — **needs nothing.** Already passes.
-- `build-android-debug`, `build-android-release` — need the Android secrets below.
-- `build-ios` — needs `FIREBASE_IOS_GOOGLE_INFO`.
+### Step 2 — `FIREBASE_GOOGLE_SERVICES_JSON_RELEASE`
+a) Same **Project settings → Your apps** page.
+b) Find the Android app with package name `xyz.ksharma.sumi` (no `.debug` suffix).
+c) Click it, click **google-services.json** to download.
+d) Run:
+```bash
+base64 -i ~/Downloads/google-services.json | tr -d '\n' | gh secret set FIREBASE_GOOGLE_SERVICES_JSON_RELEASE
+```
 
-(The `distribute-*` jobs only run on push to `main`, **not** on PRs — see Tier 2/3.)
+### Step 3 — `FIREBASE_IOS_GOOGLE_INFO`
+a) Same **Your apps** page → find the iOS app.
+b) Click it, click **GoogleService-Info.plist** to download.
+c) Run:
+```bash
+base64 -i ~/Downloads/GoogleService-Info.plist | tr -d '\n' | gh secret set FIREBASE_IOS_GOOGLE_INFO
+```
 
-### Secrets
+### Step 4 — `ANDROID_KEYSTORE_FILE`
+Sumi already shipped 1.2 on Play, so a release keystore exists somewhere on your
+machine already — find and reuse it. **Do not generate a new one**; a new
+keystore can't update an existing Play listing.
 
-| Secret | What it is | Where to get it | Format to paste |
-|---|---|---|---|
-| `FIREBASE_GOOGLE_SERVICES_JSON_DEBUG` | Firebase config for the `.debug` app | Firebase Console → Project settings → *Your apps* → Android app `xyz.ksharma.sumi.debug` → `google-services.json` | **base64**, one line (see commands) |
-| `FIREBASE_GOOGLE_SERVICES_JSON_RELEASE` | Firebase config for the prod app | Firebase Console → Android app `xyz.ksharma.sumi` → `google-services.json` | **base64**, one line |
-| `FIREBASE_IOS_GOOGLE_INFO` | Firebase config for the iOS app | Firebase Console → iOS app → `GoogleService-Info.plist` | **base64**, one line |
-| `ANDROID_KEYSTORE_FILE` | Upload/release signing keystore | Your `keystore.jks` (the one you sign releases with). If you don't have one yet, create it with `keytool` (command below) | **base64**, one line |
-| `ANDROID_KEYSTORE_PASSWORD` | Keystore (store) password | Set when the keystore was created | plain text |
-| `ANDROID_KEY_ALIAS` | Key alias inside the keystore | Set when the keystore was created (`keytool -list -keystore keystore.jks` to check) | plain text |
-| `ANDROID_KEY_PASSWORD` | Key (alias) password | Set when the keystore was created | plain text |
-| `PAT_SUMI_GITHUB` | GitHub token used to bump the `ANDROID_VERSION_CODE` variable | GitHub → Settings → Developer settings → **Personal access tokens**. Classic: `repo` scope. Fine-grained: this repo + **Variables: Read and write** + **Contents: Read and write** | the token string |
+a) Run:
+```bash
+mdfind -name keystore.jks
+```
+b) If it finds a path, run (swap in that path):
+```bash
+base64 -i /path/to/keystore.jks | tr -d '\n' | gh secret set ANDROID_KEYSTORE_FILE
+```
+c) If `mdfind` finds nothing AND you're certain this is genuinely the first
+   release build ever signed, only then create one:
+```bash
+keytool -genkeypair -v -keystore keystore.jks -alias sumi-upload -keyalg RSA -keysize 2048 -validity 10000
+```
+d) It will prompt for a store password and a key password interactively — type
+   them in and **write both down**, you need them in steps 5–7.
+e) Then run:
+```bash
+base64 -i keystore.jks | tr -d '\n' | gh secret set ANDROID_KEYSTORE_FILE
+```
 
-### Variables
+### Step 5 — `ANDROID_KEYSTORE_PASSWORD`
+a) This is the store password from step 4 (either the one you already had, or
+   the one you just typed when creating the keystore).
+b) Run (swap in the real password):
+```bash
+gh secret set ANDROID_KEYSTORE_PASSWORD --body "PASTE_PASSWORD_HERE"
+```
 
-| Variable | What it is | Value to set |
-|---|---|---|
-| `ANDROID_VERSION_CODE` | Monotonic Play Store version code; release builds increment it | Start at the last code you uploaded, or `108` if unsure (local default is 107) |
+### Step 6 — `ANDROID_KEY_ALIAS`
+a) Run:
+```bash
+keytool -list -keystore /path/to/keystore.jks
+```
+b) It'll ask for the store password — type it in.
+c) It prints one alias name (e.g. `sumi-upload`). Copy that exact string.
+d) Run:
+```bash
+gh secret set ANDROID_KEY_ALIAS --body "the-alias-name"
+```
 
-> **Note:** `build-android-release` signs the AAB. If you only care about PR *checks* and
-> not signed release artifacts yet, the release job will still fail without the keystore
-> secrets — there's no way to skip just that job without editing `build.yml`. Add the four
-> `ANDROID_*` keystore secrets to get the whole PR green.
+### Step 7 — `ANDROID_KEY_PASSWORD`
+a) The key (alias) password from when the keystore was created — often the
+   same as the store password, but not always.
+b) Run:
+```bash
+gh secret set ANDROID_KEY_PASSWORD --body "PASTE_PASSWORD_HERE"
+```
+
+### Step 8 — `PAT_SUMI_GITHUB`
+a) Go to https://github.com/settings/tokens?type=beta
+b) Click **Generate new token**.
+c) Under **Repository access**, choose **Only select repositories** → pick `ksharma-xyz/Sumi`.
+d) Under **Permissions**, set **Contents** → Read and write, **Variables** → Read and write.
+e) Click **Generate token**.
+f) Click the copy icon next to the token (shown once — copy it now).
+g) Run:
+```bash
+gh secret set PAT_SUMI_GITHUB --body "$(pbpaste)"
+```
+
+### Step 9 — `ANDROID_VERSION_CODE` (variable, not secret)
+a) Go to https://play.google.com/console
+b) Click into the Sumi app.
+c) Left sidebar → **Release → Production** (or whichever track has the latest build) → note the version code number shown.
+d) Run (swap in that number, or use `108` if you can't find it — local fallback is 107):
+```bash
+gh variable set ANDROID_VERSION_CODE --body "108"
+```
 
 ---
 
 ## Tier 2 — Android distribution (push to `main`)
 
-Used by `distribute-firebase.yml` and `distribute-google-play.yml`.
+### Step 10 — `FIREBASE_SERVICE_ACCOUNT_KEY`
+a) Firebase Console → gear icon → **Project settings** → **Service accounts** tab.
+b) Click **Generate new private key** → confirm → a JSON file downloads.
+c) Run (adjust the filename glob to match what actually downloaded):
+```bash
+gh secret set FIREBASE_SERVICE_ACCOUNT_KEY < ~/Downloads/*-firebase-adminsdk-*.json
+```
+(raw JSON, not base64)
 
-| Secret | What it is | Where to get it | Format |
-|---|---|---|---|
-| `FIREBASE_SERVICE_ACCOUNT_KEY` | Service account for Firebase App Distribution | Firebase Console → Project settings → **Service accounts** → *Generate new private key* (JSON) | **raw JSON** (paste the file contents as-is, not base64) |
-| `FIREBASE_ANDROID_DEBUG_APP_ID` | Firebase App ID for the debug app | Firebase Console → debug app → *App ID* (looks like `1:1234567890:android:abc123`) | plain text |
-| `FIREBASE_ANDROID_PROD_APP_ID` | Firebase App ID for the prod app | Firebase Console → prod app → *App ID* | plain text |
-| `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` | Play Console service account for uploads | Google Play Console → **Setup → API access** → create/link a service account in Google Cloud, grant *Release* permissions, download JSON key | **raw JSON** (plain text) |
+### Step 11 — `FIREBASE_ANDROID_DEBUG_APP_ID`
+a) Firebase Console → **Project settings → Your apps** → click the debug app (`xyz.ksharma.sumi.debug`).
+b) Copy the **App ID** shown (looks like `1:1234567890:android:abc123`).
+c) Run:
+```bash
+gh secret set FIREBASE_ANDROID_DEBUG_APP_ID --body "$(pbpaste)"
+```
+
+### Step 12 — `FIREBASE_ANDROID_PROD_APP_ID`
+a) Same page → click the prod app (`xyz.ksharma.sumi`).
+b) Copy its **App ID**.
+c) Run:
+```bash
+gh secret set FIREBASE_ANDROID_PROD_APP_ID --body "$(pbpaste)"
+```
+
+### Step 13 — `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`
+a) Play Console → **Setup → API access** (left sidebar).
+b) If no Cloud project linked yet, click **Create new project** (or link an existing one).
+c) Click **Create new service account** — this opens Google Cloud Console in a new tab with instructions; follow through to create it.
+d) Back in Play Console's API access page, find your new service account under **Service accounts**, click **Grant access**.
+e) Give it the **Release manager** role (or Admin), click **Invite user** / **Send invite**.
+f) In Google Cloud Console → **IAM & Admin → Service Accounts** → click your account → **Keys** tab → **Add key → Create new key → JSON** → downloads a JSON file.
+g) Run:
+```bash
+gh secret set GOOGLE_PLAY_SERVICE_ACCOUNT_JSON < ~/Downloads/your-project-*.json
+```
 
 ---
 
 ## Tier 3 — iOS distribution / TestFlight
 
-Used by `distribute-testflight.yml`.
+### Step 14 — `APPSTORE_KEY_ID`
+a) Go to https://appstoreconnect.apple.com
+b) Click **Users and Access** (top nav or hamburger menu).
+c) Click **Integrations** tab → **App Store Connect API**.
+d) Click **+** to generate a new team key, name it (e.g. "CI"), role **App Manager**, click **Generate**.
+e) Copy the **Key ID** shown in the new row.
+f) Run:
+```bash
+gh secret set APPSTORE_KEY_ID --body "$(pbpaste)"
+```
 
-| Secret | What it is | Where to get it | Format |
-|---|---|---|---|
-| `APPSTORE_KEY_ID` | App Store Connect API key ID | App Store Connect → **Users and Access → Integrations → App Store Connect API** → your key's *Key ID* | plain text |
-| `APPSTORE_ISSUER_ID` | App Store Connect API issuer ID | Same page, top of the Keys section → *Issuer ID* | plain text |
-| `APPSTORE_PRIVATE_KEY` | The API private key | Same page → download `AuthKey_XXXX.p8` (downloadable **once**) | **full contents of the `.p8` file**, including the `-----BEGIN/END PRIVATE KEY-----` lines |
-| `IOS_DIST_SIGNING_KEY_BASE64` | Apple distribution certificate | Export your *Apple Distribution* cert + private key from Keychain as a `.p12` | **base64**, one line |
-| `IOS_DIST_SIGNING_KEY_PASSWORD` | Password you set on the `.p12` export | You choose it during export | plain text |
-| `IOS_PROVISIONING_PROFILE_NAME` | Name of the App Store provisioning profile | Apple Developer → Certificates, IDs & Profiles → your *App Store* profile name (or the one Fastlane manages) | plain text |
+### Step 15 — `APPSTORE_ISSUER_ID`
+a) Same **Integrations → App Store Connect API** page.
+b) Copy the **Issuer ID** shown at the top of the Keys section (same for all keys).
+c) Run:
+```bash
+gh secret set APPSTORE_ISSUER_ID --body "$(pbpaste)"
+```
 
-### Variables (Tier 3)
+### Step 16 — `APPSTORE_PRIVATE_KEY`
+a) Same page → click **Download API Key** next to the key you just created.
+b) This works **once only** — if you lose the file you must generate a new key and redo steps 14–16.
+c) Run:
+```bash
+gh secret set APPSTORE_PRIVATE_KEY < ~/Downloads/AuthKey_*.p8
+```
+(full file contents, not base64)
 
-| Variable | What it is | Value |
-|---|---|---|
-| `DEVELOPMENT_TEAM` | Apple Developer Team ID | Apple Developer → Membership → *Team ID* (10 chars) |
-| `IOS_BUILD_NUMBER` | Monotonic floor for the TestFlight build number | Start at the last build number you uploaded, or `1` |
+### Step 17 — `IOS_DIST_SIGNING_KEY_BASE64`
+a) Open Xcode → **Settings** (Cmd+,) → **Accounts** tab.
+b) Select your Apple ID → click **Manage Certificates...**.
+c) Check if an **Apple Distribution** certificate already exists — if yes, reuse it (skip to step d). If not, click **+** → **Apple Distribution**.
+d) Open **Keychain Access** app (Spotlight → "Keychain Access").
+e) Find the **Apple Distribution: [your name]** certificate in the *login* keychain, under **My Certificates**.
+f) Right-click it → **Export "Apple Distribution: ..."** → save as `DistributionCert.p12` to your Desktop.
+g) It'll prompt for an export password — set one and remember it (needed in step 18).
+h) It may also ask for your Mac login password to allow the export — enter it.
+i) Run:
+```bash
+base64 -i ~/Desktop/DistributionCert.p12 | tr -d '\n' | gh secret set IOS_DIST_SIGNING_KEY_BASE64
+```
+
+### Step 18 — `IOS_DIST_SIGNING_KEY_PASSWORD`
+a) The export password you set in step 17g.
+b) Run:
+```bash
+gh secret set IOS_DIST_SIGNING_KEY_PASSWORD --body "PASTE_PASSWORD_HERE"
+```
+
+### Step 19 — `IOS_PROVISIONING_PROFILE_NAME`
+a) App Store Connect → **Users and Access** → or directly https://developer.apple.com/account/resources/profiles/list
+b) Look for an **App Store** type profile for bundle ID `xyz.ksharma.sumi`.
+c) If none exists, click **+** → **App Store** distribution → select the `xyz.ksharma.sumi` App ID → select your distribution certificate → name it (e.g. "Sumi App Store") → **Generate**.
+d) Copy the exact profile name shown.
+e) Run:
+```bash
+gh secret set IOS_PROVISIONING_PROFILE_NAME --body "$(pbpaste)"
+```
+
+### Step 20 — `DEVELOPMENT_TEAM` (variable)
+a) Go to https://developer.apple.com/account → **Membership details**.
+b) Copy the **Team ID** (10 characters, e.g. `ABCDE12345`).
+c) Run:
+```bash
+gh variable set DEVELOPMENT_TEAM --body "$(pbpaste)"
+```
+
+### Step 21 — `IOS_BUILD_NUMBER` (variable)
+a) App Store Connect → your app → **TestFlight** tab → note the highest build number already uploaded.
+b) Run (swap in that number, or `0` if unsure):
+```bash
+gh variable set IOS_BUILD_NUMBER --body "0"
+```
 
 ---
 
-## Encoding commands
+## Verify everything landed
 
-GitHub secrets must be a single line. Base64-encode files like this:
-
+a) Run:
 ```bash
-# macOS
-base64 -i google-services.json | tr -d '\n' | pbcopy        # now paste into the secret
-base64 -i keystore.jks         | tr -d '\n' | pbcopy
-base64 -i GoogleService-Info.plist | tr -d '\n' | pbcopy
-base64 -i dist_cert.p12        | tr -d '\n' | pbcopy
-
-# Linux
-base64 -w0 google-services.json   # copy the printed line
+gh secret list
 ```
-
-Create an Android keystore (only if you don't already have one):
-
+   Expect 18 secrets listed.
+b) Run:
 ```bash
-keytool -genkeypair -v -keystore keystore.jks \
-  -alias sumi-upload -keyalg RSA -keysize 2048 -validity 10000
-# remember the store password, alias (sumi-upload), and key password —
-# those become ANDROID_KEYSTORE_PASSWORD / ANDROID_KEY_ALIAS / ANDROID_KEY_PASSWORD
+gh variable list
 ```
+   Expect 3 variables: `ANDROID_VERSION_CODE`, `DEVELOPMENT_TEAM`, `IOS_BUILD_NUMBER`.
+c) Go to https://github.com/ksharma-xyz/Sumi/actions → click **Distribute Google Play** in the left list → **Run workflow** → track `internal` → **Run workflow** button. This is a low-stakes dry run before trusting the full cut → RC → tag chain.
 
-> Raw-JSON secrets (`FIREBASE_SERVICE_ACCOUNT_KEY`, `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`)
-> and the `.p8` key are pasted **as-is, not base64**. Only the files in the
-> "base64, one line" rows get encoded.
-
----
-
-## Verify it worked
-
-1. Push a commit or open a PR to `main`, then watch **Actions → Sumi App CI**.
-2. `code-quality` should already be green. Once Tier 1 is in, `build-android-debug`,
-   `build-android-release`, and `build-ios` go green too.
-3. If a job fails, open its log — missing-secret failures point at the exact step
-   (e.g. the keystore decode or the `google-services.json` write).
-
-Local equivalent of the no-secret check (always runnable):
-
+Local no-secret check (always runnable, doesn't need any of the above):
 ```bash
 ./gradlew :composeApp:compileKotlinIosSimulatorArm64 :composeApp:compileAndroidMain :composeApp:detekt :game:testAndroidHostTest
 ```
