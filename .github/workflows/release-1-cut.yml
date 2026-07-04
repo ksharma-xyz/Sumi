@@ -95,31 +95,19 @@ jobs:
           sed -i 's/versionName = "[^"]*"/versionName = "${{ steps.next.outputs.next }}"/' androidApp/build.gradle.kts
           grep "versionName" androidApp/build.gradle.kts
 
-      - name: Bump CFBundleShortVersionString in Info.plist
+      - name: Bump MARKETING_VERSION in Config.xcconfig
+        # NOTE: iosApp/iosApp/Info.plist has GENERATE_INFOPLIST_FILE=YES, so Xcode
+        # generates CFBundleShortVersionString at build time from MARKETING_VERSION
+        # here — patching Info.plist directly (the old approach) is a no-op because
+        # that key doesn't exist in the on-disk plist at all. Fastfile's build_release
+        # lane reads this file and passes it via xcargs, overriding any Xcode default.
         run: |
-          python3 - << 'EOF'
-          import re
-          version = "${{ steps.next.outputs.next }}"
-          path = "iosApp/iosApp/Info.plist"
-          with open(path, "r") as f:
-              content = f.read()
-          updated = re.sub(
-              r'(<key>CFBundleShortVersionString</key>\s*<string>)[^<]*(</string>)',
-              rf'\g<1>{version}\g<2>',
-              content,
-          )
-          if updated == content:
-              print("WARNING: CFBundleShortVersionString not found in Info.plist — skipping iOS version bump")
-              print("Add CFBundleShortVersionString to iosApp/iosApp/Info.plist to enable automatic iOS version bumps.")
-          else:
-              with open(path, "w") as f:
-                  f.write(updated)
-              print(f"Updated CFBundleShortVersionString to {version}")
-          EOF
+          sed -i 's/MARKETING_VERSION=.*/MARKETING_VERSION=${{ steps.next.outputs.next }}/' iosApp/Configuration/Config.xcconfig
+          grep "MARKETING_VERSION" iosApp/Configuration/Config.xcconfig
 
       - name: Commit and push version bump to main
         run: |
-          git add androidApp/build.gradle.kts iosApp/iosApp/Info.plist
+          git add androidApp/build.gradle.kts iosApp/Configuration/Config.xcconfig
           if git diff --staged --quiet; then
             echo "No changes to commit — main may already be at ${{ steps.next.outputs.next }}"
           else
