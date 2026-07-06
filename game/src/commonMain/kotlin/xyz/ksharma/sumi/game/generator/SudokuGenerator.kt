@@ -52,15 +52,16 @@ object SudokuGenerator {
         var bestPos = -1
         var bestCount = 10
         for (i in 0..80) {
-            if (board[i] != 0) continue
-            var candidates = 0
-            val row = i / 9
-            val col = i % 9
-            for (d in 1..9) if (isValid(board, row, col, d)) candidates++
-            if (candidates < bestCount) {
-                bestCount = candidates
-                bestPos = i
-                if (candidates <= 1) break // can't do better than 0/1 — stop scanning
+            if (board[i] == 0) {
+                var candidates = 0
+                val row = i / 9
+                val col = i % 9
+                for (d in 1..9) if (isValid(board, row, col, d)) candidates++
+                if (candidates < bestCount) {
+                    bestCount = candidates
+                    bestPos = i
+                    if (candidates <= 1) break // can't do better than 0/1 — stop scanning
+                }
             }
         }
         if (bestPos == -1) return 1 // no empty cells left — a complete solution
