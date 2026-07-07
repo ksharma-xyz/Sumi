@@ -1,0 +1,9 @@
+Calmer to read, smarter to play.
+
+- Pencil marks are saved and tidy themselves up as you play
+- Clearer board: larger, fixed-size numbers and bolder grid lines
+- Smarter hints that show the next logical square
+- Long-press Notes to auto-fill candidates
+- Redo
+- New in Settings: high-legibility numerals, conflicts-only highlighting, digit-first input, and lives mode
+- Timer pauses in the background and remembers your square

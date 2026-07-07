@@ -1,0 +1,11 @@
+Calmer to read, smarter to play.
+
+- Pick up where you left off: your game is saved automatically, even days later
+- Pencil marks now clean themselves up as you place numbers
+- A clearer board: bigger numbers, bolder grid lines, easier on the eyes
+- The board blooms onto the screen like ink spreading on paper
+- Opens faster and resumes instantly
+- Hints now point you to the next logical move, not just a random answer
+- Long-press the Notes button to fill in candidates for you
+- Redo is here. Undo your undo
+- New in Settings: extra-legible numerals, show conflicts only, digit-first entry, and an optional lives mode
