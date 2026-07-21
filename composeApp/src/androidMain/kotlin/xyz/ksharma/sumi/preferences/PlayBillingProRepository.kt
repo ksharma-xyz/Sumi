@@ -29,7 +29,7 @@ import kotlin.coroutines.resume
 /**
  * Production Play Billing implementation of [ProRepository].
  *
- * Uses Play Billing Library 7.x (one-time products / INAPP type).
+ * Uses Play Billing Library 9.x (one-time products / INAPP type).
  * [BillingClient.launchBillingFlow] requires an [android.app.Activity], so the
  * call site must keep [ActivityHolder] current — [MainActivity] does this via
  * onResume / onDestroy.
@@ -57,6 +57,9 @@ class PlayBillingProRepository(
         .enablePendingPurchases(
             PendingPurchasesParams.newBuilder().enableOneTimeProducts().build(),
         )
+        // Billing Library 8+ manages transient disconnections itself; the library
+        // reconnects automatically instead of relying on manual retry logic.
+        .enableAutoServiceReconnection()
         .build()
 
     init {
