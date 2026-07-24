@@ -16,7 +16,7 @@ android {
         // Local builds fall back to 10 — high enough that an accidental local
         // upload to Play Console is rejected for collision rather than landing.
         versionCode = findProperty("versionCode")?.toString()?.toInt() ?: 107
-        versionName = "1.4.0"
+        versionName = "1.5.0"
     }
 
     signingConfigs {
