@@ -21,9 +21,14 @@ on:
         required: true
         type: string
 
+permissions:
+  contents: write
+
 jobs:
   release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     # Skip RC tags when triggered by a push (release-2-deploy-rc pushes v*-RC* tags).
     # workflow_call / workflow_dispatch always run — callers are responsible for filtering.
     if: ${{ github.event_name != 'push' || !contains(github.ref_name, '-RC') }}
@@ -31,7 +36,10 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         env:
-          GITHUB_TOKEN: ${{ secrets.PAT_SUMI_GITHUB }}
+          # PAT_SUMI_GITHUB returned 403 "Resource not accessible by integration"
+          # on release creation, so use the job token instead. The contents: write
+          # permission above is all a release needs.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ inputs.tag_name || github.ref_name }}
           generate_release_notes: true
