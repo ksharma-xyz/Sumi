@@ -1,0 +1,4 @@
+Maintenance and stability updates.
+
+- Behind the scenes work so Sumi keeps running smoothly on the latest devices
+- No changes to the way you play

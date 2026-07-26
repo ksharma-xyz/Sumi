@@ -65,7 +65,7 @@ private const val THIN_LINE_ALPHA = 0.32f
 // user's OS text size is. cellSize is capped at MAX_BOARD_WIDTH/9 upstream, so
 // these ratios also act as the maximum on tablets.
 private const val DIGIT_SIZE_RATIO = 0.60f
-private const val NOTE_SIZE_RATIO = 0.30f
+private const val NOTE_SIZE_RATIO = 0.36f
 
 // Inset (per side, as a fraction of cellSize) reserved as a margin around the
 // 3x3 pencil-mark grid so the outer notes are centred inside a slightly smaller

@@ -6,7 +6,66 @@ the table below it is the technical record.
 
 Copy rule: no middle dot, no em dash anywhere in user-facing text.
 
-## 1.2 (next version, unreleased)
+Every shipped version is tagged `v{version}` on `main` and has a matching
+GitHub Release. Store copy for each version lives in `docs/release-notes/`.
+
+## 1.5.0 (next version, unreleased, on `main`)
+
+### What's new (user-facing)
+
+Easier on the eyes.
+
+- Pencil marks are bigger. The candidate numbers inside a square grew from 30%
+  to 36% of the cell, so a square full of notes reads at a glance.
+
+### Changes (technical record)
+
+| Area | Commit | Summary |
+|------|--------|---------|
+| Board | `1adb0b2` | `NOTE_SIZE_RATIO` 0.30 -> 0.36 in `SumiBoard.kt` |
+
+## 1.4.0 (cut as `prod/1.4.0`, RC tag `v1.4.0-RC1`, not yet in production)
+
+Maintenance release. No user-facing changes.
+
+### Changes (technical record)
+
+| Area | Commit | Summary |
+|------|--------|---------|
+| Billing | `30c8ae0` | Play Billing Library 7.1.1 -> 9.0.0 plus `enableAutoServiceReconnection()`. Required: Google rejects updates on Billing below 8.0.0 from 31 Aug 2026 |
+| Generator | `2d427bf` | Fold `continue` into the `if` in the MRV scan (no behaviour change) |
+| CI | `91f9cab` | Guard clause around the `release-1-cut` MARKETING_VERSION bump |
+
+### Notes for QA / release
+- Android only in substance. The iOS build carries nothing new.
+- Verify the Pro one-time purchase and restore flow on Billing 9.0.0 before
+  promoting past the internal track.
+
+## 1.3.0 (released 2026-07-07, tag `v1.3.0`, branch `prod/1.3`)
+
+### What's new (user-facing)
+
+Never lose your place.
+
+- Your in-progress game is kept, even days later, instead of being discarded
+  after a day.
+- The board blooms onto the screen like ink spreading on paper.
+- Puzzles are cached, so opening a game resumes instantly and new puzzles
+  generate faster.
+- No more pause-overlay flash when returning from the background.
+- Bigger, better-contained pencil marks.
+
+### Changes (technical record)
+
+| Area | Commit | Summary |
+|------|--------|---------|
+| Board / ads | `0c1300b` | Bigger, contained pencil notes; difficulty-aware idle ad gap |
+| Fix / perf | `813fef4` | No pause-overlay flash on background; puzzle cache for instant resume |
+| Motion / perf | `91e9a3f` | Ink-bloom board entrance; faster puzzle generation |
+| Fix | `1a9be70` | Resume in-progress game instead of discarding it after a day |
+| Release | `838d5a3` | Bump to 1.3; fix `release-1-cut` iOS version bump no-op |
+
+## 1.2.0 (released 2026-06-15, tag `v1.2.0`)
 
 ### What's new (user-facing)
 
@@ -66,4 +125,8 @@ Commits on the working branch, oldest first.
 - Lives limit is `MAX_LIVES = 3` (`xyz.ksharma.sumi.screens.game.MAX_LIVES`).
 - Auto-fill notes is discoverable only via long-press today; consider a visible
   affordance later.
-- Release is iOS-only and shipped manually from Xcode.
+
+## 1.1.0 (released 2026-06-14, tag `v1.1.0`)
+
+No changelog section was written at the time. See the `v1.1.0` GitHub Release
+for the commit list.
