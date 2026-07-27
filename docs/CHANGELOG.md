@@ -6,8 +6,10 @@ the table below it is the technical record.
 
 Copy rule: no middle dot, no em dash anywhere in user-facing text.
 
-Every shipped version is tagged `v{version}` on `main` and has a matching
-GitHub Release. Store copy for each version lives in `docs/release-notes/`.
+Every shipped version is tagged `v{version}` off its `prod/{version}` branch
+and has a matching GitHub Release. Store copy for each version lives in
+`docs/release-notes/`. Note that `main`'s `versionName` is always the *next*
+version, not the one shipping.
 
 ## 1.5.0 (next version, unreleased, on `main`)
 
@@ -24,7 +26,7 @@ Easier on the eyes.
 |------|--------|---------|
 | Board | `1adb0b2` | `NOTE_SIZE_RATIO` 0.30 -> 0.36 in `SumiBoard.kt` |
 
-## 1.4.0 (cut as `prod/1.4.0`, RC tag `v1.4.0-RC1`, not yet in production)
+## 1.4.0 (released 2026-07-27, tag `v1.4.0`, branch `prod/1.4.0`)
 
 Maintenance release. No user-facing changes.
 
