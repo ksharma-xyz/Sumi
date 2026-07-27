@@ -41,3 +41,10 @@ iosApp/Pods/
 # Ruby / Bundler — gem deps installed at CI time
 .bundle/
 vendor/bundle/
+
+# Release artifacts and store assets — large binaries, kept locally only.
+# The signed bundle is produced by CI; screenshots and store art are uploaded
+# straight to Play Console / App Store Connect.
+androidApp/release/
+app-store-assets/
+screenshots/
