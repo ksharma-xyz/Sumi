@@ -434,17 +434,83 @@ Two blockers to clear before any of this pays off:
 Sumi is a single mega-module (`composeApp`), so KRAIL's convention plugin is overkill here —
 direct wiring in `composeApp/build.gradle.kts` is enough.
 
-### Order of work when we resume
+### Steps when we resume
 
-1. Decide: library vs copy-in template. Settle the `compileOnly` version-coupling question.
-2. Decide the name (recommend `darpan`).
-3. Fix the non-ASCII preview name in `PreviewAnnotations.kt`.
-4. Write previews for Sumi's screens and design-system components — the actual prerequisite.
-5. Wire snapshot testing into `composeApp` (direct, no convention plugin).
-6. Record baselines, add `.gitattributes` with `**/screenshots/**/*.png filter=lfs`.
-7. If library: extract to its own repo on the aagya/dhruva shape, then depend on it from Sumi.
-8. Either way, write the missing `kmp-snapshot-testing` skill in `claude-skills` — that artifact
-   is missing regardless of which path we take.
+Ordered. Step 0 gates everything; steps 1-6 are the same work whichever way step 0 lands, so
+they can start immediately. Steps 7-8 only apply if step 0 picks the library.
+
+**Step 0 — decide library vs copy-in template** *(needs Karan, blocking)*
+- [ ] Answer: does `compileOnly` for Roborazzi / Robolectric / ComposablePreviewScanner actually
+      work, so consumers bring their own versions? Prototype it before committing to the library.
+      If it does not hold, the copy-in template wins and steps 7-8 are dropped.
+- [ ] Pick the name if library: `darpan` (recommended) / `chhaya` / `chitra`.
+
+**Step 1 — clear the two known traps** *(Sumi, ~30 min)*
+- [ ] `composeApp/.../ui/preview/PreviewAnnotations.kt:17` — replace the non-ASCII `x` in
+      `"2. 2x Font Scale"` with plain ASCII. Non-ASCII in `@Preview(name = ...)` hangs Roborazzi's
+      PNG write on macOS and throws on Linux CI.
+- [ ] Grep every other `@Preview(name = ...)` and `group = ...` in the repo for non-ASCII.
+
+**Step 2 — write previews** *(Sumi, the actual prerequisite, biggest chunk)*
+- [ ] Sumi has exactly **1** preview today (`SumiBoardPreview`). Snapshot infra guards nothing
+      until this is done — do not do step 3 first.
+- [ ] Design-system components: `WashiBG`, `SumiButton`, `SumiChip`, `InkStain`, number pad,
+      the undo/redo/note/erase/hint tool row.
+- [ ] Screens: splash, onboarding, game, win, paywall, stats, settings, Zen Pro.
+- [ ] Use the existing `@PreviewComponent` / `@PreviewScreen` multi-preview annotations.
+- [ ] Skip anything with an infinite animation (it never settles under Robolectric's frame clock)
+      or list it in `excludedPreviewNames` — see KRAIL's README skip list for the pattern.
+
+**Step 3 — wire snapshot testing into `composeApp`** *(direct, no convention plugin: Sumi is a
+single mega-module so KRAIL's plugin is overkill)*
+- [ ] Add to `gradle/libs.versions.toml`: roborazzi `1.59.0`, composablePreviewScanner `0.8.2`,
+      robolectric `4.16.1` (same versions as KRAIL and Setu, already proven together).
+- [ ] Root `build.gradle.kts`: `alias(libs.plugins.roborazzi) apply false`.
+- [ ] `composeApp/build.gradle.kts`: apply the roborazzi plugin in `plugins {}` — **not just the
+      deps**, or the gradle task silently does not exist (ASTRAMAN hit this twice).
+- [ ] `androidLibrary { withHostTest { isIncludeAndroidResources = true } }`.
+- [ ] `sourceSets { getByName("androidHostTest") { kotlin.srcDir("src/androidHostTest/kotlin") } }`
+      — `androidUnitTest` is silently ignored on `com.android.kotlin.multiplatform.library`.
+- [ ] Add `libs.compose.ui.test.manifest` to `androidHostTest` deps, or `ComponentActivity` fails
+      to resolve under Robolectric.
+- [ ] Port `ScreenshotTest`, `BaseSnapshotTest`, `SnapshotDefaults` from KRAIL (~550 lines).
+- [ ] Write `SumiSnapshotTest` extending `BaseSnapshotTest`, `packageToScan = "xyz.ksharma.sumi"`.
+
+**Step 4 — record and verify baselines**
+- [ ] `./gradlew :composeApp:recordRoborazziAndroidHostTest` (not `recordRoborazziDebug` — that
+      task name does not register on KMP `androidLibrary` modules).
+- [ ] Eyeball every generated PNG in `composeApp/screenshots/` before committing. A wrong baseline
+      is worse than no baseline.
+- [ ] Confirm the test log prints a non-zero `Found N previews with @ScreenshotTest`. If it is 0,
+      walk KRAIL's README "Debugging Found 0 previews" checklist.
+- [ ] `./gradlew :composeApp:verifyRoborazziAndroidHostTest` passes against the fresh baselines.
+
+**Step 5 — LFS**
+- [ ] Create `.gitattributes` with `**/screenshots/**/*.png filter=lfs diff=lfs merge=lfs -text`
+      (Sumi has no `.gitattributes` at all today; `git-lfs 3.7.1` is installed locally).
+- [ ] `git lfs ls-files | grep composeApp/screenshots` to confirm before committing the PNGs.
+
+**Step 6 — CI + guard against stale baselines**
+- [ ] Add `verifyRoborazziAndroidHostTest` to the CI quality gate and to `qa.sh`.
+- [ ] Note in `CLAUDE.md`: any change touching composable layout (padding, size, insets, font
+      ratios) must re-record and re-commit baselines. ASTRAMAN's `LESSONS.md` logs this failure
+      repeatedly — a fix commit silently invalidates baselines and the next PR eats the failure.
+
+**Step 7 — extract to `darpan` repo** *(only if step 0 picked library)*
+- [ ] New public repo on the aagya/dhruva shape: `GROUP=io.github.ksharma-xyz`, vanniktech publish
+      to Central Portal, Dokka + mkdocs, `sample-android`, per-module `gradle.properties` with
+      `POM_ARTIFACT_ID`, CI workflows `ci.yml` / `publish-snapshot.yml` / `publish-release.yml`.
+- [ ] `darpan-annotations` first (pure Kotlin, all targets, tiny, stable API) — publish and prove
+      the pipeline on the low-risk module before the harness.
+- [ ] `darpan-roborazzi` second (androidMain only). Document the tested Compose/AGP matrix.
+- [ ] Swap Sumi's copied harness for the published dependency; re-run verify to prove parity.
+- [ ] `darpan-gradle-plugin` is explicitly **phase 2**, not part of this pass.
+
+**Step 8 — write the missing skill** *(do this regardless of which path step 0 picked)*
+- [ ] `claude-skills` has no snapshot-testing skill — `kmp-testing/SKILL.md:122-129` has gotchas
+      only and `kmp-previews/SKILL.md:231` has one optional line.
+- [ ] Create `kmp-snapshot-testing/SKILL.md` from KRAIL's README plus whatever this pass teaches.
+- [ ] Remember `claude-skills` is canonical — edit there, not in `~/.claude/commands/`.
 
 ### Reference material
 
