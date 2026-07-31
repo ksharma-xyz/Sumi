@@ -96,7 +96,7 @@ internal fun SumiEyebrowPreview() {
     }
 }
 
-@ScreenshotTest
+@ScreenshotTest(fontScaleSensitive = false)
 @PreviewComponent
 @Composable
 internal fun SumiIconsPreview() {
@@ -153,7 +153,7 @@ internal fun SudokuThumbnailPreview() {
     }
 }
 
-@ScreenshotTest
+@ScreenshotTest(fontScaleSensitive = false)
 @PreviewComponent
 @Composable
 internal fun InkStainPreview() {
@@ -164,7 +164,7 @@ internal fun InkStainPreview() {
     }
 }
 
-@ScreenshotTest
+@ScreenshotTest(fontScaleSensitive = false)
 @PreviewComponent
 @Composable
 internal fun InkBleedPreview() {

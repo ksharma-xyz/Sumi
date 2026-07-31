@@ -20,12 +20,42 @@ Run these before marking any task complete. All three must pass.
 
 # Static analysis — must be zero violations
 ./gradlew :composeApp:detekt
+
+# Snapshot baselines — must match
+./gradlew :composeApp:verifyRoborazziAndroidHostTest
 ```
 
-One-liner for a full quality gate:
+One-liner for a full quality gate (or just run `./qa.sh`):
 ```bash
-./gradlew :composeApp:compileKotlinIosSimulatorArm64 :composeApp:compileAndroidMain :composeApp:detekt
+./gradlew :composeApp:compileKotlinIosSimulatorArm64 :composeApp:compileAndroidMain :composeApp:detekt :composeApp:verifyRoborazziAndroidHostTest
 ```
+
+## Snapshot testing
+
+Previews annotated `@ScreenshotTest` (alongside `@PreviewComponent` / `@PreviewScreen`) are
+captured by Roborazzi. Baselines live in `composeApp/screenshots/`, tracked via Git LFS.
+
+| Action | Command |
+|---|---|
+| Record baselines | `./gradlew :composeApp:recordRoborazziAndroidHostTest` |
+| Verify (part of `qa.sh` and CI) | `./gradlew :composeApp:verifyRoborazziAndroidHostTest` |
+| Emit diff PNGs | `./gradlew :composeApp:compareRoborazziAndroidHostTest` |
+
+The `Debug`-suffixed task names do not exist on a KMP `androidLibrary` module.
+
+**Any change to composable layout — padding, size, insets, font ratios, colours — invalidates
+the baselines.** Re-record, *look at the regenerated PNGs* to confirm the change is what you
+intended, and commit them in the same change. A stale baseline turns into a failure on someone
+else's unrelated PR. Never re-record just to make a red build go green without checking the diff.
+
+Do not annotate previews that drive infinite or entrance animations: they never settle under
+Robolectric's frame clock, so the captured frame is arbitrary. `SplashScreen` and
+`PaywallScreen` are uncovered for this reason. Use `excludedPreviewNames` in `SumiSnapshotTest`
+if a preview needs to be skipped by name.
+
+Set `@ScreenshotTest(fontScaleSensitive = false)` on composables that size text from layout
+rather than in sp (the board, icons, ink effects). They render identically at every font scale,
+so this captures them once instead of writing byte-identical baselines per scale.
 
 ## Key conventions
 

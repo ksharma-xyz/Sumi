@@ -12,8 +12,11 @@ import com.github.takahirom.roborazzi.RoborazziOptions
  */
 object SnapshotDefaults {
 
+    /** The unscaled baseline, and the only scale used for font-scale-invariant previews. */
+    const val BASE_FONT_SCALE = 1.0f
+
     /** Font scales captured in light mode. 2x is the accessibility case that breaks layouts. */
-    val lightModeFontScales = listOf(1.0f, 2.0f)
+    val lightModeFontScales = listOf(BASE_FONT_SCALE, 2.0f)
 
     /** Font scales captured in dark mode. */
     val darkModeFontScales = listOf(1.0f)

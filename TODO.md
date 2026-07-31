@@ -439,15 +439,15 @@ direct wiring in `composeApp/build.gradle.kts` is enough.
 Ordered. Step 0 gates everything; steps 1-6 are the same work whichever way step 0 lands, so
 they can start immediately. Steps 7-8 only apply if step 0 picks the library.
 
-> **RESUME HERE: step 2 (write previews).** Step 1 is done. Step 0 is still open and needs
-> Karan, but it does **not** block step 2 — previews are the same work either way, and they are
-> the long pole. Start there, don't wait on the library decision.
+> **RESUME HERE: step 0 (library vs copy-in), then step 2b (screen coverage).**
 >
-> Do not skip ahead to step 3. Wiring the harness before previews exist produces a passing test
-> suite that captures a single component and guards nothing.
+> Steps 1 through 6 are **done and shipped** (2026-08-01). Snapshot testing is live: 19 previews,
+> 27 baselines in `composeApp/screenshots/` via Git LFS, wired into `qa.sh` and CI. Verified it
+> both passes on a clean tree and fails on a real visual change, so the gate is not vacuous.
 >
-> Nothing has been added to the build yet: no Roborazzi, no Robolectric, no scanner in
-> `libs.versions.toml`, no host-test source set in `composeApp`. Step 1 was a source-only fix.
+> Two things are deliberately still open, both described under their steps below:
+> **screen-level coverage** (deferred on cost — see step 2b) and **dark mode** (needs a one-line
+> change to `AppPreviewTheme`). Step 0 is untouched and still needs Karan.
 
 **Step 0 — decide library vs copy-in template** *(needs Karan, blocking)*
 - [ ] Answer: does `compileOnly` for Roborazzi / Robolectric / ComposablePreviewScanner actually
@@ -467,50 +467,67 @@ they can start immediately. Steps 7-8 only apply if step 0 picks the library.
         composeApp/src game/src share/src
       ```
 
-**Step 2 — write previews** *(Sumi, the actual prerequisite, biggest chunk)*
-- [ ] Sumi has exactly **1** preview today (`SumiBoardPreview`). Snapshot infra guards nothing
-      until this is done — do not do step 3 first.
-- [ ] Design-system components: `WashiBG`, `SumiButton`, `SumiChip`, `InkStain`, number pad,
-      the undo/redo/note/erase/hint tool row.
-- [ ] Screens: splash, onboarding, game, win, paywall, stats, settings, Zen Pro.
-- [ ] Use the existing `@PreviewComponent` / `@PreviewScreen` multi-preview annotations.
-- [ ] Skip anything with an infinite animation (it never settles under Robolectric's frame clock)
-      or list it in `excludedPreviewNames` — see KRAIL's README skip list for the pattern.
+**Step 2 — write previews** — **DONE 2026-08-01.** 19 previews, 27 baselines.
+- [x] Board states (8): the mixed reference board, empty, all-nine-notes worst case, selection,
+      multiple errors, complete, high legibility, strict conflicts. This is where the coverage
+      actually is — the board is the app.
+- [x] Design-system components (11): buttons (every variant, size, disabled), chips (every tone),
+      eyebrow, icons, quote rule, seals, sudoku thumbnail, ink stain, ink bleed. Enums are
+      enumerated rather than listed by hand, so a new variant lands in the baselines by itself.
+- [x] Skipped animated composables. `SplashScreen` (14 animation call sites) and `PaywallScreen`
+      (21) stagger content in on composition, so the captured frame is arbitrary.
 
-**Step 3 — wire snapshot testing into `composeApp`** *(direct, no convention plugin: Sumi is a
-single mega-module so KRAIL's plugin is overkill)*
-- [ ] Add to `gradle/libs.versions.toml`: roborazzi `1.59.0`, composablePreviewScanner `0.8.2`,
-      robolectric `4.16.1` (same versions as KRAIL and Setu, already proven together).
-- [ ] Root `build.gradle.kts`: `alias(libs.plugins.roborazzi) apply false`.
-- [ ] `composeApp/build.gradle.kts`: apply the roborazzi plugin in `plugins {}` — **not just the
-      deps**, or the gradle task silently does not exist (ASTRAMAN hit this twice).
-- [ ] `androidLibrary { withHostTest { isIncludeAndroidResources = true } }`.
-- [ ] `sourceSets { getByName("androidHostTest") { kotlin.srcDir("src/androidHostTest/kotlin") } }`
-      — `androidUnitTest` is silently ignored on `com.android.kotlin.multiplatform.library`.
-- [ ] Add `libs.compose.ui.test.manifest` to `androidHostTest` deps, or `ComponentActivity` fails
-      to resolve under Robolectric.
-- [ ] Port `ScreenshotTest`, `BaseSnapshotTest`, `SnapshotDefaults` from KRAIL (~550 lines).
-- [ ] Write `SumiSnapshotTest` extending `BaseSnapshotTest`, `packageToScan = "xyz.ksharma.sumi"`.
+**Step 2b — screen-level coverage** *(deferred, open)*
+- [ ] Screens were written, captured, reviewed, and then **deliberately reverted**. Each
+      full-bleed screen PNG is ~3 MB because the washi paper texture is photographic noise that
+      PNG cannot compress — 12 baselines came to 38 MB, and every re-record writes another 38 MB
+      into LFS forever. Not worth it for the coverage it added.
+- [ ] Options when we come back to it: `resizeScale` in `SnapshotDefaults.roborazziOptions`
+      (0.5 still catches every layout regression), or capture screens against a flat background
+      instead of `WashiBG`, or accept the cost for a small hand-picked set.
+- [ ] Noted while reviewing them: `StatsScreen` with `isPro = true` and `false` produced
+      **byte-identical** captures. Whatever Pro unlocks is below the fold at that viewport, so a
+      naive pro/free preview pair tests nothing. Needs a scroll position or a smaller viewport.
 
-**Step 4 — record and verify baselines**
-- [ ] `./gradlew :composeApp:recordRoborazziAndroidHostTest` (not `recordRoborazziDebug` — that
-      task name does not register on KMP `androidLibrary` modules).
-- [ ] Eyeball every generated PNG in `composeApp/screenshots/` before committing. A wrong baseline
-      is worse than no baseline.
-- [ ] Confirm the test log prints a non-zero `Found N previews with @ScreenshotTest`. If it is 0,
-      walk KRAIL's README "Debugging Found 0 previews" checklist.
-- [ ] `./gradlew :composeApp:verifyRoborazziAndroidHostTest` passes against the fresh baselines.
+**Step 3 — wire snapshot testing into `composeApp`** — **DONE 2026-08-01.**
+- [x] Catalog: roborazzi `1.59.0`, composablePreviewScanner `0.8.2`, robolectric `4.16.1`,
+      junit `4.13.2`, androidx-compose-ui `1.10.6` (the KRAIL/Setu combination).
+- [x] Roborazzi plugin in root `build.gradle.kts` (`apply false`) and in `composeApp`'s
+      `plugins {}` — applying it only as a dependency registers no tasks and reports no error.
+- [x] `withHostTest { isIncludeAndroidResources = true }` and the explicit `androidHostTest`
+      srcDir. `androidUnitTest` is silently ignored on this plugin.
+- [x] `ui-test-manifest` in host-test deps, or `ComponentActivity` will not resolve.
+- [x] Ported `ScreenshotTest` (commonMain), `BaseSnapshotTest` + `SnapshotDefaults` +
+      `SumiSnapshotTest` (androidHostTest). Base stays split from its subclass so extracting a
+      library later is a move, not a rewrite.
+- [x] Added `fontScaleSensitive` to `@ScreenshotTest`, which KRAIL does not have. Without it,
+      11 of 27 baselines were byte-identical duplicates: the board sizes every glyph from
+      `cellSize` rather than in sp specifically so system font scale cannot break the grid, and
+      icons and ink effects are fixed-size. Those now capture once.
 
-**Step 5 — LFS**
-- [ ] Create `.gitattributes` with `**/screenshots/**/*.png filter=lfs diff=lfs merge=lfs -text`
-      (Sumi has no `.gitattributes` at all today; `git-lfs 3.7.1` is installed locally).
-- [ ] `git lfs ls-files | grep composeApp/screenshots` to confirm before committing the PNGs.
+**Step 4 — record and verify baselines** — **DONE 2026-08-01.**
+- [x] Recorded via `recordRoborazziAndroidHostTest`.
+- [x] Reviewed every PNG as contact sheets before committing.
+- [x] Confirmed zero byte-identical baselines remain.
+- [x] `verifyRoborazziAndroidHostTest` passes clean, **and** fails when `NOTE_SIZE_RATIO` is
+      nudged 0.46 to 0.60 and passes again on revert. The gate is not vacuous.
 
-**Step 6 — CI + guard against stale baselines**
-- [ ] Add `verifyRoborazziAndroidHostTest` to the CI quality gate and to `qa.sh`.
-- [ ] Note in `CLAUDE.md`: any change touching composable layout (padding, size, insets, font
-      ratios) must re-record and re-commit baselines. ASTRAMAN's `LESSONS.md` logs this failure
-      repeatedly — a fix commit silently invalidates baselines and the next PR eats the failure.
+**Step 5 — LFS** — **DONE 2026-08-01.**
+- [x] `.gitattributes` with `**/screenshots/**/*.png filter=lfs`.
+- [x] `.gitignore`'s `screenshots/` was unanchored and silently swallowed the baselines. Now
+      `/screenshots/`, so it still ignores the store-listing art it was written for.
+- [x] Confirmed via `git lfs ls-files` before committing.
+
+**Step 6 — CI + guard against stale baselines** — **DONE 2026-08-01.**
+- [x] `verifyRoborazziAndroidHostTest` added to `qa.sh` and to `code-quality.yml` as its own
+      `snapshots` job, with `lfs: true` on checkout (without it the baselines are pointer files
+      and every comparison fails for the wrong reason) and diff PNGs uploaded as artifacts.
+- [x] `CLAUDE.md` documents the workflow and the rule that any layout change must re-record,
+      be eyeballed, and be committed together — the ASTRAMAN failure mode.
+- [ ] Still open: dark mode. `AppPreviewTheme` passes `dark = false` unconditionally, so every
+      dark capture would be byte-identical to its light one and `testDarkMode` is off in
+      `SumiSnapshotTest`. Give that parameter a default of `isSystemInDarkTheme()` and flip the
+      flag. Worth doing — the app ships a dark palette and nothing currently covers it.
 
 **Step 7 — extract to `darpan` repo** *(only if step 0 picked library)*
 - [ ] New public repo on the aagya/dhruva shape: `GROUP=io.github.ksharma-xyz`, vanniktech publish

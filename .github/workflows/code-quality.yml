@@ -6,6 +6,9 @@ on:
       detekt-passed:
         description: "Whether Detekt checks passed"
         value: ${{ jobs.detekt.outputs.passed }}
+      snapshots-passed:
+        description: "Whether snapshot baselines matched"
+        value: ${{ jobs.snapshots.outputs.passed }}
 
 jobs:
   detekt:
@@ -39,5 +42,40 @@ jobs:
             **/build/reports/detekt/detekt.md
             **/build/reports/detekt/detekt.txt
             build/reports/problems/problems-report.html
+          if-no-files-found: ignore
+          retention-days: 7
+
+  snapshots:
+    runs-on: ubuntu-latest
+    outputs:
+      passed: ${{ steps.verify.outcome == 'success' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Baselines are stored in Git LFS; without this the checkout leaves pointer
+          # files behind and every comparison fails for the wrong reason.
+          lfs: true
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: 21
+
+      - name: Make Gradle executable
+        run: chmod +x ./gradlew
+
+      - name: Verify snapshots
+        id: verify
+        run: ./gradlew :composeApp:verifyRoborazziAndroidHostTest
+
+      - name: Upload snapshot diffs
+        if: always() && steps.verify.conclusion != 'skipped'
+        uses: actions/upload-artifact@v4
+        with:
+          name: snapshot-diffs-${{ github.run_id }}
+          path: |
+            composeApp/build/outputs/roborazzi/**
+            composeApp/build/reports/roborazzi/**
           if-no-files-found: ignore
           retention-days: 7

@@ -79,12 +79,21 @@ abstract class BaseSnapshotTest {
     }
 
     private fun capturePreviewSnapshots(preview: ComposablePreview<AndroidPreviewInfo>) {
-        val threshold = preview.getAnnotation<ScreenshotTest>()?.threshold
-            ?: SnapshotDefaults.DEFAULT_THRESHOLD
+        val config = preview.getAnnotation<ScreenshotTest>()
+        val threshold = config?.threshold ?: SnapshotDefaults.DEFAULT_THRESHOLD
+
+        // A font-scale-invariant preview renders identically at every scale, so capturing the
+        // whole ramp would just store the same bytes several times over.
+        val scaleOf: (List<Float>) -> List<Float> =
+            if (config?.fontScaleSensitive == false) {
+                { listOf(SnapshotDefaults.BASE_FONT_SCALE) }
+            } else {
+                { it }
+            }
 
         val modes = buildList {
-            add(false to lightModeFontScales)
-            if (testDarkMode) add(true to darkModeFontScales)
+            add(false to scaleOf(lightModeFontScales))
+            if (testDarkMode) add(true to scaleOf(darkModeFontScales))
         }
 
         modes.forEach { (isDarkMode, fontScales) ->

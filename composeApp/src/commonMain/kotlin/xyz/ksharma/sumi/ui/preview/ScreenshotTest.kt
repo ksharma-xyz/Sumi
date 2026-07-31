@@ -22,11 +22,17 @@ package xyz.ksharma.sumi.ui.preview
  * instead.
  *
  * @param threshold Comparison tolerance, 0.0 (exact match, the default) to 1.0.
+ * @param fontScaleSensitive Whether this preview's rendering responds to the system font scale.
+ *   Set false for composables that size their text from layout rather than in sp - the board
+ *   derives every glyph from `cellSize` so the grid cannot be broken by a large system font,
+ *   and icons are fixed-size vectors. Those capture identically at every scale, so the harness
+ *   captures them once instead of storing byte-identical baselines per scale.
  * @param description Free text for documentation and debugging.
  */
 @Target(AnnotationTarget.FUNCTION)
 @Retention(AnnotationRetention.RUNTIME)
 annotation class ScreenshotTest(
     val threshold: Double = 0.0,
+    val fontScaleSensitive: Boolean = true,
     val description: String = "",
 )
