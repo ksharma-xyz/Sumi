@@ -84,6 +84,9 @@ kotlin {
             implementation(libs.firebase.gitLiveCrashlytics)
             implementation(projects.game)
             implementation(projects.share)
+            // Just the @ScreenshotTest annotation. Pure Kotlin, no test dependencies, so it is
+            // safe to carry in the production source set where the previews live.
+            implementation(libs.darpan.annotations)
         }
 
         iosMain.dependencies {
@@ -98,18 +101,12 @@ kotlin {
         // Snapshot testing. `com.android.kotlin.multiplatform.library` compiles host-side
         // tests under `androidHostTest` — files placed in `src/androidUnitTest/` are silently
         // ignored, so the srcDir is declared explicitly to keep that unambiguous.
+        // darpan-roborazzi api-exports Roborazzi, Robolectric, the preview scanner, JUnit and
+        // the compose test artifacts, so this one line covers the whole host-test classpath.
         getByName("androidHostTest") {
             kotlin.srcDir("src/androidHostTest/kotlin")
             dependencies {
-                implementation(libs.test.junit)
-                implementation(libs.test.robolectric)
-                implementation(libs.test.composeUiTestJunit4)
-                implementation(libs.test.composeUiTestManifest)
-                implementation(libs.roborazzi)
-                implementation(libs.roborazzi.compose)
-                implementation(libs.roborazzi.junit)
-                implementation(libs.preview.scanner.android)
-                implementation(libs.androidx.ui.tooling)
+                implementation(libs.darpan.roborazzi)
             }
         }
     }

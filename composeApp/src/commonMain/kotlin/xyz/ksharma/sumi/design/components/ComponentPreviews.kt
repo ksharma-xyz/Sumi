@@ -10,11 +10,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import xyz.ksharma.darpan.ScreenshotTest
 import xyz.ksharma.sumi.design.icons.SumiIcons
 import xyz.ksharma.sumi.theme.SumiTheme
 import xyz.ksharma.sumi.ui.preview.AppPreviewTheme
 import xyz.ksharma.sumi.ui.preview.PreviewComponent
-import xyz.ksharma.sumi.ui.preview.ScreenshotTest
 
 // A solved grid, row-major, for the thumbnail preview.
 private const val SOLVED_GRID =

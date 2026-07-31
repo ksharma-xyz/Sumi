@@ -1,0 +1,3 @@
+[submodule "darpan"]
+	path = darpan
+	url = https://github.com/ksharma-xyz/darpan.git

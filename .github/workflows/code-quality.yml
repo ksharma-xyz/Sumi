@@ -55,12 +55,26 @@ jobs:
           # Baselines are stored in Git LFS; without this the checkout leaves pointer
           # files behind and every comparison fails for the wrong reason.
           lfs: true
+          # darpan is a composite build via git submodule until it is published to Central.
+          submodules: recursive
 
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
           distribution: zulu
           java-version: 21
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      # Robolectric downloads a per-SDK android-all jar on first use. Uncached that dominates
+      # the job: the first run of this workflow took 16 minutes, most of it here.
+      - name: Cache Robolectric jars
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository/org/robolectric
+          key: robolectric-${{ runner.os }}-sdk34
+          restore-keys: robolectric-${{ runner.os }}-
 
       - name: Make Gradle executable
         run: chmod +x ./gradlew

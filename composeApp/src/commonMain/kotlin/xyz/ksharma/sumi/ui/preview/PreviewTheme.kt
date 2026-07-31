@@ -1,6 +1,7 @@
 package xyz.ksharma.sumi.ui.preview
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
@@ -12,7 +13,9 @@ import xyz.ksharma.sumi.ui.theme.AppTheme
 @Composable
 fun AppPreviewTheme(
     modifier: Modifier = Modifier,
-    dark: Boolean = false,
+    // Follows the ambient uiMode so the snapshot harness can drive light and dark from the
+    // same preview, and so IDE previews match whichever theme the IDE is in.
+    dark: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit,
 ) {
     AppTheme(dark = dark) {

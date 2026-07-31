@@ -21,6 +21,12 @@ plugins {
     id("org.gradle.toolchains.foojay-resolver-convention") version "0.10.0"
 }
 
+// Darpan is a git submodule until it is published to Central. As a composite build, Gradle
+// substitutes the io.github.ksharma-xyz:darpan-* coordinates in the catalog for these projects
+// automatically, so CI needs no published artifact and no mavenLocal. After the Central publish
+// this include goes away and the same catalog entries resolve normally.
+includeBuild("darpan")
+
 dependencyResolutionManagement {
     repositories {
         google {

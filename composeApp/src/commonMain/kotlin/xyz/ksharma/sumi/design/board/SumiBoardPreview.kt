@@ -3,12 +3,12 @@
 package xyz.ksharma.sumi.design.board
 
 import androidx.compose.runtime.Composable
+import xyz.ksharma.darpan.ScreenshotTest
 import xyz.ksharma.sumi.game.model.BoardState
 import xyz.ksharma.sumi.game.model.Cell
 import xyz.ksharma.sumi.game.model.Difficulty
 import xyz.ksharma.sumi.ui.preview.AppPreviewTheme
 import xyz.ksharma.sumi.ui.preview.PreviewComponent
-import xyz.ksharma.sumi.ui.preview.ScreenshotTest
 
 // A solved grid drives the previews so error/teal states can be derived from it.
 private val PREVIEW_SOLUTION = listOf(
