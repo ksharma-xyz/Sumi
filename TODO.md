@@ -439,17 +439,33 @@ direct wiring in `composeApp/build.gradle.kts` is enough.
 Ordered. Step 0 gates everything; steps 1-6 are the same work whichever way step 0 lands, so
 they can start immediately. Steps 7-8 only apply if step 0 picks the library.
 
+> **RESUME HERE: step 2 (write previews).** Step 1 is done. Step 0 is still open and needs
+> Karan, but it does **not** block step 2 — previews are the same work either way, and they are
+> the long pole. Start there, don't wait on the library decision.
+>
+> Do not skip ahead to step 3. Wiring the harness before previews exist produces a passing test
+> suite that captures a single component and guards nothing.
+>
+> Nothing has been added to the build yet: no Roborazzi, no Robolectric, no scanner in
+> `libs.versions.toml`, no host-test source set in `composeApp`. Step 1 was a source-only fix.
+
 **Step 0 — decide library vs copy-in template** *(needs Karan, blocking)*
 - [ ] Answer: does `compileOnly` for Roborazzi / Robolectric / ComposablePreviewScanner actually
       work, so consumers bring their own versions? Prototype it before committing to the library.
       If it does not hold, the copy-in template wins and steps 7-8 are dropped.
 - [ ] Pick the name if library: `darpan` (recommended) / `chhaya` / `chitra`.
 
-**Step 1 — clear the two known traps** *(Sumi, ~30 min)*
-- [ ] `composeApp/.../ui/preview/PreviewAnnotations.kt:17` — replace the non-ASCII `x` in
-      `"2. 2x Font Scale"` with plain ASCII. Non-ASCII in `@Preview(name = ...)` hangs Roborazzi's
-      PNG write on macOS and throws on Linux CI.
-- [ ] Grep every other `@Preview(name = ...)` and `group = ...` in the repo for non-ASCII.
+**Step 1 — clear the two known traps** *(Sumi, ~30 min)* — **DONE 2026-07-31, commit below**
+- [x] `composeApp/.../ui/preview/PreviewAnnotations.kt:14` — replaced the non-ASCII multiplication
+      sign in `"2. 2x Font Scale"` with an ASCII `x`. Non-ASCII in `@Preview(name = ...)` hangs
+      Roborazzi's PNG write on macOS and throws on Linux CI.
+- [x] Scanned every `name = ` / `group = ` string literal across `composeApp/src`, `game/src`,
+      `share/src` for non-ASCII. That one line was the only hit in the whole repo.
+      Re-run before recording baselines in step 4, in case new previews landed:
+      ```bash
+      LC_ALL=C grep -rn --include="*.kt" -E '(name|group)[[:space:]]*=[[:space:]]*"[^"]*[^ -~][^"]*"' \
+        composeApp/src game/src share/src
+      ```
 
 **Step 2 — write previews** *(Sumi, the actual prerequisite, biggest chunk)*
 - [ ] Sumi has exactly **1** preview today (`SumiBoardPreview`). Snapshot infra guards nothing
