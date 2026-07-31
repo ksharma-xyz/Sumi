@@ -439,21 +439,27 @@ direct wiring in `composeApp/build.gradle.kts` is enough.
 Ordered. Step 0 gates everything; steps 1-6 are the same work whichever way step 0 lands, so
 they can start immediately. Steps 7-8 only apply if step 0 picks the library.
 
-> **RESUME HERE: step 0 (library vs copy-in), then step 2b (screen coverage).**
+> **RESUME HERE: step 7, publish darpan to Maven Central.** Everything else is done.
 >
-> Steps 1 through 6 are **done and shipped** (2026-08-01). Snapshot testing is live: 19 previews,
-> 27 baselines in `composeApp/screenshots/` via Git LFS, wired into `qa.sh` and CI. Verified it
-> both passes on a clean tree and fails on a real visual change, so the gate is not vacuous.
+> Steps 0 through 8 are shipped (2026-08-01). Snapshot testing is live and **CI green**: 19
+> previews, 46 baselines in `composeApp/screenshots/` via Git LFS, gated in `qa.sh` and in
+> `code-quality.yml`. The harness is now the **darpan** library
+> (`github.com/ksharma-xyz/darpan`, public), consumed as a git submodule + composite build.
 >
-> Two things are deliberately still open, both described under their steps below:
-> **screen-level coverage** (deferred on cost — see step 2b) and **dark mode** (needs a one-line
-> change to `AppPreviewTheme`). Step 0 is untouched and still needs Karan.
+> Step 0 was decided: **library**, named `darpan`. Dark mode is covered. The gate is not vacuous
+> — verified it fails on a real visual change and passes on revert, and that macOS-recorded
+> baselines verify on a Linux CI runner.
+>
+> Only **step 2b, screen-level coverage**, is still deliberately open (deferred on cost).
 
-**Step 0 — decide library vs copy-in template** *(needs Karan, blocking)*
-- [ ] Answer: does `compileOnly` for Roborazzi / Robolectric / ComposablePreviewScanner actually
-      work, so consumers bring their own versions? Prototype it before committing to the library.
-      If it does not hold, the copy-in template wins and steps 7-8 are dropped.
-- [ ] Pick the name if library: `darpan` (recommended) / `chhaya` / `chitra`.
+**Step 0 — library vs copy-in template** — **DECIDED 2026-08-01: library.**
+- [x] Named `darpan` (दर्पण, mirror), matching the aagya/dhruva line.
+- [x] `github.com/ksharma-xyz/darpan`, public (Maven Central requires a reachable SCM URL).
+- [x] Two modules: `darpan-annotations` (pure Kotlin, every target, safe in `commonMain`) and
+      `darpan-roborazzi` (Android host-test only). The `compileOnly` question turned out moot:
+      `darpan-roborazzi` `api`-exports Roborazzi, Robolectric, the scanner, JUnit and the compose
+      test artifacts on purpose, because consumers subclass `BaseSnapshotTest` and need all of
+      them visible in their own source. One dependency line replaced nine in Sumi.
 
 **Step 1 — clear the two known traps** *(Sumi, ~30 min)* — **DONE 2026-07-31, commit below**
 - [x] `composeApp/.../ui/preview/PreviewAnnotations.kt:14` — replaced the non-ASCII multiplication
@@ -529,21 +535,33 @@ they can start immediately. Steps 7-8 only apply if step 0 picks the library.
       `SumiSnapshotTest`. Give that parameter a default of `isSystemInDarkTheme()` and flip the
       flag. Worth doing — the app ships a dark palette and nothing currently covers it.
 
-**Step 7 — extract to `darpan` repo** *(only if step 0 picked library)*
-- [ ] New public repo on the aagya/dhruva shape: `GROUP=io.github.ksharma-xyz`, vanniktech publish
-      to Central Portal, Dokka + mkdocs, `sample-android`, per-module `gradle.properties` with
-      `POM_ARTIFACT_ID`, CI workflows `ci.yml` / `publish-snapshot.yml` / `publish-release.yml`.
-- [ ] `darpan-annotations` first (pure Kotlin, all targets, tiny, stable API) — publish and prove
-      the pipeline on the low-risk module before the harness.
-- [ ] `darpan-roborazzi` second (androidMain only). Document the tested Compose/AGP matrix.
-- [ ] Swap Sumi's copied harness for the published dependency; re-run verify to prove parity.
-- [ ] `darpan-gradle-plugin` is explicitly **phase 2**, not part of this pass.
+**Step 7 — extract to `darpan` repo** — **DONE 2026-08-01, except the Central publish.**
+- [x] `github.com/ksharma-xyz/darpan`, public, on the aagya/dhruva shape:
+      `GROUP=io.github.ksharma-xyz`, vanniktech publish plugin, Dokka, per-module
+      `gradle.properties` with `POM_ARTIFACT_ID`.
+- [x] `darpan-annotations` (pure Kotlin, android/ios/jvm) and `darpan-roborazzi` (androidMain).
+- [x] Sumi consumes it and its own harness is deleted. `verifyRoborazziAndroidHostTest` passes
+      against the same baselines, so parity is proven.
+- [x] `darpan-gradle-plugin` remains phase 2, not started.
 
-**Step 8 — write the missing skill** *(do this regardless of which path step 0 picked)*
-- [ ] `claude-skills` has no snapshot-testing skill — `kmp-testing/SKILL.md:122-129` has gotchas
-      only and `kmp-previews/SKILL.md:231` has one optional line.
-- [ ] Create `kmp-snapshot-testing/SKILL.md` from KRAIL's README plus whatever this pass teaches.
-- [ ] Remember `claude-skills` is canonical — edit there, not in `~/.claude/commands/`.
+**Step 7b — publish darpan to Maven Central** *(morning, the only thing left)*
+- [ ] Flip `RELEASE_SIGNING_ENABLED=true` and set `VERSION_NAME` to `0.1.0` in
+      `darpan/gradle.properties`. Both are deliberately set for unsigned local installs today.
+- [ ] `./gradlew publishAndReleaseToMavenCentral` with the Central Portal credentials, same as
+      aagya and dhruva.
+- [ ] Then unwind the submodule in Sumi, which is only a stand-in for the published artifact:
+      remove `includeBuild("darpan")` from `settings.gradle.kts`, `git submodule deinit -f darpan`
+      + `git rm darpan`, delete `.gitmodules`, and drop `submodules: recursive` from all three
+      workflows. The catalog entries do not change — they already name the real coordinates.
+- [ ] Re-run `./qa.sh` and confirm CI stays green resolving from Central.
+- [ ] Consider `sample-android` and mkdocs, plus `ci.yml` / `publish-snapshot.yml` /
+      `publish-release.yml` workflows, to finish matching the aagya shape.
+
+**Step 8 — write the missing skill** — **DONE 2026-08-01.**
+- [x] `claude-skills/kmp-snapshot-testing/SKILL.md`, pointing at darpan rather than describing a
+      hand-rolled setup. Carries every trap from this pass plus ASTRAMAN's repeat failures.
+- [x] Cross-linked from `kmp-testing` (whose inline gotcha bullet now defers to it) and
+      `kmp-previews`, and added to the skills `README.md` table.
 
 ### Reference material
 

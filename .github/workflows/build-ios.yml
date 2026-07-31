@@ -10,6 +10,10 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          # settings.gradle.kts includeBuild("darpan") applies to every Gradle invocation,
+          # so the submodule must be present even for app builds.
+          submodules: recursive
 
       - name: List available Xcode versions
         run: |

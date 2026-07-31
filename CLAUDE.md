@@ -33,7 +33,13 @@ One-liner for a full quality gate (or just run `./qa.sh`):
 ## Snapshot testing
 
 Previews annotated `@ScreenshotTest` (alongside `@PreviewComponent` / `@PreviewScreen`) are
-captured by Roborazzi. Baselines live in `composeApp/screenshots/`, tracked via Git LFS.
+captured by [darpan](https://github.com/ksharma-xyz/darpan), our own Roborazzi harness. Baselines
+live in `composeApp/screenshots/`, tracked via Git LFS.
+
+darpan is a **git submodule + composite build** (`includeBuild("darpan")`) until it is published
+to Maven Central. That applies to every Gradle invocation, so a fresh clone needs
+`git submodule update --init`, and `darpan/local.properties` needs an `sdk.dir` line. All three
+CI workflows check out with `submodules: recursive`.
 
 | Action | Command |
 |---|---|
@@ -52,6 +58,10 @@ Do not annotate previews that drive infinite or entrance animations: they never 
 Robolectric's frame clock, so the captured frame is arbitrary. `SplashScreen` and
 `PaywallScreen` are uncovered for this reason. Use `excludedPreviewNames` in `SumiSnapshotTest`
 if a preview needs to be skipped by name.
+
+Comparison uses a per-pixel tolerance, not an exact match, because macOS-recorded baselines do
+not match a Linux CI runner byte for byte (same geometry, different antialiasing). If a build is
+red, read the diff PNGs — do not raise the tolerance to make it pass.
 
 Set `@ScreenshotTest(fontScaleSensitive = false)` on composables that size text from layout
 rather than in sp (the board, icons, ink effects). They render identically at every font scale,

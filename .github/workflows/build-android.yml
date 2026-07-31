@@ -15,6 +15,10 @@ jobs:
       actions: write  # required to write back ANDROID_VERSION_CODE repo variable
     steps:
       - uses: actions/checkout@v4
+        with:
+          # settings.gradle.kts includeBuild("darpan") applies to every Gradle invocation,
+          # so the submodule must be present even for app builds.
+          submodules: recursive
 
       - name: Set up JDK
         uses: actions/setup-java@v4
