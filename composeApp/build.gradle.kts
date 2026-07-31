@@ -7,6 +7,7 @@ plugins {
     alias(libs.plugins.sumi.android.kmp.library)
     alias(libs.plugins.kotlinSerialization)
     alias(libs.plugins.sqldelight)
+    alias(libs.plugins.roborazzi)
 }
 
 kotlin {
@@ -19,6 +20,12 @@ kotlin {
 
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_21)
+        }
+
+        // Roborazzi renders through Robolectric, which needs the merged Android resources
+        // (and, via androidResources below, the composeResources fonts) on the test classpath.
+        withHostTest {
+            isIncludeAndroidResources = true
         }
 
         // MANDATORY for AGP 9 to include assets (compose multiplatform resources)
@@ -86,6 +93,24 @@ kotlin {
 
         commonTest.dependencies {
             implementation(libs.test.kotlin)
+        }
+
+        // Snapshot testing. `com.android.kotlin.multiplatform.library` compiles host-side
+        // tests under `androidHostTest` — files placed in `src/androidUnitTest/` are silently
+        // ignored, so the srcDir is declared explicitly to keep that unambiguous.
+        getByName("androidHostTest") {
+            kotlin.srcDir("src/androidHostTest/kotlin")
+            dependencies {
+                implementation(libs.test.junit)
+                implementation(libs.test.robolectric)
+                implementation(libs.test.composeUiTestJunit4)
+                implementation(libs.test.composeUiTestManifest)
+                implementation(libs.roborazzi)
+                implementation(libs.roborazzi.compose)
+                implementation(libs.roborazzi.junit)
+                implementation(libs.preview.scanner.android)
+                implementation(libs.androidx.ui.tooling)
+            }
         }
     }
 }

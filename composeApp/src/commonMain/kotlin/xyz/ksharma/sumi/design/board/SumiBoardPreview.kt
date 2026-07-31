@@ -8,6 +8,7 @@ import xyz.ksharma.sumi.game.model.Cell
 import xyz.ksharma.sumi.game.model.Difficulty
 import xyz.ksharma.sumi.ui.preview.AppPreviewTheme
 import xyz.ksharma.sumi.ui.preview.PreviewComponent
+import xyz.ksharma.sumi.ui.preview.ScreenshotTest
 
 // A solved grid drives the preview so error/teal states can be derived from it.
 private val PREVIEW_SOLUTION = listOf(
@@ -48,6 +49,7 @@ private fun previewBoard(): BoardState {
     )
 }
 
+@ScreenshotTest
 @PreviewComponent
 @Composable
 internal fun SumiBoardPreview() {

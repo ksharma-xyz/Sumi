@@ -47,4 +47,7 @@ vendor/bundle/
 # straight to Play Console / App Store Connect.
 androidApp/release/
 app-store-assets/
-screenshots/
+# Anchored to the repo root on purpose: this is the store-listing art. An unanchored
+# `screenshots/` would also swallow the snapshot-test baselines in composeApp/screenshots/,
+# which we do want tracked (via Git LFS, see .gitattributes).
+/screenshots/
