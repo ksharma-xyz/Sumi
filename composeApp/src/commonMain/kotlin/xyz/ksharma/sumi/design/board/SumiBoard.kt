@@ -65,12 +65,16 @@ private const val THIN_LINE_ALPHA = 0.32f
 // user's OS text size is. cellSize is capped at MAX_BOARD_WIDTH/9 upstream, so
 // these ratios also act as the maximum on tablets.
 private const val DIGIT_SIZE_RATIO = 0.60f
-private const val NOTE_SIZE_RATIO = 0.36f
+private const val NOTE_SIZE_RATIO = 0.46f
 
 // Inset (per side, as a fraction of cellSize) reserved as a margin around the
 // 3x3 pencil-mark grid so the outer notes are centred inside a slightly smaller
 // area and never touch the cell border, even at the larger NOTE_SIZE_RATIO.
 private const val NOTE_AREA_INSET_RATIO = 0.07f
+
+// Pencil marks sit behind the solved digit in the visual hierarchy, but Caveat has a
+// small x-height so too low an alpha made them hard to read on the dark board.
+private const val NOTE_ALPHA = 0.62f
 
 // Ink-bloom entrance tuning. The reveal sweeps along the top-left -> bottom-right
 // diagonal (cells share a wave position by row+col, which runs 0..16). SPREAD is
@@ -441,7 +445,7 @@ private fun NoteGrid(
     offsetY: Dp,
     entranceReveal: Float,
 ) {
-    val noteColor = SumiTheme.colors.ink.copy(alpha = 0.5f)
+    val noteColor = SumiTheme.colors.ink.copy(alpha = NOTE_ALPHA)
     val noteSizeSp = with(LocalDensity.current) { (cellSize * NOTE_SIZE_RATIO).toSp() }
     // Restored notes bloom in with the rest of the board on the ink-bloom entrance
     // (reveal is 1 otherwise, so this is a no-op during normal play).
