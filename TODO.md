@@ -347,6 +347,116 @@ PDF output (for reference):
 
 ---
 
+## Snapshot Testing — extract a shared library (resume later)
+
+Status: **planned, not started.** Investigated 2026-07-31. Nothing has been added to Sumi yet.
+
+### Why this exists
+
+Sumi has no snapshot testing at all — no Roborazzi, no Paparazzi, no host tests in `composeApp`.
+This surfaced while sizing pencil marks (`NOTE_SIZE_RATIO`, commit `ca46864`): there was no way
+to render the board and compare before/after, so the change was validated with a throwaway
+Python + PIL render of the real Caveat font instead of an actual Compose render.
+
+### Prior art in our own repos
+
+| Repo | Approach | Verdict |
+|---|---|---|
+| **KRAIL** | `core/snapshot-testing` + `core/snapshot-testing-annotations`, preview auto-discovery via ComposablePreviewScanner, `SnapshotTestingConventionPlugin` for one-line adoption | The good one. Copy this. |
+| **ASTRAMAN / astraman-templates** | Android-only `:catalogue` module, hand-written `captureRoboImage()` per component | Cautionary. `LESSONS.md` logs the same failure 4x: plugin in deps but not `plugins {}` so the task silently doesn't exist; no tests written so `verify` passes vacuously; baselines stale after layout fixes. |
+| **Setu** | Roborazzi 1.59.0 + Robolectric 4.16.1 in the catalog, catalogue module only | Same versions as KRAIL. Nothing extra to learn. |
+| **Huezoo** | None | Nothing to learn. |
+
+Also checked `claude-skills`: **there is no snapshot-testing skill.** `kmp-testing/SKILL.md:122-129`
+has gotchas only, `kmp-previews/SKILL.md:231` has a single optional line. The real reference is
+KRAIL's `core/snapshot-testing/README.md`, which documents every trap already hit and solved.
+
+### The library idea
+
+Follow the `aagya` / `dhruva` shape: standalone public repo, `io.github.ksharma-xyz` group,
+vanniktech publish plugin to Maven Central via Central Portal, Dokka + mkdocs, `sample-android`,
+CI workflows for snapshot and release publish, per-module `gradle.properties` carrying
+`POM_ARTIFACT_ID`.
+
+**Name candidates** (Sanskrit, matching aagya = आज्ञा permission, dhruva = ध्रुव fixed star):
+
+| Name | Meaning | Note |
+|---|---|---|
+| **darpan** (दर्पण) | mirror | Recommended. "Mirror" maps onto the verify/diff semantics, which is where the value is. |
+| chhaya (छाया) | shadow, reflection, image | Good. Maps onto capture rather than compare. |
+| chitra (चित्र) | picture | Clearest but most generic. |
+
+**Proposed modules:**
+
+- `darpan-annotations` — `@ScreenshotTest` only. Pure Kotlin, commonMain, every target.
+  Tiny and genuinely multiplatform. Stable API surface. Safe to publish first.
+- `darpan-roborazzi` — the harness: `BaseSnapshotTest`, `SnapshotDefaults`, `SnapshotTestConfig`,
+  the light/dark/font-scale matrix, the multi-`@Preview`-variant dedupe, `excludedPreviewNames`.
+  androidMain only. ~550 lines ported from KRAIL.
+- `darpan-gradle-plugin` — *phase 2.* One-line adoption, equivalent to KRAIL's
+  `SnapshotTestingConventionPlugin`. Highest leverage, hardest to publish (plugin portal + marker).
+
+### Honest risk on the library idea
+
+The harness is **not multiplatform** — it is Robolectric/JVM Android host-test code. Only the
+annotation module is truly KMP. Calling the whole thing a "KMP library" would be misleading.
+
+Bigger risk: **version coupling.** Roborazzi is tightly bound to Compose and AGP versions. A
+published `darpan-roborazzi` drags transitive Roborazzi + Robolectric + ComposablePreviewScanner
+into every consumer, and a consumer on a different AGP will fight it. Mitigation: declare those
+as `compileOnly` in the library and require consumers to bring their own versions via their own
+catalog, documenting the tested combination. Decide this before publishing, not after.
+
+The counter-proposal is a **copy-in template** (skill or `astraman-templates` entry): ~550 lines
+duplicated per app, drift risk, but zero version coupling. Worth deciding deliberately — a library
+is only better here if the version-coupling problem is actually solved.
+
+### Sumi gap analysis
+
+| Need | Sumi state |
+|---|---|
+| Roborazzi / Robolectric / scanner in `libs.versions.toml` | absent |
+| `withHostTest { isIncludeAndroidResources = true }` | absent — `composeApp` has no host tests |
+| Previews use `androidx.compose.ui.tooling.preview.Preview` | correct one (`AndroidComposablePreviewScanner` requires exactly this) |
+| `.gitattributes` / Git LFS for PNGs | no `.gitattributes`; `git-lfs 3.7.1` installed locally |
+| Previews available to capture | **1** (`SumiBoardPreview`) |
+
+Two blockers to clear before any of this pays off:
+
+1. **Preview coverage is the real gap.** One preview means the infra guards almost nothing.
+   Writing previews for the screens and design-system components is the prerequisite, not the
+   follow-up.
+2. **`PreviewAnnotations.kt:17` uses `"2. 2x Font Scale"` with a non-ASCII multiplication sign.**
+   KRAIL hit a hang on macOS / `IllegalArgumentException` on Linux CI when Roborazzi writes a PNG
+   whose name came from a non-ASCII `@Preview(name = ...)` (their case was an em dash). Must be
+   plain ASCII before recording baselines.
+
+Sumi is a single mega-module (`composeApp`), so KRAIL's convention plugin is overkill here —
+direct wiring in `composeApp/build.gradle.kts` is enough.
+
+### Order of work when we resume
+
+1. Decide: library vs copy-in template. Settle the `compileOnly` version-coupling question.
+2. Decide the name (recommend `darpan`).
+3. Fix the non-ASCII preview name in `PreviewAnnotations.kt`.
+4. Write previews for Sumi's screens and design-system components — the actual prerequisite.
+5. Wire snapshot testing into `composeApp` (direct, no convention plugin).
+6. Record baselines, add `.gitattributes` with `**/screenshots/**/*.png filter=lfs`.
+7. If library: extract to its own repo on the aagya/dhruva shape, then depend on it from Sumi.
+8. Either way, write the missing `kmp-snapshot-testing` skill in `claude-skills` — that artifact
+   is missing regardless of which path we take.
+
+### Reference material
+
+- `KRAIL/core/snapshot-testing/README.md` — every gotcha, already solved
+- `KRAIL/core/snapshot-testing/src/androidMain/.../BaseSnapshotTest.kt` — the harness to port
+- `KRAIL/gradle/build-logic/convention/src/main/kotlin/.../SnapshotTestingConventionPlugin.kt`
+- `KRAIL/.gitattributes` — LFS patterns
+- `ASTRAMAN/LESSONS.md:62-65,120-123,194-197,270-272` — the failure modes to design against
+- `aagya/gradle.properties` + `aagya/aagya-state/build.gradle.kts` — the publishing shape to copy
+
+---
+
 ## Known Limitations
 
 - `recordSolve()` counts every win as +1 to total puzzles; if the app is killed mid-solve and
