@@ -35,7 +35,7 @@ firebase-crashlytics-plugin = "3.0.6"
 # runtime libraries come transitively from darpan, so the two must stay in step. Bump them
 # together and re-record baselines afterwards.
 roborazzi = "1.59.0"
-darpan = "0.1.0-SNAPSHOT"
+darpan = "0.1.0"
 
 [libraries]
 # Android
