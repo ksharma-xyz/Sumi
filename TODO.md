@@ -439,7 +439,9 @@ direct wiring in `composeApp/build.gradle.kts` is enough.
 Ordered. Step 0 gates everything; steps 1-6 are the same work whichever way step 0 lands, so
 they can start immediately. Steps 7-8 only apply if step 0 picks the library.
 
-> **RESUME HERE: step 7, publish darpan to Maven Central.** Everything else is done.
+> **RESUME HERE: step 7b, publish darpan to Maven Central — blocked on repo secrets, which
+> Karan can only add around the week of 2026-08-08.** Everything that does not need credentials
+> is done and pushed. Nothing else is outstanding except step 2b.
 >
 > Steps 0 through 8 are shipped (2026-08-01). Snapshot testing is live and **CI green**: 19
 > previews, 46 baselines in `composeApp/screenshots/` via Git LFS, gated in `qa.sh` and in
@@ -544,18 +546,49 @@ they can start immediately. Steps 7-8 only apply if step 0 picks the library.
       against the same baselines, so parity is proven.
 - [x] `darpan-gradle-plugin` remains phase 2, not started.
 
-**Step 7b — publish darpan to Maven Central** *(morning, the only thing left)*
-- [ ] Flip `RELEASE_SIGNING_ENABLED=true` and set `VERSION_NAME` to `0.1.0` in
-      `darpan/gradle.properties`. Both are deliberately set for unsigned local installs today.
-- [ ] `./gradlew publishAndReleaseToMavenCentral` with the Central Portal credentials, same as
-      aagya and dhruva.
-- [ ] Then unwind the submodule in Sumi, which is only a stand-in for the published artifact:
-      remove `includeBuild("darpan")` from `settings.gradle.kts`, `git submodule deinit -f darpan`
-      + `git rm darpan`, delete `.gitmodules`, and drop `submodules: recursive` from all three
-      workflows. The catalog entries do not change — they already name the real coordinates.
+**Step 7b — publish darpan to Maven Central** *(BLOCKED on secrets, ~week of 2026-08-08)*
+
+Everything that does not need credentials is already done and pushed. darpan is at
+`VERSION_NAME=0.1.0`, `RELEASE_SIGNING_ENABLED=true`, with `ci.yml`, `publish-release.yml` and
+`publish-snapshot.yml` in place and `docs/publishing.md` written. Sumi's catalog already says
+`0.1.0`. Only the two credentialed steps remain.
+
+- [ ] **Add the four repo secrets to `ksharma-xyz/darpan`.** Same values as on `ksharma-xyz/aagya`.
+      This is the blocker — nothing else can proceed without it.
+      ```bash
+      gh secret set SONATYPE_USERNAME     -R ksharma-xyz/darpan
+      gh secret set SONATYPE_PASSWORD     -R ksharma-xyz/darpan
+      gh secret set SIGNING_KEY           -R ksharma-xyz/darpan < signing-key.asc
+      gh secret set SIGNING_KEY_PASSWORD  -R ksharma-xyz/darpan
+      ```
+- [ ] **Release deliberately, in two steps.** Maven Central coordinates are immutable:
+      `io.github.ksharma-xyz:darpan-*:0.1.0` can never be deleted, replaced or re-uploaded, and a
+      mistake costs a version number. For a brand new artifact, upload first and look at it:
+      ```bash
+      # uploads a deployment and stops; inspect or drop it at
+      # https://central.sonatype.com/publishing/deployments
+      ./gradlew publishToMavenCentral --no-configuration-cache
+      ```
+      Then either release it from the Portal UI, or `git tag v0.1.0 && git push origin v0.1.0`
+      to let `publish-release.yml` run `publishAndReleaseToMavenCentral` and cut a GitHub Release.
+- [ ] **Then unwind the submodule in Sumi.** It is only a stand-in for the published artifact:
+      drop `includeBuild("darpan")` from `settings.gradle.kts`, `git submodule deinit -f darpan`
+      + `git rm darpan`, delete `.gitmodules`, and drop `submodules: recursive` from
+      `code-quality.yml`, `build-android.yml` and `build-ios.yml`. The catalog entries do not
+      change — they already name the real coordinates and the real version.
 - [ ] Re-run `./qa.sh` and confirm CI stays green resolving from Central.
-- [ ] Consider `sample-android` and mkdocs, plus `ci.yml` / `publish-snapshot.yml` /
-      `publish-release.yml` workflows, to finish matching the aagya shape.
+- [ ] Optional, to finish matching the aagya shape: `sample-android` and mkdocs.
+
+Two things to know before touching this:
+
+- `publish-snapshot.yml` in darpan is **manual-only on purpose**, unlike aagya's, which runs on
+  every push to main. aagya is safe because its version carries `-SNAPSHOT` and the job exits
+  early; darpan is already at `0.1.0`, so that trigger would have made the first push after the
+  secrets land an unannounced irreversible release. Do not "restore parity" without re-reading
+  this.
+- Signing being on means plain `./gradlew publishToMavenLocal` now fails locally with "no
+  configured signatory". Add `-PRELEASE_SIGNING_ENABLED=false` for local installs; darpan's own
+  CI smoke test already does.
 
 **Step 8 — write the missing skill** — **DONE 2026-08-01.**
 - [x] `claude-skills/kmp-snapshot-testing/SKILL.md`, pointing at darpan rather than describing a
