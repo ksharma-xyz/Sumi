@@ -22,7 +22,7 @@ plugins {
 }
 
 // Darpan is a git submodule until it is published to Central. As a composite build, Gradle
-// substitutes the io.github.ksharma-xyz:darpan-* coordinates in the catalog for these projects
+// substitutes the xyz.ksharma:darpan-* coordinates in the catalog for these projects
 // automatically, so CI needs no published artifact and no mavenLocal. After the Central publish
 // this include goes away and the same catalog entries resolve normally.
 includeBuild("darpan")
