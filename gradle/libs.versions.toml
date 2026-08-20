@@ -35,7 +35,7 @@ firebase-crashlytics-plugin = "3.0.6"
 # runtime libraries come transitively from darpan, so the two must stay in step. Bump them
 # together and re-record baselines afterwards.
 roborazzi = "1.59.0"
-darpan = "0.1.0"
+darpan = "0.1.0-SNAPSHOT"
 
 [libraries]
 # Android
@@ -94,8 +94,8 @@ test-kotlin = { group = "org.jetbrains.kotlin", name = "kotlin-test", version.re
 # Screenshot testing — the harness itself lives in the darpan library. darpan-roborazzi
 # api-exports Roborazzi, Robolectric, the preview scanner, JUnit and the compose test
 # artifacts, so none of those need declaring here.
-darpan-annotations = { module = "io.github.ksharma-xyz:darpan-annotations", version.ref = "darpan" }
-darpan-roborazzi = { module = "io.github.ksharma-xyz:darpan-roborazzi", version.ref = "darpan" }
+darpan-annotations = { module = "xyz.ksharma:darpan-annotations", version.ref = "darpan" }
+darpan-roborazzi = { module = "xyz.ksharma:darpan-roborazzi", version.ref = "darpan" }
 
 # Firebase (GitLive KMP wrapper)
 firebase-bom                 = { module = "com.google.firebase:firebase-bom",           version.ref = "firebaseBom" }
