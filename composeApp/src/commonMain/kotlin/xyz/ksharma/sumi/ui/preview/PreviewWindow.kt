@@ -25,6 +25,10 @@ const val DUO_OUTER_HEIGHT_DP = 678
 const val DUO_INNER_WIDTH_DP = 669
 const val DUO_INNER_HEIGHT_DP = 951
 
+/** A 10-inch Android tablet in dp (1280 x 800 landscape). */
+const val TABLET_LONG_DP = 1280
+const val TABLET_SHORT_DP = 800
+
 /**
  * Lays [content] out in a window of exactly [widthDp] x [heightDp], whatever size the capture
  * frame is, so layouts that react to window size can be snapshotted at iPhone Duo or iPad sizes.

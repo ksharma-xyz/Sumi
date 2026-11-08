@@ -23,10 +23,25 @@ class GameLayoutTest {
     @Test
     fun duoInnerLandscapeIsSideBySideAndFitsTheWindow() {
         val layout = assertIs<GameLayout.SideBySide>(gameLayoutFor(width = 951.dp, height = 669.dp))
-        assertEquals(MAX_BOARD_WIDTH, layout.boardSize) // 645dp of height, capped at 560dp
-        assertTrue(layout.boardSize + SIDE_BOARD_MARGIN * 2 <= 669.dp)
+        assertEquals(MAX_BOARD_WIDTH, layout.boardSize) // 585dp of height after the top bar, capped at 560dp
+        assertTrue(layout.boardSize + SIDE_TOP_BAR_BLOCK + SIDE_BOARD_MARGIN * 2 <= 669.dp)
         assertTrue(layout.panelWidth >= MIN_PANEL_WIDTH)
-        assertTrue(layout.boardSize + SIDE_GAP + layout.panelWidth + SIDE_BOARD_MARGIN * 2 <= 951.dp)
+        assertTrue(layout.unitWidth + SIDE_BOARD_MARGIN * 2 <= 951.dp)
+    }
+
+    @Test
+    fun tabletLandscapeUnitFitsAndTopBarIsInTheBudget() {
+        val layout = assertIs<GameLayout.SideBySide>(gameLayoutFor(width = 1280.dp, height = 800.dp))
+        assertEquals(MAX_BOARD_WIDTH, layout.boardSize)
+        assertEquals(MAX_PANEL_WIDTH, layout.panelWidth)
+        assertEquals(layout.boardSize + SIDE_GAP + layout.panelWidth, layout.unitWidth)
+        assertTrue(layout.boardSize + SIDE_TOP_BAR_BLOCK <= 800.dp)
+    }
+
+    @Test
+    fun boardShrinksByTheTopBarOnShortWindows() {
+        val layout = assertIs<GameLayout.SideBySide>(gameLayoutFor(width = 900.dp, height = 400.dp))
+        assertEquals(400.dp - SIDE_BOARD_MARGIN * 2 - SIDE_TOP_BAR_BLOCK, layout.boardSize)
     }
 
     @Test

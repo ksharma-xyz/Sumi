@@ -40,6 +40,7 @@ import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
@@ -298,9 +299,10 @@ private fun StackedGameBody(
 }
 
 /**
- * Board on the left sized to the available height, controls on the right: top bar, marks row,
- * tools and a 3x3 number pad that takes the remaining height. Nothing scrolls, and the pad cells
- * stay well above the minimum tap size.
+ * One centred unit on a single grid. The top bar spans board and panel (left edge = board left,
+ * right edge = panel right). Beneath it a row exactly as tall as the board: the board on the left,
+ * and a panel on the right whose marks row top sits on the board top and whose number pad takes
+ * the remaining height, so its bottom sits on the board bottom. Nothing scrolls.
  */
 @Composable
 private fun SideBySideGameBody(
@@ -309,39 +311,43 @@ private fun SideBySideGameBody(
     layout: GameLayout.SideBySide,
     bottomReservedHeight: Dp,
 ) {
-    Row(
+    Column(
         modifier = Modifier
             .fillMaxSize()
             .statusBarsWithCornerClearance()
-            .padding(start = SIDE_BOARD_MARGIN, end = SIDE_BOARD_MARGIN, bottom = bottomReservedHeight),
-        horizontalArrangement = Arrangement.spacedBy(SIDE_GAP, Alignment.CenterHorizontally),
-        verticalAlignment = Alignment.CenterVertically,
+            .padding(bottom = bottomReservedHeight),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        BoardArea(ui = ui, callbacks = callbacks, cellSize = layout.boardSize / 9)
-        Column(
-            modifier = Modifier
-                .width(layout.panelWidth)
-                .fillMaxHeight()
-                .padding(vertical = SIDE_BOARD_MARGIN),
-        ) {
+        Column(modifier = Modifier.width(layout.unitWidth)) {
             GameTopBar(
                 difficulty = ui.diff,
                 elapsedMs = ui.elapsedMs,
                 onBack = callbacks.onBack,
                 onPause = callbacks.onPause,
+                edgeAligned = true,
             )
-            GameMarksRow(ui)
-            Spacer(Modifier.height(Sumi.Space.s3))
-            ToolsRow(tools = gameTools(ui.state, callbacks))
-            Spacer(Modifier.height(Sumi.Space.s3))
-            NumberPad(
-                state = ui.state,
-                selectedDigit = ui.selectedDigit,
-                highLegibility = ui.highLegibility,
-                onDigit = callbacks.onEnter,
-                modifier = Modifier.weight(1f),
-                grid = true,
-            )
+            Spacer(Modifier.height(SIDE_TOP_BAR_GAP))
+            Row(
+                modifier = Modifier.fillMaxWidth().height(layout.boardSize),
+                horizontalArrangement = Arrangement.spacedBy(SIDE_GAP),
+            ) {
+                BoardArea(ui = ui, callbacks = callbacks, cellSize = layout.boardSize / 9)
+                Column(modifier = Modifier.width(layout.panelWidth).fillMaxHeight()) {
+                    GameMarksRow(ui)
+                    Spacer(Modifier.height(Sumi.Space.s3))
+                    ToolsRow(tools = gameTools(ui.state, callbacks))
+                    Spacer(Modifier.height(Sumi.Space.s3))
+                    NumberPad(
+                        state = ui.state,
+                        selectedDigit = ui.selectedDigit,
+                        highLegibility = ui.highLegibility,
+                        onDigit = callbacks.onEnter,
+                        modifier = Modifier.weight(1f),
+                        grid = true,
+                    )
+                }
+            }
         }
     }
 }
@@ -388,17 +394,27 @@ private fun BoardArea(ui: GameBodyUi, callbacks: GameCallbacks, cellSize: Dp) {
 }
 
 @Composable
-private fun GameTopBar(difficulty: Difficulty, elapsedMs: Long, onBack: () -> Unit, onPause: () -> Unit) {
+private fun GameTopBar(
+    difficulty: Difficulty,
+    elapsedMs: Long,
+    onBack: () -> Unit,
+    onPause: () -> Unit,
+    edgeAligned: Boolean = false,
+) {
     val backSrc = remember { MutableInteractionSource() }
     val pauseSrc = remember { MutableInteractionSource() }
     val kanji = DIFFICULTY_KANJI[difficulty] ?: "一"
+    // Edge-aligned (side by side): a fixed-height bar with no bottom padding, and the back arrow and
+    // pause icon pushed to the outer edges so they sit on the board's left / panel's right edge.
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(bottom = Sumi.Space.s3),
+            .then(if (edgeAligned) Modifier else Modifier.padding(bottom = Sumi.Space.s3)),
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .then(if (edgeAligned) Modifier.height(SIDE_TOP_BAR_HEIGHT) else Modifier),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
@@ -406,7 +422,7 @@ private fun GameTopBar(difficulty: Difficulty, elapsedMs: Long, onBack: () -> Un
                 modifier = Modifier
                     .size(Sumi.Layout.minTap)
                     .clickable(interactionSource = backSrc, indication = null, onClick = onBack),
-                contentAlignment = Alignment.Center,
+                contentAlignment = if (edgeAligned) Alignment.CenterStart else Alignment.Center,
             ) {
                 Text(text = "←", style = SumiTheme.typography.h3, color = SumiTheme.colors.ink)
             }
@@ -426,7 +442,7 @@ private fun GameTopBar(difficulty: Difficulty, elapsedMs: Long, onBack: () -> Un
                 modifier = Modifier
                     .size(Sumi.Layout.minTap)
                     .clickable(interactionSource = pauseSrc, indication = null, onClick = onPause),
-                contentAlignment = Alignment.Center,
+                contentAlignment = if (edgeAligned) Alignment.CenterEnd else Alignment.Center,
             ) {
                 SumiIcon(
                     icon = SumiIcons.Pause,
@@ -625,7 +641,10 @@ private fun NumberPad(
     }
 }
 
-/** 3x3 keypad for the side-by-side layout: big cells that share whatever height is left. */
+/**
+ * 3x3 keypad for the side-by-side layout: big cells that share whatever height is left. The digit
+ * (and the remaining-count badge) scale with the cell height so they stay proportional to the cell.
+ */
 @Composable
 private fun NumberPadGrid(
     state: BoardState,
@@ -634,25 +653,37 @@ private fun NumberPadGrid(
     onDigit: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier.fillMaxWidth().border(width = 1.dp, color = SumiTheme.colors.paperEdge)) {
-        for (rowIndex in 0 until 3) {
-            if (rowIndex > 0) {
-                Box(Modifier.fillMaxWidth().height(1.dp).background(SumiTheme.colors.paperEdge))
-            }
-            Row(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                for (colIndex in 0 until 3) {
-                    val n = rowIndex * 3 + colIndex + 1
-                    if (colIndex > 0) {
-                        Box(Modifier.width(1.dp).fillMaxHeight().background(SumiTheme.colors.paperEdge))
+    BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
+        // Border and the two dividers take 4dp of the height.
+        val cellHeight = (maxHeight - 4.dp) / 3
+        val density = LocalDensity.current
+        // Size the text in dp-equivalent sp so a large system font scale cannot overflow the cell.
+        val digitSp = with(density) {
+            (cellHeight * PAD_DIGIT_RATIO).toSp().value.coerceIn(PAD_DIGIT_MIN_SP, PAD_DIGIT_MAX_SP)
+        }
+        val scaledDigit = digitStyle.copy(fontSize = digitSp.sp, lineHeight = (digitSp * 1.15f).sp)
+        val badgeSp = 11f * digitSp / PAD_DIGIT_MIN_SP
+        Column(modifier = Modifier.fillMaxSize().border(width = 1.dp, color = SumiTheme.colors.paperEdge)) {
+            for (rowIndex in 0 until 3) {
+                if (rowIndex > 0) {
+                    Box(Modifier.fillMaxWidth().height(1.dp).background(SumiTheme.colors.paperEdge))
+                }
+                Row(modifier = Modifier.weight(1f).fillMaxWidth()) {
+                    for (colIndex in 0 until 3) {
+                        val n = rowIndex * 3 + colIndex + 1
+                        if (colIndex > 0) {
+                            Box(Modifier.width(1.dp).fillMaxHeight().background(SumiTheme.colors.paperEdge))
+                        }
+                        NumberCell(
+                            n = n,
+                            state = state,
+                            armed = n == selectedDigit,
+                            digitStyle = scaledDigit,
+                            onDigit = onDigit,
+                            modifier = Modifier.weight(1f).fillMaxHeight(),
+                            badgeSp = badgeSp,
+                        )
                     }
-                    NumberCell(
-                        n = n,
-                        state = state,
-                        armed = n == selectedDigit,
-                        digitStyle = digitStyle,
-                        onDigit = onDigit,
-                        modifier = Modifier.weight(1f).fillMaxHeight(),
-                    )
                 }
             }
         }
@@ -667,6 +698,7 @@ private fun NumberCell(
     digitStyle: TextStyle,
     onDigit: (Int) -> Unit,
     modifier: Modifier = Modifier,
+    badgeSp: Float = 11f,
 ) {
     val src = remember { MutableInteractionSource() }
     val remaining = state.remainingCounts.getOrElse(n - 1) { 0 }
@@ -692,7 +724,7 @@ private fun NumberCell(
         )
         Text(
             text = if (remaining > 0) remaining.toString() else "",
-            style = SumiTheme.typography.uiMeta.copy(fontSize = 11.sp),
+            style = SumiTheme.typography.uiMeta.copy(fontSize = badgeSp.sp),
             color = SumiTheme.colors.inkFaint,
         )
     }

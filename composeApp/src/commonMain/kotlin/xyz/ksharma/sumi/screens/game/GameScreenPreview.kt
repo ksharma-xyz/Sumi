@@ -13,6 +13,8 @@ import xyz.ksharma.sumi.ui.preview.DUO_INNER_WIDTH_DP
 import xyz.ksharma.sumi.ui.preview.DUO_OUTER_HEIGHT_DP
 import xyz.ksharma.sumi.ui.preview.DUO_OUTER_WIDTH_DP
 import xyz.ksharma.sumi.ui.preview.PreviewWindow
+import xyz.ksharma.sumi.ui.preview.TABLET_LONG_DP
+import xyz.ksharma.sumi.ui.preview.TABLET_SHORT_DP
 
 private val SOLUTION = listOf(
     listOf(5, 3, 4, 6, 7, 8, 9, 1, 2),
@@ -100,3 +102,15 @@ internal fun GameScreenDuoInnerPortraitPreview() = GameScreenAtWindow(DUO_INNER_
 @Preview(name = "5. Duo inner landscape", group = "Window", showBackground = true)
 @Composable
 internal fun GameScreenDuoInnerLandscapePreview() = GameScreenAtWindow(DUO_INNER_HEIGHT_DP, DUO_INNER_WIDTH_DP)
+
+/** Tablet landscape: top bar across the unit, panel exactly as tall as the board. */
+@ScreenshotTest(fontScaleSensitive = false)
+@Preview(name = "6. Tablet landscape", group = "Window", showBackground = true)
+@Composable
+internal fun GameScreenTabletLandscapePreview() = GameScreenAtWindow(TABLET_LONG_DP, TABLET_SHORT_DP)
+
+/** Tablet portrait: stacked, board at its cap. */
+@ScreenshotTest(fontScaleSensitive = false)
+@Preview(name = "7. Tablet portrait", group = "Window", showBackground = true)
+@Composable
+internal fun GameScreenTabletPortraitPreview() = GameScreenAtWindow(TABLET_SHORT_DP, TABLET_LONG_DP)

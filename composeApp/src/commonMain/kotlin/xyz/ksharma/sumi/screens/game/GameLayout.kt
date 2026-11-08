@@ -21,11 +21,25 @@ internal val MAX_PANEL_WIDTH = 400.dp
 /** Smallest board worth drawing beside a panel; below this the stacked layout is used. */
 internal val MIN_SIDE_BOARD = 260.dp
 
+/** Height of the top bar (back, difficulty + timer, pause) that spans board and panel. */
+internal val SIDE_TOP_BAR_HEIGHT = 48.dp
+
+/** Gap between the top bar and the board / panel row beneath it. */
+internal val SIDE_TOP_BAR_GAP = 12.dp
+
+/** Vertical space the top bar and its gap take out of the side-by-side size budget. */
+internal val SIDE_TOP_BAR_BLOCK = SIDE_TOP_BAR_HEIGHT + SIDE_TOP_BAR_GAP
+
 /**
- * Shortest window the control panel (top bar, marks row, tools row and a 3x3 number pad with
- * 48dp rows) fits in without scrolling.
+ * Shortest window the side-by-side unit (top bar, then a board with the marks row, tools row and
+ * a 3x3 number pad beside it) fits in without scrolling.
  */
 internal val MIN_SIDE_HEIGHT = 360.dp
+
+/** Keypad digit size as a fraction of the keypad cell height, and its clamp in sp. */
+internal const val PAD_DIGIT_RATIO = 0.38f
+internal const val PAD_DIGIT_MIN_SP = 26f
+internal const val PAD_DIGIT_MAX_SP = 44f
 
 /**
  * Height the stacked layout's controls take besides the board: top bar, marks row, tools row,
@@ -41,15 +55,22 @@ internal sealed interface GameLayout {
     /** Top bar, marks, board, tools and number pad in one vertical scroll (portrait). */
     data object Stacked : GameLayout
 
-    /** Board on the left, controls on the right; nothing scrolls. */
-    data class SideBySide(val boardSize: Dp, val panelWidth: Dp) : GameLayout
+    /**
+     * One centred unit: a top bar across the whole width, and below it the board on the left and
+     * a panel of exactly the board's height on the right; nothing scrolls.
+     */
+    data class SideBySide(val boardSize: Dp, val panelWidth: Dp) : GameLayout {
+        /** Width of the unit, which is also the width of the top bar above it. */
+        val unitWidth: Dp get() = boardSize + SIDE_GAP + panelWidth
+    }
 }
 
 /**
  * Picks the layout from the window alone, never from the device type.
  *
  * Side by side needs a window wider than tall, enough height for the controls to fit without
- * scrolling, and enough width left for a usable panel after the board has taken the full height.
+ * scrolling, and enough width left for a usable panel after the board has taken the height left
+ * under the top bar.
  * Everything else keeps the stacked, scrolling layout.
  *
  * @param width window width after side insets
@@ -58,7 +79,11 @@ internal sealed interface GameLayout {
 internal fun gameLayoutFor(width: Dp, height: Dp): GameLayout {
     if (width <= height || height < MIN_SIDE_HEIGHT) return GameLayout.Stacked
     val usableWidth = width - SIDE_BOARD_MARGIN * 2
-    val boardSize = minOf(height - SIDE_BOARD_MARGIN * 2, MAX_BOARD_WIDTH, usableWidth - MIN_PANEL_WIDTH - SIDE_GAP)
+    val boardSize = minOf(
+        height - SIDE_BOARD_MARGIN * 2 - SIDE_TOP_BAR_BLOCK,
+        MAX_BOARD_WIDTH,
+        usableWidth - MIN_PANEL_WIDTH - SIDE_GAP,
+    )
     if (boardSize < MIN_SIDE_BOARD) return GameLayout.Stacked
     val panelWidth = minOf(usableWidth - boardSize - SIDE_GAP, MAX_PANEL_WIDTH)
     return GameLayout.SideBySide(boardSize = boardSize, panelWidth = panelWidth)
