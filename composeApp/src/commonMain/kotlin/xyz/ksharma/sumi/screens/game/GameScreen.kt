@@ -552,11 +552,23 @@ private fun gameTools(state: BoardState, callbacks: GameCallbacks): List<Tool> =
 )
 
 @OptIn(ExperimentalFoundationApi::class)
+/**
+ * Tool button size. Side by side, the button grows with the board-cell grid (about 62% of its
+ * slot) so it keeps its proportion to the keypad on big windows, never below the tap minimum
+ * unless the slot itself is smaller.
+ */
+private fun toolBoxSize(slotWidth: Dp?): Dp = if (slotWidth == null) {
+    Sumi.Layout.minTap
+} else {
+    minOf(slotWidth - 4.dp, maxOf(Sumi.Layout.minTap, slotWidth * TOOL_BOX_SLOT_RATIO))
+}
+
 @Composable
 private fun ToolsRow(tools: List<Tool>, slotWidth: Dp? = null) {
     // With a slot width (side by side) each tool owns an equal slice of the panel and the button
     // shrinks to fit it; otherwise the row spaces tools around at the standard tap size.
-    val box = if (slotWidth == null) Sumi.Layout.minTap else minOf(Sumi.Layout.minTap, slotWidth - 4.dp)
+    val box = toolBoxSize(slotWidth)
+    val iconSize = if (slotWidth == null) 20.dp else maxOf(20.dp, box * TOOL_ICON_BOX_RATIO)
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = if (slotWidth == null) Arrangement.SpaceAround else Arrangement.SpaceBetween,
@@ -594,7 +606,7 @@ private fun ToolsRow(tools: List<Tool>, slotWidth: Dp? = null) {
                             tool.active -> SumiTheme.colors.teal
                             else -> SumiTheme.colors.ink
                         },
-                        size = 20.dp,
+                        size = iconSize,
                     )
                 }
                 Text(
@@ -809,3 +821,9 @@ private fun formatTime(ms: Long): String {
     val sec = totalSec % 60
     return "${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}"
 }
+
+/** Tool button size as a share of its slot in the side-by-side panel. */
+private const val TOOL_BOX_SLOT_RATIO = 0.62f
+
+/** Tool icon size as a share of its button, matching 20dp in the 48dp button. */
+private const val TOOL_ICON_BOX_RATIO = 20f / 48f
