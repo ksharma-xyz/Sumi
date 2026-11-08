@@ -142,7 +142,7 @@ composeApp/src/commonMain/
 
 - JDK 17+
 - Android Studio Ladybug or later
-- Xcode 16+ (for iOS builds)
+- Xcode 27.1+ (for iOS builds; needed for iPhone Duo support)
 - Kotlin Multiplatform Mobile plugin
 
 ### Build & Run
