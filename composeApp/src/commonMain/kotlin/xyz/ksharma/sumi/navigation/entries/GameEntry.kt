@@ -11,6 +11,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
@@ -239,6 +240,7 @@ fun EntryProviderScope<NavKey>.GameEntry(navigator: SumiNavigator) {
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(50.dp),
+                        contentAlignment = Alignment.Center,
                     ) { BannerAd(adUnitId = adUnits.banner) }
                 }
             } else null,
