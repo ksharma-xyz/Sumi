@@ -70,13 +70,19 @@ All helpers live in `theme/CornerSafeInsets.kt`.
     board's given-digit size (0.6u, ignores font scale like the board); the remaining-count badge
     is small, scaled from the board's pencil-mark size.
   The board's square footprint is reserved before the puzzle is ready in both layouts.
-- **Home** (`screens/home/HomeScreen.kt`): below Expanded it is the single column. Expanded: the
-  header spans the content (max 1200dp, 24dp gutters), then two top-aligned panes 24dp apart.
-  Left (weight 5): quote, streak, invite. Right (weight 7): the difficulty grid, 3 columns when
-  the pane is >= 560dp wide, else 2. The two eyebrow labels share a baseline.
+- **Home** (`screens/home/HomeScreen.kt`): below Expanded it is the single column; from 600dp
+  the grid's last row fills the row (an odd card spans it) and the "Pass Sumi along" card spans
+  the grid's edges. Phones (< 600dp) are unchanged. Expanded: the header spans the content (max
+  1200dp, 24dp gutters). Below it, centred in the remaining height, two top-aligned panes 24dp
+  apart. Left (weight 5): large quote, divider, streak. Right (weight 7): the difficulty grid with
+  larger cards, 3 columns when the pane is >= 560dp wide, else 2; the last row's cards share the
+  full row. The invite card is a full-width row 24dp below both panes, spanning the left pane's
+  left edge to the right pane's right edge. The "Today / Practice" and "New Practice" labels
+  share a baseline.
 - **Navigation** (`navigation/SumiNavShell.kt`): Compact and Medium keep `BottomNavBar`; Expanded
-  uses `SumiNavRail` (88dp, left, same four tabs and selected colour) and the screen gets the
-  space to its right. The rail hides wherever the bottom bar hid (game, win, settings, ...).
+  uses `SumiNavRail` (88dp, left, same four tabs and selected colour), tabs stacked from the top
+  so the first sits level with the screen's header row. The screen gets the space to its right.
+  The rail hides wherever the bottom bar hid (game, win, settings, ...).
 - Paywall scrolls as one page below 560dp of height so the pricing block does not starve the
   feature list; every other screen scrolls vertically.
 

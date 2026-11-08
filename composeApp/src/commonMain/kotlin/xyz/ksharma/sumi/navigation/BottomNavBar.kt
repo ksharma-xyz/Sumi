@@ -89,7 +89,7 @@ val NavRailWidth = 88.dp
 
 /**
  * Expanded windows (width >= 840dp) use this left rail instead of [BottomNavBar]: same four
- * destinations, icons, labels and selected colour, stacked vertically and centred in the height.
+ * destinations, icons, labels and selected colour, stacked from the top, level with the screen's header row.
  */
 @Composable
 fun SumiNavRail(
@@ -106,9 +106,10 @@ fun SumiNavRail(
                 .statusBarsWithCornerClearance()
                 .windowInsetsPadding(WindowInsets.navigationBars)
                 .safeHorizontalPadding()
-                .padding(vertical = Sumi.Space.s3),
+                // Same top inset as a screen's header row, so the first tab lines up with it.
+                .padding(top = Sumi.Space.s4, bottom = Sumi.Space.s3),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(Sumi.Space.s4, Alignment.CenterVertically),
+            verticalArrangement = Arrangement.spacedBy(Sumi.Space.s4, Alignment.Top),
         ) {
             TABS.forEach { tab ->
                 BottomNavItem(

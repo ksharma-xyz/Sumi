@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.absoluteOffset
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
@@ -110,7 +111,8 @@ fun HomeScreen(
 
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         // The window class is the window's width, which includes any navigation rail beside us.
-        val expanded = maxWidth + LocalNavRailWidth.current >= ExpandedMinWidth
+        val windowWidth = maxWidth + LocalNavRailWidth.current
+        val expanded = windowWidth >= ExpandedMinWidth
         val shareInvite: () -> Unit = {
             // Snapshot the offscreen InviteShareCard, hand the
             // bitmap up so HomeEntry can call shareImage(bitmap, text).
@@ -141,6 +143,7 @@ fun HomeScreen(
                         inviteGlow = inviteGlow.value,
                         lockedDifficulties = lockedDifficulties,
                         bottomReserve = if (bottomBanner != null) 64.dp else Sumi.Space.s5,
+                        wide = windowWidth >= MEDIUM_MIN_WIDTH,
                     )
                 }
                 // Offscreen InviteShareCard — positioned far off-screen via absoluteOffset
@@ -183,6 +186,7 @@ private fun CompactHomeContent(
     inviteGlow: Float,
     lockedDifficulties: Set<String>,
     bottomReserve: Dp,
+    wide: Boolean,
 ) {
     Column(
         modifier = Modifier
@@ -202,9 +206,9 @@ private fun CompactHomeContent(
         Spacer(Modifier.height(Sumi.Space.s5))
         StreakCard(streakDays = streakDays)
         Spacer(Modifier.height(Sumi.Space.s4))
-        NewPracticeGrid(onStartGame = onStartGame, lockedDifficulties = lockedDifficulties)
+        NewPracticeGrid(onStartGame = onStartGame, lockedDifficulties = lockedDifficulties, fillLastRow = wide)
         Spacer(Modifier.height(Sumi.Space.s5))
-        InviteRow(glowAlpha = inviteGlow, onInvite = onInvite)
+        InviteRow(glowAlpha = inviteGlow, onInvite = onInvite, fullWidth = wide)
     }
 }
 
@@ -226,41 +230,61 @@ private fun ExpandedHomeContent(
     lockedDifficulties: Set<String>,
     bottomReserve: Dp,
 ) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .statusBarsWithCornerClearance()
-            .padding(top = Sumi.Space.s4, bottom = bottomReserve),
-        contentAlignment = Alignment.TopCenter,
-    ) {
-        Column(
-            modifier = Modifier.widthIn(max = HOME_PAGE_MAX_WIDTH).fillMaxWidth().padding(horizontal = Sumi.Space.s6),
+    // The viewport is measured outside the scroll container, whose own constraints are unbounded.
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val viewportHeight = maxHeight
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .statusBarsWithCornerClearance()
+                .padding(top = Sumi.Space.s4, bottom = bottomReserve),
+            contentAlignment = Alignment.TopCenter,
         ) {
-            HomeTopChrome(onSettings = onSettings)
-            Spacer(Modifier.height(Sumi.Space.s5))
-            Row(horizontalArrangement = Arrangement.spacedBy(HOME_PANE_GAP)) {
-                Column(modifier = Modifier.weight(HOME_LEFT_WEIGHT)) {
-                    DailyQuoteBlock(quote = quote)
-                    Spacer(Modifier.height(Sumi.Space.s5))
-                    QuoteRule()
-                    Spacer(Modifier.height(Sumi.Space.s5))
-                    StreakCard(streakDays = streakDays)
-                    Spacer(Modifier.height(Sumi.Space.s5))
-                    InviteRow(glowAlpha = inviteGlow, onInvite = onInvite)
-                }
-                BoxWithConstraints(modifier = Modifier.weight(HOME_RIGHT_WEIGHT)) {
-                    NewPracticeGrid(
-                        onStartGame = onStartGame,
-                        lockedDifficulties = lockedDifficulties,
-                        columns = if (maxWidth >= HOME_THREE_COLUMN_MIN_WIDTH) 3 else 2,
-                    )
+            Column(
+                modifier = Modifier.widthIn(
+                    max = HOME_PAGE_MAX_WIDTH,
+                ).fillMaxWidth().padding(horizontal = Sumi.Space.s6),
+            ) {
+                HomeTopChrome(onSettings = onSettings)
+                Spacer(Modifier.height(Sumi.Space.s5))
+                // The body sits centred in the height the header leaves, so a tall window is balanced
+                // above and below instead of empty at the bottom. Short windows just scroll.
+                Column(
+                    modifier = Modifier.heightIn(min = viewportHeight - HOME_HEADER_RESERVE),
+                    verticalArrangement = Arrangement.Center,
+                ) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(HOME_PANE_GAP)) {
+                        Column(modifier = Modifier.weight(HOME_LEFT_WEIGHT)) {
+                            DailyQuoteBlock(quote = quote, large = true)
+                            Spacer(Modifier.height(Sumi.Space.s6))
+                            QuoteRule()
+                            Spacer(Modifier.height(Sumi.Space.s6))
+                            StreakCard(streakDays = streakDays)
+                        }
+                        BoxWithConstraints(modifier = Modifier.weight(HOME_RIGHT_WEIGHT)) {
+                            NewPracticeGrid(
+                                onStartGame = onStartGame,
+                                lockedDifficulties = lockedDifficulties,
+                                columns = if (maxWidth >= HOME_THREE_COLUMN_MIN_WIDTH) 3 else 2,
+                                fillLastRow = true,
+                                large = true,
+                            )
+                        }
+                    }
+                    // Spans from the left pane's left edge to the right pane's right edge.
+                    Spacer(Modifier.height(HOME_PANE_GAP))
+                    InviteRow(glowAlpha = inviteGlow, onInvite = onInvite, fullWidth = true)
                 }
             }
         }
     }
 }
 
+/** Height the header row, its spacing and the page insets take, kept out of the centred body's minimum. */
+private val HOME_HEADER_RESERVE = 160.dp
+
+private val MEDIUM_MIN_WIDTH = 600.dp
 private val HOME_PAGE_MAX_WIDTH = 1200.dp
 private val HOME_PANE_GAP = 24.dp
 private val HOME_THREE_COLUMN_MIN_WIDTH = 560.dp
@@ -282,7 +306,7 @@ private val HOME_GUST_CONFIG = PetalBurstConfig(
  * opens the OS share sheet.
  */
 @Composable
-private fun InviteRow(glowAlpha: Float, onInvite: () -> Unit) {
+private fun InviteRow(glowAlpha: Float, onInvite: () -> Unit, fullWidth: Boolean = false) {
     val src = remember { MutableInteractionSource() }
     Box(
         modifier = Modifier
@@ -294,6 +318,7 @@ private fun InviteRow(glowAlpha: Float, onInvite: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Sumi.Space.s3),
             modifier = Modifier
+                .then(if (fullWidth) Modifier.fillMaxWidth() else Modifier)
                 .clickable(interactionSource = src, indication = null, onClick = onInvite)
                 .border(
                     width = 1.dp,
@@ -359,13 +384,17 @@ private fun HomeTopChrome(onSettings: () -> Unit) {
 }
 
 @Composable
-private fun DailyQuoteBlock(quote: Quote) {
+private fun DailyQuoteBlock(quote: Quote, large: Boolean = false) {
     Column {
         SumiEyebrow(text = "Today / Practice", color = SumiTheme.colors.red)
         Spacer(Modifier.height(Sumi.Space.s2))
         Text(
             text = "\u201C${quote.text}\u201D",
-            style = SumiTheme.typography.quote.copy(lineHeight = 36.sp),
+            style = if (large) {
+                SumiTheme.typography.quote.copy(fontSize = 40.sp, lineHeight = 52.sp)
+            } else {
+                SumiTheme.typography.quote.copy(lineHeight = 36.sp)
+            },
             color = SumiTheme.colors.ink,
         )
         Spacer(Modifier.height(Sumi.Space.s1))
@@ -440,6 +469,8 @@ private fun NewPracticeGrid(
     onStartGame: (String) -> Unit,
     lockedDifficulties: Set<String>,
     columns: Int = 2,
+    fillLastRow: Boolean = false,
+    large: Boolean = false,
 ) {
     Column {
         SumiEyebrow(text = "New Practice", color = SumiTheme.colors.inkFaint)
@@ -456,9 +487,11 @@ private fun NewPracticeGrid(
                             isLocked = name in lockedDifficulties,
                             onClick = { onStartGame(name) },
                             modifier = Modifier.weight(1f),
+                            large = large,
                         )
                     }
-                    repeat(columns - row.size) { Spacer(Modifier.weight(1f)) }
+                    // Wide windows let the last row's cards share the full row instead of leaving a gap.
+                    if (!fillLastRow) repeat(columns - row.size) { Spacer(Modifier.weight(1f)) }
                 }
             }
         }
@@ -473,7 +506,10 @@ private fun DifficultyTile(
     isLocked: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    large: Boolean = false,
 ) {
+    // Expanded windows have room to spare, so the cards grow instead of leaving the page empty.
+    val scale = if (large) 1.4f else 1f
     val src = remember { MutableInteractionSource() }
     val borderColor = if (isLocked) SumiTheme.colors.gold else SumiTheme.colors.paperEdge
     val kanjiColor = if (isLocked) SumiTheme.colors.gold else SumiTheme.colors.red
@@ -485,13 +521,13 @@ private fun DifficultyTile(
                 .border(1.dp, borderColor)
                 .semantics(mergeDescendants = true) { contentDescription = tileDescription }
                 .clickable(interactionSource = src, indication = null, onClick = onClick)
-                .padding(horizontal = Sumi.Space.s3, vertical = Sumi.Space.s3),
+                .padding(horizontal = Sumi.Space.s3 * scale, vertical = Sumi.Space.s3 * scale),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(Sumi.Space.s3),
+            horizontalArrangement = Arrangement.spacedBy(Sumi.Space.s3 * scale),
         ) {
             Text(
                 text = kanji,
-                style = SumiTheme.typography.cjk.copy(fontSize = 30.sp),
+                style = SumiTheme.typography.cjk.copy(fontSize = (30 * scale).sp),
                 color = kanjiColor,
                 modifier = Modifier.semantics { hideFromAccessibility() },
             )
@@ -499,7 +535,7 @@ private fun DifficultyTile(
                 Text(
                     text = name,
                     style = SumiTheme.typography.h3.copy(
-                        fontSize = 20.sp,
+                        fontSize = (20 * scale).sp,
                         fontStyle = FontStyle.Italic,
                         fontWeight = FontWeight(500),
                     ),
@@ -507,7 +543,7 @@ private fun DifficultyTile(
                 )
                 Text(
                     text = if (isLocked) "Sumi Pro" else avgTime,
-                    style = SumiTheme.typography.uiMeta.copy(letterSpacing = 1.sp, fontSize = 12.sp),
+                    style = SumiTheme.typography.uiMeta.copy(letterSpacing = 1.sp, fontSize = (12 * scale).sp),
                     color = if (isLocked) SumiTheme.colors.gold else SumiTheme.colors.inkFaint,
                 )
             }
