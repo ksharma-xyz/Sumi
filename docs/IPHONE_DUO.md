@@ -50,13 +50,31 @@ All helpers live in `theme/CornerSafeInsets.kt`.
 
 - `contentMaxWidth()` caps a screen's main column at `MaxContentWidth` (640dp) and fills
   narrower windows; `WashiBG` centres it.
+- **Window classes**: Compact < 600dp wide (phone layouts, unchanged), Medium 600 to 839dp (one
+  column capped at 640dp), Expanded >= 840dp (`ExpandedMinWidth`, multi-pane). Decided by window
+  width, never device. Under the rail a screen adds `LocalNavRailWidth` back to its own width.
 - **Game screen** (`screens/game/GameLayout.kt`): `gameLayoutFor(width, height)` picks the layout
   from the window alone. Wider than tall, at least 360dp of usable height, and room for a 280dp
-  panel beside a board of at least 260dp: the board sits on the left sized to the height (capped
-  at 560dp) and the top bar, marks row, tools and a 3x3 number pad are in a column on the right,
-  nothing scrolls. Anything else keeps the stacked, scrolling layout, unchanged. "Usable height"
-  already subtracts the status bar, corner clearance and the reserved banner height. The board's
-  square footprint is reserved before the puzzle is ready in both layouts.
+  panel beside a board of at least 260dp: side by side, otherwise the stacked, scrolling layout
+  (unchanged). "Usable height" already subtracts the status bar, corner clearance and the banner.
+  Side by side is one centred **unit** on one grid, `unitWidth = board + 24dp gap + panel`:
+  - The top bar (back, difficulty + timer, pause) spans the unit above both. Back arrow left
+    edge = board left edge, pause right edge = panel right edge.
+  - Below it a row exactly `boardSize` tall. Board on the left (square, capped at 560dp). Panel
+    on the right (280..400dp): marks row top = board top, then tools row, then the 3x3 pad with
+    `weight(1f)`, so the pad bottom = board bottom.
+  - Size budget: `boardSize = min(height - 2 x 12dp margin - 60dp top bar block, 560dp, width
+    left for a 280dp panel)`. The top bar block is `SIDE_TOP_BAR_BLOCK` (48dp bar + 12dp gap).
+  - Pad digits scale with the cell: 0.38 x cell height, clamped 26..44sp, sized so a large font
+    scale cannot clip; the remaining-count badge scales by the same factor.
+  The board's square footprint is reserved before the puzzle is ready in both layouts.
+- **Home** (`screens/home/HomeScreen.kt`): below Expanded it is the single column. Expanded: the
+  header spans the content (max 1200dp, 24dp gutters), then two top-aligned panes 24dp apart.
+  Left (weight 5): quote, streak, invite. Right (weight 7): the difficulty grid, 3 columns when
+  the pane is >= 560dp wide, else 2. The two eyebrow labels share a baseline.
+- **Navigation** (`navigation/SumiNavShell.kt`): Compact and Medium keep `BottomNavBar`; Expanded
+  uses `SumiNavRail` (88dp, left, same four tabs and selected colour) and the screen gets the
+  space to its right. The rail hides wherever the bottom bar hid (game, win, settings, ...).
 - Paywall scrolls as one page below 560dp of height so the pricing block does not starve the
   feature list; every other screen scrolls vertically.
 
@@ -65,8 +83,9 @@ All helpers live in `theme/CornerSafeInsets.kt`.
 The darpan harness captures each preview once, at one fixed device size, and ignores a preview's
 own `widthDp` / `heightDp`. `ui/preview/PreviewWindow.kt` works around that: it lays the content
 out at the real dp size and shrinks the density so the window fits the frame. The game screen has
-previews for phone, Duo outer (portrait, landscape) and Duo inner (portrait, landscape)
-(`GameScreenPreview.kt`). Insets are zero under Robolectric, so these show layout, not the status
+previews for phone, Duo outer (portrait, landscape), Duo inner (portrait, landscape) and
+tablet 1280x800 (portrait, landscape) (`GameScreenPreview.kt`); Home has tablet and Duo inner
+previews inside `SumiNavShell` (`HomeScreenPreview.kt`). Insets are zero under Robolectric, so these show layout, not the status
 column. The layout decision itself is unit-tested in `GameLayoutTest`.
 
 ## Testing on the Duo simulator
