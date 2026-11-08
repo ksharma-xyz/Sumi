@@ -15,16 +15,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
@@ -63,6 +60,8 @@ import xyz.ksharma.sumi.game.model.BoardState
 import xyz.ksharma.sumi.game.model.Difficulty
 import xyz.ksharma.sumi.platform.KeepScreenOn
 import xyz.ksharma.sumi.theme.SumiTheme
+import xyz.ksharma.sumi.theme.safeHorizontalPadding
+import xyz.ksharma.sumi.theme.statusBarsWithCornerClearance
 import xyz.ksharma.sumi.theme.SumiTokens as Sumi
 
 private val DIFFICULTY_KANJI = mapOf(
@@ -163,6 +162,7 @@ fun GameScreen(
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
+                    .safeHorizontalPadding()
                     .fillMaxWidth(),
                 contentAlignment = Alignment.BottomCenter,
             ) { bottomBanner() }
@@ -199,7 +199,7 @@ private fun GameBody(
             .fillMaxSize()
             .verticalScroll(rememberScrollState()) // Lets landscape + small phones scroll the
             // board + tools + number-pad stack instead of clipping the bottom.
-            .windowInsetsPadding(WindowInsets.statusBars)
+            .statusBarsWithCornerClearance()
             // Tight side margin so the grid (and number-pad tap targets) get
             // as much width as possible — easier to read / tap, better for
             // low vision. MAX_BOARD_WIDTH still caps it on tablets.

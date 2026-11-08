@@ -40,7 +40,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.pager.HorizontalPager
@@ -91,6 +90,8 @@ import xyz.ksharma.sumi.share.BookTheme
 import xyz.ksharma.sumi.share.color
 import xyz.ksharma.sumi.share.swatchColor
 import xyz.ksharma.sumi.theme.SumiTheme
+import xyz.ksharma.sumi.theme.safeContentColumn
+import xyz.ksharma.sumi.theme.statusBarsWithCornerClearance
 import xyz.ksharma.sumi.theme.SumiTokens as Sumi
 
 private val STEP_LABELS = listOf("DIFFICULTY", "THEME", "OPTIONS", "PREVIEW")
@@ -234,7 +235,8 @@ private fun ZenLanding(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .windowInsetsPadding(WindowInsets.statusBars)
+                .safeContentColumn()
+                .statusBarsWithCornerClearance()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = Sumi.Space.s6)
                 .padding(top = Sumi.Space.s8, bottom = Sumi.Space.s9),
@@ -560,7 +562,8 @@ private fun BookDesignerScreen(state: BookDesignerState, callbacks: BookDesigner
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .windowInsetsPadding(WindowInsets.statusBars)
+                .safeContentColumn()
+                .statusBarsWithCornerClearance()
                 .windowInsetsPadding(WindowInsets.navigationBars)
                 .padding(horizontal = Sumi.Space.s6)
                 .padding(top = Sumi.Space.s5, bottom = Sumi.Space.s6),

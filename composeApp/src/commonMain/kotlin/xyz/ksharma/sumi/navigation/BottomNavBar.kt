@@ -25,6 +25,7 @@ import androidx.navigation3.runtime.NavKey
 import xyz.ksharma.sumi.design.components.SumiIcon
 import xyz.ksharma.sumi.design.icons.SumiIcons
 import xyz.ksharma.sumi.theme.SumiTheme
+import xyz.ksharma.sumi.theme.safeHorizontalPadding
 import xyz.ksharma.sumi.theme.SumiTokens as Sumi
 
 private data class NavTab(val route: NavKey, val label: String, val icon: ImageVector)
@@ -64,6 +65,7 @@ fun BottomNavBar(
             modifier = Modifier
                 .fillMaxWidth()
                 .windowInsetsPadding(WindowInsets.navigationBars)
+                .safeHorizontalPadding()
                 .padding(horizontal = Sumi.Space.s4, vertical = Sumi.Space.s3),
             horizontalArrangement = Arrangement.SpaceAround,
         ) {
