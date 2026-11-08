@@ -20,51 +20,52 @@ class GameLayoutTest {
         assertEquals(GameLayout.Stacked, gameLayoutFor(width = 600.dp, height = 600.dp))
     }
 
+    private fun sideBySide(width: Int, height: Int) =
+        assertIs<GameLayout.SideBySide>(gameLayoutFor(width = width.dp, height = height.dp))
+
+    private fun assertDp(expected: Float, actual: androidx.compose.ui.unit.Dp) =
+        assertTrue(kotlin.math.abs(expected - actual.value) < 0.01f, "expected $expected but was ${actual.value}")
+
     @Test
-    fun duoInnerLandscapeIsSideBySideAndFitsTheWindow() {
-        val layout = assertIs<GameLayout.SideBySide>(gameLayoutFor(width = 951.dp, height = 669.dp))
-        assertEquals(MAX_BOARD_WIDTH, layout.boardSize) // 585dp of height after the top bar, capped at 560dp
-        assertTrue(layout.boardSize + SIDE_TOP_BAR_BLOCK + SIDE_BOARD_MARGIN * 2 <= 669.dp)
-        assertTrue(layout.panelWidth >= MIN_PANEL_WIDTH)
+    fun panelIsSixCellsWideAndBoardNine() {
+        val layout = sideBySide(1280, 800)
+        assertEquals(layout.cell * 9, layout.boardSize)
+        assertEquals(layout.cell * 6, layout.panelWidth)
+        assertEquals(layout.boardSize + layout.gap + layout.panelWidth, layout.unitWidth)
+    }
+
+    @Test
+    fun tabletLandscapeFillsTheHeightUpToTheBoardCap() {
+        val layout = sideBySide(1280, 800)
+        assertDp(640f / 9, layout.cell) // height would allow 79.6dp; the 640dp board cap wins
+        assertEquals(MAX_SIDE_GAP, layout.gap)
+        assertTrue(layout.boardSize + SIDE_TOP_BAR_BLOCK + SIDE_BOARD_MARGIN * 2 <= 800.dp)
+    }
+
+    @Test
+    fun duoInnerLandscapeIsWidthBound() {
+        val layout = sideBySide(951, 669)
+        assertDp((951f - 24 - 24) / 15, layout.cell)
         assertTrue(layout.unitWidth + SIDE_BOARD_MARGIN * 2 <= 951.dp)
     }
 
     @Test
-    fun tabletLandscapeUnitFitsAndTopBarIsInTheBudget() {
-        val layout = assertIs<GameLayout.SideBySide>(gameLayoutFor(width = 1280.dp, height = 800.dp))
-        assertEquals(MAX_BOARD_WIDTH, layout.boardSize)
-        assertEquals(MAX_PANEL_WIDTH, layout.panelWidth)
-        assertEquals(layout.boardSize + SIDE_GAP + layout.panelWidth, layout.unitWidth)
-        assertTrue(layout.boardSize + SIDE_TOP_BAR_BLOCK <= 800.dp)
+    fun duoOuterLandscapeIsSideBySideWithAHalfCellGap() {
+        val layout = sideBySide(678, 466)
+        val fromHeight = (466f - 24 - 60) / 9
+        assertDp((678f - 24 - fromHeight / 2) / 15, layout.cell)
+        assertDp(fromHeight / 2, layout.gap)
+        assertTrue(layout.cell >= MIN_SIDE_CELL)
     }
 
     @Test
-    fun boardShrinksByTheTopBarOnShortWindows() {
-        val layout = assertIs<GameLayout.SideBySide>(gameLayoutFor(width = 900.dp, height = 400.dp))
-        assertEquals(400.dp - SIDE_BOARD_MARGIN * 2 - SIDE_TOP_BAR_BLOCK, layout.boardSize)
-    }
-
-    @Test
-    fun duoOuterLandscapeGivesWidthToThePanel() {
-        val layout = assertIs<GameLayout.SideBySide>(gameLayoutFor(width = 628.dp, height = 450.dp))
-        assertEquals(MIN_PANEL_WIDTH, layout.panelWidth)
-        assertTrue(layout.boardSize >= MIN_SIDE_BOARD)
-    }
-
-    @Test
-    fun boardIsCappedOnVeryLargeWindows() {
-        val layout = assertIs<GameLayout.SideBySide>(gameLayoutFor(width = 1366.dp, height = 1024.dp))
-        assertEquals(MAX_BOARD_WIDTH, layout.boardSize)
-        assertEquals(MAX_PANEL_WIDTH, layout.panelWidth)
-    }
-
-    @Test
-    fun tooShortWindowScrollsInsteadOfSqueezing() {
+    fun cellBelowTheMinimumFallsBackToStacked() {
+        // 340dp of height leaves a 28dp cell.
         assertEquals(GameLayout.Stacked, gameLayoutFor(width = 900.dp, height = 340.dp))
     }
 
     @Test
-    fun tooNarrowForAPanelStaysStacked() {
+    fun tooNarrowForFifteenCellsStaysStacked() {
         assertEquals(GameLayout.Stacked, gameLayoutFor(width = 520.dp, height = 400.dp))
     }
 

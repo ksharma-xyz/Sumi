@@ -54,19 +54,21 @@ All helpers live in `theme/CornerSafeInsets.kt`.
   column capped at 640dp), Expanded >= 840dp (`ExpandedMinWidth`, multi-pane). Decided by window
   width, never device. Under the rail a screen adds `LocalNavRailWidth` back to its own width.
 - **Game screen** (`screens/game/GameLayout.kt`): `gameLayoutFor(width, height)` picks the layout
-  from the window alone. Wider than tall, at least 360dp of usable height, and room for a 280dp
-  panel beside a board of at least 260dp: side by side, otherwise the stacked, scrolling layout
-  (unchanged). "Usable height" already subtracts the status bar, corner clearance and the banner.
-  Side by side is one centred **unit** on one grid, `unitWidth = board + 24dp gap + panel`:
-  - The top bar (back, difficulty + timer, pause) spans the unit above both. Back arrow left
-    edge = board left edge, pause right edge = panel right edge.
-  - Below it a row exactly `boardSize` tall. Board on the left (square, capped at 560dp). Panel
-    on the right (280..400dp): marks row top = board top, then tools row, then the 3x3 pad with
-    `weight(1f)`, so the pad bottom = board bottom.
-  - Size budget: `boardSize = min(height - 2 x 12dp margin - 60dp top bar block, 560dp, width
-    left for a 280dp panel)`. The top bar block is `SIDE_TOP_BAR_BLOCK` (48dp bar + 12dp gap).
-  - Pad digits scale with the cell: 0.38 x cell height, clamped 26..44sp, sized so a large font
-    scale cannot clip; the remaining-count badge scales by the same factor.
+  from the window alone. "Usable height" already subtracts the status bar, corner clearance and the reserved banner height.
+  Side by side is a **board-cell grid**: u = one board cell, board = 9u x 9u, panel = 6u x 9u,
+  gap = u/2 clamped 16..24dp, one centred unit of width 15u + gap.
+  `u = min((height - 60dp top bar block - 2 x 12dp margin) / 9, 640dp / 9, (width - 2 x margin - gap) / 15)`.
+  Side by side needs width > height and u >= 32dp; anything else is the stacked, scrolling layout
+  (unchanged, its board stays capped at 560dp).
+  - The top bar (back, difficulty + timer, pause) spans the unit above both: arrow left edge =
+    board left edge, pause bars' right edge = panel right edge.
+  - Panel rows, every horizontal line on a board line: row 0 (1u) Mistakes / Hints centred in
+    the band; rows 1-2 (2u) the five tools, spread across 6u and centred in the band; rows 3-8
+    (6u) a 3x3 keypad of square 2u cells. Its top edge is the board's first thick box line
+    (+3u), inner lines at +5u and +7u, bottom edge = board bottom (+9u).
+  - Keypad lines use the board's thin line weight and colour (no heavier frame). Digits use the
+    board's given-digit size (0.6u, ignores font scale like the board); the remaining-count badge
+    is small, scaled from the board's pencil-mark size.
   The board's square footprint is reserved before the puzzle is ready in both layouts.
 - **Home** (`screens/home/HomeScreen.kt`): below Expanded it is the single column. Expanded: the
   header spans the content (max 1200dp, 24dp gutters), then two top-aligned panes 24dp apart.

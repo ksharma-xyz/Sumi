@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -38,6 +39,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
@@ -51,10 +54,16 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import xyz.ksharma.sumi.design.board.BoardEntrance
+import xyz.ksharma.sumi.design.board.DIGIT_SIZE_RATIO
+import xyz.ksharma.sumi.design.board.NOTE_SIZE_RATIO
 import xyz.ksharma.sumi.design.board.SumiBoard
+import xyz.ksharma.sumi.design.board.THIN_LINE_ALPHA
+import xyz.ksharma.sumi.design.board.THIN_STROKE_MIN
+import xyz.ksharma.sumi.design.board.THIN_STROKE_RATIO
 import xyz.ksharma.sumi.design.components.PetalBurstConfig
 import xyz.ksharma.sumi.design.components.SumiIcon
 import xyz.ksharma.sumi.design.components.SumiPetalBurst
@@ -299,10 +308,10 @@ private fun StackedGameBody(
 }
 
 /**
- * One centred unit on a single grid. The top bar spans board and panel (left edge = board left,
- * right edge = panel right). Beneath it a row exactly as tall as the board: the board on the left,
- * and a panel on the right whose marks row top sits on the board top and whose number pad takes
- * the remaining height, so its bottom sits on the board bottom. Nothing scrolls.
+ * One centred unit on a grid of board cells (u = one cell, board = 9u x 9u). The top bar spans board
+ * and panel. Beside the board a panel 6u wide and 9u tall, every horizontal line on a board line:
+ * row 0 (1u) marks and hints, rows 1-2 (2u) the tools, rows 3-8 (6u) a 3x3 pad of square 2u cells
+ * whose top edge is the board's first thick box line and whose bottom edge is the board bottom.
  */
 @Composable
 private fun SideBySideGameBody(
@@ -311,6 +320,7 @@ private fun SideBySideGameBody(
     layout: GameLayout.SideBySide,
     bottomReservedHeight: Dp,
 ) {
+    val u = layout.cell
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -330,21 +340,22 @@ private fun SideBySideGameBody(
             Spacer(Modifier.height(SIDE_TOP_BAR_GAP))
             Row(
                 modifier = Modifier.fillMaxWidth().height(layout.boardSize),
-                horizontalArrangement = Arrangement.spacedBy(SIDE_GAP),
+                horizontalArrangement = Arrangement.spacedBy(layout.gap),
             ) {
-                BoardArea(ui = ui, callbacks = callbacks, cellSize = layout.boardSize / 9)
+                BoardArea(ui = ui, callbacks = callbacks, cellSize = u)
                 Column(modifier = Modifier.width(layout.panelWidth).fillMaxHeight()) {
-                    GameMarksRow(ui)
-                    Spacer(Modifier.height(Sumi.Space.s3))
-                    ToolsRow(tools = gameTools(ui.state, callbacks))
-                    Spacer(Modifier.height(Sumi.Space.s3))
-                    NumberPad(
+                    Box(modifier = Modifier.fillMaxWidth().height(u), contentAlignment = Alignment.Center) {
+                        GameMarksRow(ui)
+                    }
+                    Box(modifier = Modifier.fillMaxWidth().height(u * 2), contentAlignment = Alignment.Center) {
+                        ToolsRow(tools = gameTools(ui.state, callbacks), slotWidth = u * PANEL_CELLS / 5)
+                    }
+                    NumberPadGrid(
                         state = ui.state,
                         selectedDigit = ui.selectedDigit,
                         highLegibility = ui.highLegibility,
                         onDigit = callbacks.onEnter,
-                        modifier = Modifier.weight(1f),
-                        grid = true,
+                        cell = u,
                     )
                 }
             }
@@ -449,6 +460,8 @@ private fun GameTopBar(
                     contentDescription = "Pause",
                     tint = SumiTheme.colors.ink,
                     size = 22.dp,
+                    // The pause vector has blank space at its right; push the visible bars to the edge.
+                    modifier = if (edgeAligned) Modifier.offset(x = PAUSE_GLYPH_INSET) else Modifier,
                 )
             }
         }
@@ -540,18 +553,25 @@ private fun gameTools(state: BoardState, callbacks: GameCallbacks): List<Tool> =
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun ToolsRow(tools: List<Tool>) {
+private fun ToolsRow(tools: List<Tool>, slotWidth: Dp? = null) {
+    // With a slot width (side by side) each tool owns an equal slice of the panel and the button
+    // shrinks to fit it; otherwise the row spaces tools around at the standard tap size.
+    val box = if (slotWidth == null) Sumi.Layout.minTap else minOf(Sumi.Layout.minTap, slotWidth - 4.dp)
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceAround,
+        horizontalArrangement = if (slotWidth == null) Arrangement.SpaceAround else Arrangement.SpaceBetween,
     ) {
         tools.forEach { tool ->
             val src = remember { MutableInteractionSource() }
+            val slotModifier = if (slotWidth == null) {
+                Modifier.minimumInteractiveComponentSize()
+            } else {
+                Modifier.width(slotWidth)
+            }
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(5.dp),
-                modifier = Modifier
-                    .minimumInteractiveComponentSize()
+                modifier = slotModifier
                     .combinedClickable(
                         interactionSource = src,
                         indication = null,
@@ -562,7 +582,7 @@ private fun ToolsRow(tools: List<Tool>) {
             ) {
                 Box(
                     modifier = Modifier
-                        .size(Sumi.Layout.minTap)
+                        .size(box)
                         .border(1.dp, SumiTheme.colors.paperEdge),
                     contentAlignment = Alignment.Center,
                 ) {
@@ -598,15 +618,10 @@ private fun NumberPad(
     highLegibility: Boolean,
     onDigit: (Int) -> Unit,
     modifier: Modifier = Modifier,
-    grid: Boolean = false,
 ) {
     // Match the board: high-legibility mode uses the UI sans family for the pad digits too.
     val digitStyle = SumiTheme.typography.numeral.copy(fontSize = 26.sp).let {
         if (highLegibility) it.copy(fontFamily = SumiTheme.typography.uiLabel.fontFamily) else it
-    }
-    if (grid) {
-        NumberPadGrid(state, selectedDigit, digitStyle, onDigit, modifier)
-        return
     }
     // Row uses IntrinsicSize.Min so the dividers stretch to whatever the
     // tallest number cell needs. Cells use intrinsic height (no aspectRatio
@@ -641,50 +656,70 @@ private fun NumberPad(
     }
 }
 
+/** Blank space between the pause icon's box and its visible bars. */
+private val PAUSE_GLYPH_INSET = 5.5.dp
+
+/** The sans count badge matches the board's Caveat pencil marks at this fraction of their size (Caveat reads smaller). */
+private const val BADGE_TO_NOTE = 0.7f
+
 /**
- * 3x3 keypad for the side-by-side layout: big cells that share whatever height is left. The digit
- * (and the remaining-count badge) scale with the cell height so they stay proportional to the cell.
+ * 3x3 keypad for the side-by-side layout: nine square cells of 2 x 2 board cells, 6 x 6 cells in
+ * all. Lines use the board's thin-line weight and colour, centred on the board's grid lines (the
+ * top edge on the first thick box line, inner lines on rows 5 and 7, bottom edge on the board
+ * bottom). Digits use the board's given-digit size and the count badge the pencil-mark size.
  */
 @Composable
 private fun NumberPadGrid(
     state: BoardState,
     selectedDigit: Int?,
-    digitStyle: TextStyle,
+    highLegibility: Boolean,
     onDigit: (Int) -> Unit,
+    cell: Dp,
     modifier: Modifier = Modifier,
 ) {
-    BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
-        // Border and the two dividers take 4dp of the height.
-        val cellHeight = (maxHeight - 4.dp) / 3
-        val density = LocalDensity.current
-        // Size the text in dp-equivalent sp so a large system font scale cannot overflow the cell.
-        val digitSp = with(density) {
-            (cellHeight * PAD_DIGIT_RATIO).toSp().value.coerceIn(PAD_DIGIT_MIN_SP, PAD_DIGIT_MAX_SP)
-        }
-        val scaledDigit = digitStyle.copy(fontSize = digitSp.sp, lineHeight = (digitSp * 1.15f).sp)
-        val badgeSp = 11f * digitSp / PAD_DIGIT_MIN_SP
-        Column(modifier = Modifier.fillMaxSize().border(width = 1.dp, color = SumiTheme.colors.paperEdge)) {
-            for (rowIndex in 0 until 3) {
-                if (rowIndex > 0) {
-                    Box(Modifier.fillMaxWidth().height(1.dp).background(SumiTheme.colors.paperEdge))
-                }
-                Row(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                    for (colIndex in 0 until 3) {
-                        val n = rowIndex * 3 + colIndex + 1
-                        if (colIndex > 0) {
-                            Box(Modifier.width(1.dp).fillMaxHeight().background(SumiTheme.colors.paperEdge))
-                        }
-                        NumberCell(
-                            n = n,
-                            state = state,
-                            armed = n == selectedDigit,
-                            digitStyle = scaledDigit,
-                            onDigit = onDigit,
-                            modifier = Modifier.weight(1f).fillMaxHeight(),
-                            badgeSp = badgeSp,
-                        )
+    val density = LocalDensity.current
+    val digitSp = with(density) { (cell * DIGIT_SIZE_RATIO).toSp() }
+    val badgeSp = with(density) { (cell * NOTE_SIZE_RATIO * BADGE_TO_NOTE).toSp() }
+    val baseStyle = SumiTheme.typography.numeral.let {
+        if (highLegibility) it.copy(fontFamily = SumiTheme.typography.uiLabel.fontFamily) else it
+    }
+    val digitStyle = baseStyle.copy(fontSize = digitSp, lineHeight = digitSp)
+    val lineColor = SumiTheme.colors.ink.copy(alpha = THIN_LINE_ALPHA)
+    Box(
+        modifier = modifier
+            .size(cell * PANEL_CELLS)
+            .drawBehind {
+                val px = cell.toPx()
+                val stroke = (cell.value * THIN_STROKE_RATIO).dp.toPx().coerceAtLeast(THIN_STROKE_MIN.toPx())
+                val side = px * PANEL_CELLS
+                for (i in 0..3) {
+                    // Top edge is centred on the board's thick box line; the far edges sit inside.
+                    val pos = when (i) {
+                        0 -> 0f
+                        3 -> side - stroke / 2f
+                        else -> i * 2 * px
                     }
+                    val xPos = if (i == 0) stroke / 2f else pos
+                    drawLine(lineColor, Offset(0f, pos), Offset(side, pos), stroke)
+                    drawLine(lineColor, Offset(xPos, 0f), Offset(xPos, side), stroke)
                 }
+            },
+    ) {
+        for (rowIndex in 0 until 3) {
+            for (colIndex in 0 until 3) {
+                val n = rowIndex * 3 + colIndex + 1
+                NumberCell(
+                    n = n,
+                    state = state,
+                    armed = n == selectedDigit,
+                    digitStyle = digitStyle,
+                    onDigit = onDigit,
+                    modifier = Modifier
+                        .offset(x = cell * (colIndex * 2), y = cell * (rowIndex * 2))
+                        .size(cell * 2),
+                    badgeSp = badgeSp,
+                    fillCell = true,
+                )
             }
         }
     }
@@ -698,17 +733,18 @@ private fun NumberCell(
     digitStyle: TextStyle,
     onDigit: (Int) -> Unit,
     modifier: Modifier = Modifier,
-    badgeSp: Float = 11f,
+    badgeSp: TextUnit = 11.sp,
+    fillCell: Boolean = false,
 ) {
     val src = remember { MutableInteractionSource() }
     val remaining = state.remainingCounts.getOrElse(n - 1) { 0 }
     Column(
         modifier = modifier
-            .minimumInteractiveComponentSize()
+            .then(if (fillCell) Modifier else Modifier.minimumInteractiveComponentSize())
             // Armed digit (digit-first mode) gets a soft teal wash so it's clear
             // which number the next cell tap will place.
             .background(if (armed) SumiTheme.colors.teal.copy(alpha = 0.14f) else Color.Transparent)
-            .padding(vertical = Sumi.Space.s2)
+            .then(if (fillCell) Modifier else Modifier.padding(vertical = Sumi.Space.s2))
             .clickable(interactionSource = src, indication = null, enabled = remaining > 0) { onDigit(n) },
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
@@ -724,7 +760,7 @@ private fun NumberCell(
         )
         Text(
             text = if (remaining > 0) remaining.toString() else "",
-            style = SumiTheme.typography.uiMeta.copy(fontSize = badgeSp.sp),
+            style = SumiTheme.typography.uiMeta.copy(fontSize = badgeSp),
             color = SumiTheme.colors.inkFaint,
         )
     }
