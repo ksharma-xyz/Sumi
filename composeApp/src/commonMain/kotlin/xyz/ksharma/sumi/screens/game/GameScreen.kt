@@ -230,19 +230,31 @@ private fun GameBody(
     BoxWithConstraints(modifier = Modifier.fillMaxSize().safeHorizontalPadding()) {
         val usableHeight = maxHeight - cornerSafeTopPadding() - bottomReservedHeight
         when (val layout = gameLayoutFor(width = maxWidth, height = usableHeight)) {
-            GameLayout.Stacked -> StackedGameBody(ui, callbacks, bottomReservedHeight)
+            GameLayout.Stacked -> StackedGameBody(
+                ui = ui,
+                callbacks = callbacks,
+                bottomReservedHeight = bottomReservedHeight,
+                fitToHeight = stackedFitsHeight(usableHeight),
+            )
             is GameLayout.SideBySide -> SideBySideGameBody(ui, callbacks, layout, bottomReservedHeight)
         }
     }
 }
 
 @Composable
-private fun StackedGameBody(ui: GameBodyUi, callbacks: GameCallbacks, bottomReservedHeight: Dp) {
+private fun StackedGameBody(
+    ui: GameBodyUi,
+    callbacks: GameCallbacks,
+    bottomReservedHeight: Dp,
+    fitToHeight: Boolean,
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState()) // Lets landscape + small phones scroll the
-            // board + tools + number-pad stack instead of clipping the bottom.
+            // Tall enough: nothing scrolls and the board takes the height the controls leave
+            // (iPhone Duo's outer display, where a full-width board pushed the number pad under
+            // the banner). Too short (phones on their side): scroll instead of clipping.
+            .then(if (fitToHeight) Modifier else Modifier.verticalScroll(rememberScrollState()))
             .statusBarsWithCornerClearance()
             // Tight side margin so the grid (and number-pad tap targets) get
             // as much width as possible — easier to read / tap, better for
@@ -266,8 +278,12 @@ private fun StackedGameBody(ui: GameBodyUi, callbacks: GameCallbacks, bottomRese
         // doesn't dominate a 12-inch display. SumiBoard owns its own perimeter
         // so no wrapping border / padding is needed (would have caused the
         // interior lines to overhang the perimeter).
-        BoxWithConstraints(contentAlignment = Alignment.Center) {
-            BoardArea(ui = ui, callbacks = callbacks, cellSize = minOf(maxWidth, MAX_BOARD_WIDTH) / 9)
+        BoxWithConstraints(
+            modifier = if (fitToHeight) Modifier.weight(1f, fill = false) else Modifier,
+            contentAlignment = Alignment.Center,
+        ) {
+            val side = if (fitToHeight) minOf(maxWidth, maxHeight) else maxWidth
+            BoardArea(ui = ui, callbacks = callbacks, cellSize = minOf(side, MAX_BOARD_WIDTH) / 9)
         }
         Spacer(Modifier.height(Sumi.Space.s4))
         ToolsRow(tools = gameTools(ui.state, callbacks))

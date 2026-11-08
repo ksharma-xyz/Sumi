@@ -3,6 +3,7 @@ package xyz.ksharma.sumi.screens.game
 import androidx.compose.ui.unit.dp
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
@@ -50,5 +51,16 @@ class GameLayoutTest {
     @Test
     fun tooNarrowForAPanelStaysStacked() {
         assertEquals(GameLayout.Stacked, gameLayoutFor(width = 520.dp, height = 400.dp))
+    }
+
+    @Test
+    fun duoOuterPortraitFitsWithoutScrolling() {
+        // 678dp tall, minus the corner clearance and the banner reserve.
+        assertTrue(stackedFitsHeight(678.dp - 16.dp - 64.dp))
+    }
+
+    @Test
+    fun phoneOnItsSideScrolls() {
+        assertFalse(stackedFitsHeight(402.dp - 64.dp))
     }
 }

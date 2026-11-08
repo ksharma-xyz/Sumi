@@ -27,6 +27,15 @@ internal val MIN_SIDE_BOARD = 260.dp
  */
 internal val MIN_SIDE_HEIGHT = 360.dp
 
+/**
+ * Height the stacked layout's controls take besides the board: top bar, marks row, tools row,
+ * number pad and the gaps between them, at the default font scale.
+ */
+internal val STACKED_CONTROLS_HEIGHT = 300.dp
+
+/** Smallest board the stacked layout shrinks to before it scrolls instead. */
+internal val MIN_STACKED_BOARD = 270.dp
+
 /** How the game screen arranges the board and its controls. */
 internal sealed interface GameLayout {
     /** Top bar, marks, board, tools and number pad in one vertical scroll (portrait). */
@@ -54,3 +63,11 @@ internal fun gameLayoutFor(width: Dp, height: Dp): GameLayout {
     val panelWidth = minOf(usableWidth - boardSize - SIDE_GAP, MAX_PANEL_WIDTH)
     return GameLayout.SideBySide(boardSize = boardSize, panelWidth = panelWidth)
 }
+
+/**
+ * Whether the stacked layout can fit the window without scrolling by sizing the board to the
+ * height the controls leave. False on short windows (phones on their side), which scroll.
+ *
+ * @param height window height after the status bar, corner clearance and reserved banner space
+ */
+internal fun stackedFitsHeight(height: Dp): Boolean = height - STACKED_CONTROLS_HEIGHT >= MIN_STACKED_BOARD
