@@ -13,13 +13,13 @@ internal val SIDE_GAP = 24.dp
 internal val SIDE_BOARD_MARGIN = 12.dp
 
 /** Narrowest control panel that still gives the number pad comfortable tap targets. */
-internal val MIN_PANEL_WIDTH = 300.dp
+internal val MIN_PANEL_WIDTH = 280.dp
 
 /** Widest control panel; beyond this the extra width goes to the margins. */
 internal val MAX_PANEL_WIDTH = 400.dp
 
 /** Smallest board worth drawing beside a panel; below this the stacked layout is used. */
-internal val MIN_SIDE_BOARD = 280.dp
+internal val MIN_SIDE_BOARD = 260.dp
 
 /**
  * Shortest window the control panel (top bar, marks row, tools row and a 3x3 number pad with

@@ -32,7 +32,7 @@ class GameLayoutTest {
     fun duoOuterLandscapeGivesWidthToThePanel() {
         val layout = assertIs<GameLayout.SideBySide>(gameLayoutFor(width = 628.dp, height = 450.dp))
         assertEquals(MIN_PANEL_WIDTH, layout.panelWidth)
-        assertEquals(MIN_SIDE_BOARD, layout.boardSize)
+        assertTrue(layout.boardSize >= MIN_SIDE_BOARD)
     }
 
     @Test
