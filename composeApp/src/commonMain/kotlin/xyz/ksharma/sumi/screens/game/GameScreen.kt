@@ -12,7 +12,9 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -43,9 +45,11 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import xyz.ksharma.sumi.design.board.BoardEntrance
@@ -60,6 +64,7 @@ import xyz.ksharma.sumi.game.model.BoardState
 import xyz.ksharma.sumi.game.model.Difficulty
 import xyz.ksharma.sumi.platform.KeepScreenOn
 import xyz.ksharma.sumi.theme.SumiTheme
+import xyz.ksharma.sumi.theme.cornerSafeTopPadding
 import xyz.ksharma.sumi.theme.safeHorizontalPadding
 import xyz.ksharma.sumi.theme.statusBarsWithCornerClearance
 import xyz.ksharma.sumi.theme.SumiTokens as Sumi
@@ -88,9 +93,6 @@ private val GRID_BURST = PetalBurstConfig(
     durationMs = 3_400,
     swayScale = 1.2f,
 )
-
-/** Cap board width on tablets so the grid scales up without dominating wide screens. */
-private val MAX_BOARD_WIDTH = 560.dp
 
 @Suppress("LongParameterList")
 @Composable
@@ -177,6 +179,21 @@ fun GameScreen(
     }
 }
 
+/** Everything the game body draws apart from the callbacks, so the two layouts share one signature. */
+private data class GameBodyUi(
+    val state: BoardState,
+    val elapsedMs: Long,
+    val diff: Difficulty,
+    val boardReady: Boolean,
+    val rewardedHintAvailable: Boolean,
+    val showMistakes: Boolean,
+    val highLegibility: Boolean,
+    val strictConflicts: Boolean,
+    val selectedDigit: Int?,
+    val livesMode: Boolean,
+    val boardEntrance: BoardEntrance,
+)
+
 @Suppress("LongParameterList")
 @Composable
 private fun GameBody(
@@ -185,7 +202,7 @@ private fun GameBody(
     diff: Difficulty,
     boardReady: Boolean,
     callbacks: GameCallbacks,
-    bottomReservedHeight: androidx.compose.ui.unit.Dp = 0.dp,
+    bottomReservedHeight: Dp = 0.dp,
     rewardedHintAvailable: Boolean = false,
     showMistakes: Boolean = true,
     highLegibility: Boolean = false,
@@ -194,6 +211,33 @@ private fun GameBody(
     livesMode: Boolean = false,
     boardEntrance: BoardEntrance = BoardEntrance.None,
 ) {
+    val ui = GameBodyUi(
+        state = state,
+        elapsedMs = elapsedMs,
+        diff = diff,
+        boardReady = boardReady,
+        rewardedHintAvailable = rewardedHintAvailable,
+        showMistakes = showMistakes,
+        highLegibility = highLegibility,
+        strictConflicts = strictConflicts,
+        selectedDigit = selectedDigit,
+        livesMode = livesMode,
+        boardEntrance = boardEntrance,
+    )
+    // The layout follows the window, never the device: wide-and-short windows (iPhone Duo's open
+    // display or outer display held sideways, iPad landscape, phones on their side) put the board
+    // beside the controls so nothing scrolls; every other window keeps the stacked layout.
+    BoxWithConstraints(modifier = Modifier.fillMaxSize().safeHorizontalPadding()) {
+        val usableHeight = maxHeight - cornerSafeTopPadding() - bottomReservedHeight
+        when (val layout = gameLayoutFor(width = maxWidth, height = usableHeight)) {
+            GameLayout.Stacked -> StackedGameBody(ui, callbacks, bottomReservedHeight)
+            is GameLayout.SideBySide -> SideBySideGameBody(ui, callbacks, layout, bottomReservedHeight)
+        }
+    }
+}
+
+@Composable
+private fun StackedGameBody(ui: GameBodyUi, callbacks: GameCallbacks, bottomReservedHeight: Dp) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -208,60 +252,122 @@ private fun GameBody(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Spacer(Modifier.height(Sumi.Space.s3))
-        GameTopBar(difficulty = diff, elapsedMs = elapsedMs, onBack = callbacks.onBack, onPause = callbacks.onPause)
-        Spacer(Modifier.height(Sumi.Space.s3))
-        MarksHintsRow(
-            mistakeCount = state.mistakeCount,
-            hintsRemaining = state.hintsRemaining,
-            showMistakes = showMistakes,
-            livesMode = livesMode,
-            rewardedHintAvailable = rewardedHintAvailable,
+        GameTopBar(
+            difficulty = ui.diff,
+            elapsedMs = ui.elapsedMs,
+            onBack = callbacks.onBack,
+            onPause = callbacks.onPause,
         )
+        Spacer(Modifier.height(Sumi.Space.s3))
+        GameMarksRow(ui)
         Spacer(Modifier.height(Sumi.Space.s3))
         // BoxWithConstraints lets the board scale to fill the available width —
         // up to MAX_BOARD_WIDTH (560dp) so it grows properly on tablets but
         // doesn't dominate a 12-inch display. SumiBoard owns its own perimeter
         // so no wrapping border / padding is needed (would have caused the
         // interior lines to overhang the perimeter).
-        androidx.compose.foundation.layout.BoxWithConstraints(
-            contentAlignment = Alignment.Center,
-        ) {
-            val resolvedCellSize = minOf(maxWidth, MAX_BOARD_WIDTH) / 9
-            // Reserve the board's square footprint so the tools row + number
-            // pad never jump when the grid arrives. The grid itself fades in
-            // from the blank paper once the puzzle is ready.
-            Box(modifier = Modifier.size(resolvedCellSize * 9), contentAlignment = Alignment.Center) {
-                // With the ink-bloom entrance, the per-cell bloom IS the reveal — fade the
-                // container in fast so the diagonal pop reads instead of being washed out by
-                // a slow uniform crossfade. Otherwise keep the slow, calm grid fade.
-                val boardFadeMs = if (boardEntrance == BoardEntrance.InkBloom) 140 else 620
-                Crossfade(
-                    targetState = boardReady,
-                    animationSpec = tween(boardFadeMs, easing = Sumi.Ease.paper),
-                    label = "boardFade",
-                ) { ready ->
-                    if (ready) {
-                        SumiBoard(
-                            state = state,
-                            cellSize = resolvedCellSize,
-                            highLegibility = highLegibility,
-                            strictConflicts = strictConflicts,
-                            entrance = boardEntrance,
-                            onCellTap = { r, c -> callbacks.onSelect(r, c) },
-                        )
-                    }
-                }
-            }
+        BoxWithConstraints(contentAlignment = Alignment.Center) {
+            BoardArea(ui = ui, callbacks = callbacks, cellSize = minOf(maxWidth, MAX_BOARD_WIDTH) / 9)
         }
         Spacer(Modifier.height(Sumi.Space.s4))
-        ToolsRow(tools = gameTools(state, callbacks))
+        ToolsRow(tools = gameTools(ui.state, callbacks))
         Spacer(Modifier.height(Sumi.Space.s3))
         NumberPad(
-            state = state,
-            selectedDigit = selectedDigit,
-            highLegibility = highLegibility,
+            state = ui.state,
+            selectedDigit = ui.selectedDigit,
+            highLegibility = ui.highLegibility,
             onDigit = callbacks.onEnter,
         )
+    }
+}
+
+/**
+ * Board on the left sized to the available height, controls on the right: top bar, marks row,
+ * tools and a 3x3 number pad that takes the remaining height. Nothing scrolls, and the pad cells
+ * stay well above the minimum tap size.
+ */
+@Composable
+private fun SideBySideGameBody(
+    ui: GameBodyUi,
+    callbacks: GameCallbacks,
+    layout: GameLayout.SideBySide,
+    bottomReservedHeight: Dp,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxSize()
+            .statusBarsWithCornerClearance()
+            .padding(start = SIDE_BOARD_MARGIN, end = SIDE_BOARD_MARGIN, bottom = bottomReservedHeight),
+        horizontalArrangement = Arrangement.spacedBy(SIDE_GAP, Alignment.CenterHorizontally),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        BoardArea(ui = ui, callbacks = callbacks, cellSize = layout.boardSize / 9)
+        Column(
+            modifier = Modifier
+                .width(layout.panelWidth)
+                .fillMaxHeight()
+                .padding(vertical = SIDE_BOARD_MARGIN),
+        ) {
+            GameTopBar(
+                difficulty = ui.diff,
+                elapsedMs = ui.elapsedMs,
+                onBack = callbacks.onBack,
+                onPause = callbacks.onPause,
+            )
+            GameMarksRow(ui)
+            Spacer(Modifier.height(Sumi.Space.s3))
+            ToolsRow(tools = gameTools(ui.state, callbacks))
+            Spacer(Modifier.height(Sumi.Space.s3))
+            NumberPad(
+                state = ui.state,
+                selectedDigit = ui.selectedDigit,
+                highLegibility = ui.highLegibility,
+                onDigit = callbacks.onEnter,
+                modifier = Modifier.weight(1f),
+                grid = true,
+            )
+        }
+    }
+}
+
+@Composable
+private fun GameMarksRow(ui: GameBodyUi) {
+    MarksHintsRow(
+        mistakeCount = ui.state.mistakeCount,
+        hintsRemaining = ui.state.hintsRemaining,
+        showMistakes = ui.showMistakes,
+        livesMode = ui.livesMode,
+        rewardedHintAvailable = ui.rewardedHintAvailable,
+    )
+}
+
+/**
+ * The board's square footprint, reserved even before the puzzle is ready so the tools row and
+ * number pad never jump when the grid arrives. The grid fades in from the blank paper.
+ */
+@Composable
+private fun BoardArea(ui: GameBodyUi, callbacks: GameCallbacks, cellSize: Dp) {
+    Box(modifier = Modifier.size(cellSize * 9), contentAlignment = Alignment.Center) {
+        // With the ink-bloom entrance, the per-cell bloom IS the reveal — fade the
+        // container in fast so the diagonal pop reads instead of being washed out by
+        // a slow uniform crossfade. Otherwise keep the slow, calm grid fade.
+        val boardFadeMs = if (ui.boardEntrance == BoardEntrance.InkBloom) 140 else 620
+        Crossfade(
+            targetState = ui.boardReady,
+            animationSpec = tween(boardFadeMs, easing = Sumi.Ease.paper),
+            label = "boardFade",
+        ) { ready ->
+            if (ready) {
+                SumiBoard(
+                    state = ui.state,
+                    cellSize = cellSize,
+                    highLegibility = ui.highLegibility,
+                    strictConflicts = ui.strictConflicts,
+                    entrance = ui.boardEntrance,
+                    onCellTap = { r, c -> callbacks.onSelect(r, c) },
+                )
+            }
+        }
     }
 }
 
@@ -459,10 +565,16 @@ private fun NumberPad(
     selectedDigit: Int?,
     highLegibility: Boolean,
     onDigit: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+    grid: Boolean = false,
 ) {
     // Match the board: high-legibility mode uses the UI sans family for the pad digits too.
     val digitStyle = SumiTheme.typography.numeral.copy(fontSize = 26.sp).let {
         if (highLegibility) it.copy(fontFamily = SumiTheme.typography.uiLabel.fontFamily) else it
+    }
+    if (grid) {
+        NumberPadGrid(state, selectedDigit, digitStyle, onDigit, modifier)
+        return
     }
     // Row uses IntrinsicSize.Min so the dividers stretch to whatever the
     // tallest number cell needs. Cells use intrinsic height (no aspectRatio
@@ -470,16 +582,13 @@ private fun NumberPad(
     // grow at large system font scales without getting clipped — that was
     // the bug where the count got cut off.
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .height(androidx.compose.foundation.layout.IntrinsicSize.Min)
+            .height(IntrinsicSize.Min)
             .border(width = 1.dp, color = SumiTheme.colors.paperEdge)
             .padding(vertical = Sumi.Space.s2),
     ) {
         for (n in 1..9) {
-            val src = remember { MutableInteractionSource() }
-            val remaining = state.remainingCounts.getOrElse(n - 1) { 0 }
-            val armed = n == selectedDigit
             if (n > 1) {
                 Box(
                     modifier = Modifier
@@ -488,34 +597,88 @@ private fun NumberPad(
                         .background(SumiTheme.colors.paperEdge),
                 )
             }
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .minimumInteractiveComponentSize()
-                    // Armed digit (digit-first mode) gets a soft teal wash so it's clear
-                    // which number the next cell tap will place.
-                    .background(if (armed) SumiTheme.colors.teal.copy(alpha = 0.14f) else Color.Transparent)
-                    .padding(vertical = Sumi.Space.s2)
-                    .clickable(interactionSource = src, indication = null, enabled = remaining > 0) { onDigit(n) },
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
-            ) {
-                Text(
-                    text = n.toString(),
-                    style = digitStyle,
-                    color = when {
-                        armed -> SumiTheme.colors.teal
-                        remaining > 0 -> SumiTheme.colors.ink
-                        else -> SumiTheme.colors.inkGhost
-                    },
-                )
-                Text(
-                    text = if (remaining > 0) remaining.toString() else "",
-                    style = SumiTheme.typography.uiMeta.copy(fontSize = 11.sp),
-                    color = SumiTheme.colors.inkFaint,
-                )
+            NumberCell(
+                n = n,
+                state = state,
+                armed = n == selectedDigit,
+                digitStyle = digitStyle,
+                onDigit = onDigit,
+                modifier = Modifier.weight(1f),
+            )
+        }
+    }
+}
+
+/** 3x3 keypad for the side-by-side layout: big cells that share whatever height is left. */
+@Composable
+private fun NumberPadGrid(
+    state: BoardState,
+    selectedDigit: Int?,
+    digitStyle: TextStyle,
+    onDigit: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier.fillMaxWidth().border(width = 1.dp, color = SumiTheme.colors.paperEdge)) {
+        for (rowIndex in 0 until 3) {
+            if (rowIndex > 0) {
+                Box(Modifier.fillMaxWidth().height(1.dp).background(SumiTheme.colors.paperEdge))
+            }
+            Row(modifier = Modifier.weight(1f).fillMaxWidth()) {
+                for (colIndex in 0 until 3) {
+                    val n = rowIndex * 3 + colIndex + 1
+                    if (colIndex > 0) {
+                        Box(Modifier.width(1.dp).fillMaxHeight().background(SumiTheme.colors.paperEdge))
+                    }
+                    NumberCell(
+                        n = n,
+                        state = state,
+                        armed = n == selectedDigit,
+                        digitStyle = digitStyle,
+                        onDigit = onDigit,
+                        modifier = Modifier.weight(1f).fillMaxHeight(),
+                    )
+                }
             }
         }
+    }
+}
+
+@Composable
+private fun NumberCell(
+    n: Int,
+    state: BoardState,
+    armed: Boolean,
+    digitStyle: TextStyle,
+    onDigit: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val src = remember { MutableInteractionSource() }
+    val remaining = state.remainingCounts.getOrElse(n - 1) { 0 }
+    Column(
+        modifier = modifier
+            .minimumInteractiveComponentSize()
+            // Armed digit (digit-first mode) gets a soft teal wash so it's clear
+            // which number the next cell tap will place.
+            .background(if (armed) SumiTheme.colors.teal.copy(alpha = 0.14f) else Color.Transparent)
+            .padding(vertical = Sumi.Space.s2)
+            .clickable(interactionSource = src, indication = null, enabled = remaining > 0) { onDigit(n) },
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Text(
+            text = n.toString(),
+            style = digitStyle,
+            color = when {
+                armed -> SumiTheme.colors.teal
+                remaining > 0 -> SumiTheme.colors.ink
+                else -> SumiTheme.colors.inkGhost
+            },
+        )
+        Text(
+            text = if (remaining > 0) remaining.toString() else "",
+            style = SumiTheme.typography.uiMeta.copy(fontSize = 11.sp),
+            color = SumiTheme.colors.inkFaint,
+        )
     }
 }
 

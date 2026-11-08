@@ -102,3 +102,10 @@ private fun needsCornerClearance(statusTop: Dp): Boolean {
     val leading = with(density) { leadingPx.toDp() }
     return statusTop < CORNER_CLEARANCE && leading < CORNER_CLEARANCE
 }
+
+/**
+ * The top padding [statusBarsWithCornerClearance] applies, as a plain [Dp] for layout maths
+ * (the status bar height plus [cornerClearanceTop]).
+ */
+@Composable
+fun cornerSafeTopPadding(): Dp = statusBarTop() + cornerClearanceTop()
