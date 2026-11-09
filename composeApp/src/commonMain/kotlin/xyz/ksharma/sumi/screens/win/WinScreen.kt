@@ -59,6 +59,7 @@ import xyz.ksharma.sumi.resources.ink_bleed_03
 import xyz.ksharma.sumi.resources.logo_chop
 import xyz.ksharma.sumi.resources.logo_enso
 import xyz.ksharma.sumi.theme.SumiTheme
+import xyz.ksharma.sumi.theme.safeContentColumn
 import xyz.ksharma.sumi.theme.SumiTokens as Sumi
 
 // Long because the screen orchestrates a share-layer card + interstitial-ad lifecycle +
@@ -123,6 +124,7 @@ fun WinScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .safeContentColumn()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = Sumi.Space.s6)
                 .padding(top = Sumi.Space.s9, bottom = Sumi.Space.s7),

@@ -8,10 +8,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.Text
 import androidx.compose.material3.minimumInteractiveComponentSize
@@ -25,6 +27,8 @@ import androidx.navigation3.runtime.NavKey
 import xyz.ksharma.sumi.design.components.SumiIcon
 import xyz.ksharma.sumi.design.icons.SumiIcons
 import xyz.ksharma.sumi.theme.SumiTheme
+import xyz.ksharma.sumi.theme.safeHorizontalPadding
+import xyz.ksharma.sumi.theme.statusBarsWithCornerClearance
 import xyz.ksharma.sumi.theme.SumiTokens as Sumi
 
 private data class NavTab(val route: NavKey, val label: String, val icon: ImageVector)
@@ -64,6 +68,7 @@ fun BottomNavBar(
             modifier = Modifier
                 .fillMaxWidth()
                 .windowInsetsPadding(WindowInsets.navigationBars)
+                .safeHorizontalPadding()
                 .padding(horizontal = Sumi.Space.s4, vertical = Sumi.Space.s3),
             horizontalArrangement = Arrangement.SpaceAround,
         ) {
@@ -76,6 +81,46 @@ fun BottomNavBar(
                 )
             }
         }
+    }
+}
+
+/** Width of [SumiNavRail], also what content to its right has lost from the window width. */
+val NavRailWidth = 88.dp
+
+/**
+ * Expanded windows (width >= 840dp) use this left rail instead of [BottomNavBar]: same four
+ * destinations, icons, labels and selected colour, stacked from the top, level with the screen's header row.
+ */
+@Composable
+fun SumiNavRail(
+    currentTab: NavKey,
+    onTabClick: (NavKey) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val colors = SumiTheme.colors
+    Row(modifier = modifier.fillMaxHeight().background(colors.paper)) {
+        Column(
+            modifier = Modifier
+                .fillMaxHeight()
+                .width(NavRailWidth - 1.dp)
+                .statusBarsWithCornerClearance()
+                .windowInsetsPadding(WindowInsets.navigationBars)
+                .safeHorizontalPadding()
+                // Same top inset as a screen's header row, so the first tab lines up with it.
+                .padding(top = Sumi.Space.s4, bottom = Sumi.Space.s3),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(Sumi.Space.s4, Alignment.Top),
+        ) {
+            TABS.forEach { tab ->
+                BottomNavItem(
+                    label = tab.label,
+                    icon = tab.icon,
+                    selected = currentTab == tab.route,
+                    onClick = { onTabClick(tab.route) },
+                )
+            }
+        }
+        Spacer(modifier = Modifier.width(1.dp).fillMaxHeight().background(colors.paperEdge))
     }
 }
 

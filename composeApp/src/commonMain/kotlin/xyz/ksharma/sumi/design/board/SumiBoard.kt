@@ -49,23 +49,23 @@ import xyz.ksharma.sumi.theme.SumiTokens as Sumi
 // cellSize changes (was hardcoded to 1.5dp / 0.5dp tied to the original 38dp
 // cell). At cellSize = 41dp these resolve to ~1.4dp / ~0.5dp, matching the
 // previous look; at larger cells they grow proportionally.
-private const val BOX_STROKE_RATIO = 0.05f
-private const val THIN_STROKE_RATIO = 0.014f
+internal const val BOX_STROKE_RATIO = 0.05f
+internal const val THIN_STROKE_RATIO = 0.014f
 private val BOX_STROKE_MIN = 1.5.dp
-private val THIN_STROKE_MIN = 0.5.dp
+internal val THIN_STROKE_MIN = 0.5.dp
 
 // Grid line alphas (over the ink colour). The 3x3 box separators are near-opaque
 // and the inner cell lines lighter, so the nine boxes read clearly at a glance.
 private const val BOX_LINE_ALPHA = 0.92f
-private const val THIN_LINE_ALPHA = 0.32f
+internal const val THIN_LINE_ALPHA = 0.32f
 
 // Board digit + pencil-mark sizes are a fraction of cellSize and converted
 // dp -> sp via LocalDensity so they IGNORE the system font-scale setting. The
 // board therefore keeps one fixed, legible glyph size no matter how large the
 // user's OS text size is. cellSize is capped at MAX_BOARD_WIDTH/9 upstream, so
 // these ratios also act as the maximum on tablets.
-private const val DIGIT_SIZE_RATIO = 0.60f
-private const val NOTE_SIZE_RATIO = 0.46f
+internal const val DIGIT_SIZE_RATIO = 0.60f
+internal const val NOTE_SIZE_RATIO = 0.46f
 
 // Inset (per side, as a fraction of cellSize) reserved as a margin around the
 // 3x3 pencil-mark grid so the outer notes are centred inside a slightly smaller

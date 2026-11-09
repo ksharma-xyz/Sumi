@@ -13,6 +13,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -24,6 +27,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import xyz.ksharma.sumi.theme.SumiTheme
+import xyz.ksharma.sumi.theme.safeHorizontalPadding
+import xyz.ksharma.sumi.theme.statusBarsWithCornerClearance
 import xyz.ksharma.sumi.theme.SumiTokens as Sumi
 
 @Composable
@@ -45,51 +50,63 @@ fun PauseOverlay(
             .background(scrimColor),
         contentAlignment = Alignment.Center,
     ) {
-        Column(
-            modifier = Modifier
-                .widthIn(max = 280.dp)
-                .fillMaxWidth()
-                .padding(horizontal = Sumi.Space.s6),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(Sumi.Space.s3),
-        ) {
-            Text(
-                text = "休",
-                style = SumiTheme.typography.cjk.copy(fontSize = 52.sp),
-                color = SumiTheme.colors.red,
-            )
-            Text(
-                text = "A moment of rest",
-                style = SumiTheme.typography.h2.copy(
-                    fontSize = 34.sp,
-                    fontStyle = FontStyle.Italic,
-                ),
-                color = SumiTheme.colors.ink,
-                textAlign = TextAlign.Center,
-            )
-            Text(
-                text = "Your time is paused. Return when you are ready.",
-                style = SumiTheme.typography.body.copy(lineHeight = (15 * 1.5f).sp),
-                color = SumiTheme.colors.inkSoft,
-                textAlign = TextAlign.Center,
-            )
-            PauseButton(
-                label = "RESUME",
-                onClick = onResume,
-                bg = SumiTheme.colors.ink,
-                fg = SumiTheme.colors.paper,
-                modifier = Modifier.fillMaxWidth().padding(top = Sumi.Space.s4),
-            )
-            PauseButton(
-                label = "NEW PUZZLE",
-                onClick = onNewPuzzle,
-                bg = Color.Transparent,
-                fg = SumiTheme.colors.ink,
-                borderColor = SumiTheme.colors.ink,
-                modifier = Modifier.fillMaxWidth(),
-            )
-            PauseTextLink(label = "RETURN HOME", color = SumiTheme.colors.inkSoft, onClick = onHome)
-        }
+        PauseCard(onResume = onResume, onNewPuzzle = onNewPuzzle, onHome = onHome)
+    }
+}
+
+@Composable
+private fun PauseCard(onResume: () -> Unit, onNewPuzzle: () -> Unit, onHome: () -> Unit) {
+    // The scrim stays full-bleed; the card clears the side insets and scrolls on short
+    // windows (landscape) instead of clipping its buttons.
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .safeHorizontalPadding()
+            .statusBarsWithCornerClearance()
+            .verticalScroll(rememberScrollState())
+            .wrapContentWidth(Alignment.CenterHorizontally)
+            .widthIn(max = 280.dp)
+            .fillMaxWidth()
+            .padding(horizontal = Sumi.Space.s6, vertical = Sumi.Space.s6),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(Sumi.Space.s3, Alignment.CenterVertically),
+    ) {
+        Text(
+            text = "休",
+            style = SumiTheme.typography.cjk.copy(fontSize = 52.sp),
+            color = SumiTheme.colors.red,
+        )
+        Text(
+            text = "A moment of rest",
+            style = SumiTheme.typography.h2.copy(
+                fontSize = 34.sp,
+                fontStyle = FontStyle.Italic,
+            ),
+            color = SumiTheme.colors.ink,
+            textAlign = TextAlign.Center,
+        )
+        Text(
+            text = "Your time is paused. Return when you are ready.",
+            style = SumiTheme.typography.body.copy(lineHeight = (15 * 1.5f).sp),
+            color = SumiTheme.colors.inkSoft,
+            textAlign = TextAlign.Center,
+        )
+        PauseButton(
+            label = "RESUME",
+            onClick = onResume,
+            bg = SumiTheme.colors.ink,
+            fg = SumiTheme.colors.paper,
+            modifier = Modifier.fillMaxWidth().padding(top = Sumi.Space.s4),
+        )
+        PauseButton(
+            label = "NEW PUZZLE",
+            onClick = onNewPuzzle,
+            bg = Color.Transparent,
+            fg = SumiTheme.colors.ink,
+            borderColor = SumiTheme.colors.ink,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        PauseTextLink(label = "RETURN HOME", color = SumiTheme.colors.inkSoft, onClick = onHome)
     }
 }
 

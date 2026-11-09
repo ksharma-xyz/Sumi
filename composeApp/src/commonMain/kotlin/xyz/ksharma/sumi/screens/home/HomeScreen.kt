@@ -10,18 +10,18 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.absoluteOffset
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
@@ -48,6 +48,7 @@ import androidx.compose.ui.semantics.hideFromAccessibility
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
@@ -61,7 +62,10 @@ import xyz.ksharma.sumi.design.components.SumiIcon
 import xyz.ksharma.sumi.design.components.SumiPetalBurst
 import xyz.ksharma.sumi.design.components.WashiBG
 import xyz.ksharma.sumi.design.icons.SumiIcons
+import xyz.ksharma.sumi.navigation.ExpandedMinWidth
+import xyz.ksharma.sumi.navigation.LocalNavRailWidth
 import xyz.ksharma.sumi.theme.SumiTheme
+import xyz.ksharma.sumi.theme.statusBarsWithCornerClearance
 import xyz.ksharma.sumi.theme.SumiTokens as Sumi
 
 private val DIFFICULTY_TILES = listOf(
@@ -105,65 +109,187 @@ fun HomeScreen(
         }
     }
 
-    WashiBG(modifier = modifier.fillMaxSize()) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .windowInsetsPadding(WindowInsets.statusBars)
-                    .padding(horizontal = Sumi.Space.s6)
-                    // Reserve room at the bottom so banner-anchored content doesn't overlap
-                    // the last difficulty tile when scrolled to the end.
-                    .padding(top = Sumi.Space.s4, bottom = if (bottomBanner != null) 64.dp else Sumi.Space.s5),
-            ) {
-                HomeTopChrome(onSettings = onSettings)
-                Spacer(Modifier.height(Sumi.Space.s5))
-                DailyQuoteBlock(quote = quote)
-                Spacer(Modifier.height(Sumi.Space.s5))
-                QuoteRule()
-                Spacer(Modifier.height(Sumi.Space.s5))
-                StreakCard(streakDays = streakDays)
-                Spacer(Modifier.height(Sumi.Space.s4))
-                NewPracticeGrid(onStartGame = onStartGame, lockedDifficulties = lockedDifficulties)
-                Spacer(Modifier.height(Sumi.Space.s5))
-                InviteRow(
-                    glowAlpha = inviteGlow.value,
-                    onInvite = {
-                        // Snapshot the offscreen InviteShareCard, hand the
-                        // bitmap up so HomeEntry can call shareImage(bitmap, text).
-                        coroutineScope.launch {
-                            onInvite(inviteShareLayer.toImageBitmap())
-                        }
-                    },
-                )
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        // The window class is the window's width, which includes any navigation rail beside us.
+        val windowWidth = maxWidth + LocalNavRailWidth.current
+        val expanded = windowWidth >= ExpandedMinWidth
+        val shareInvite: () -> Unit = {
+            // Snapshot the offscreen InviteShareCard, hand the
+            // bitmap up so HomeEntry can call shareImage(bitmap, text).
+            coroutineScope.launch {
+                onInvite(inviteShareLayer.toImageBitmap())
             }
-            // Offscreen InviteShareCard — positioned far off-screen via absoluteOffset
-            // so it lays out + draws (into inviteShareLayer) on every composition,
-            // but is never visible. toImageBitmap() above always has a fresh capture
-            // ready. Pro variant uses gold ink + "Sumi Pro"; otherwise normal Sumi.
-            Box(
-                modifier = Modifier.absoluteOffset(x = (-10_000).dp, y = (-10_000).dp),
-            ) {
-                InviteShareCard(layer = inviteShareLayer, isPro = isPro)
-            }
-            // Ambient gust — a wind passes ~every 2.5 min. Sparse, slow.
-            SumiPetalBurst(
-                trigger = gustTrigger,
-                modifier = Modifier.fillMaxSize(),
-                config = HOME_GUST_CONFIG,
-            )
-            if (bottomBanner != null) {
+        }
+        WashiBG(modifier = Modifier.fillMaxSize(), capContentWidth = !expanded) {
+            Box(modifier = Modifier.fillMaxSize()) {
+                if (expanded) {
+                    ExpandedHomeContent(
+                        streakDays = streakDays,
+                        quote = quote,
+                        onStartGame = onStartGame,
+                        onSettings = onSettings,
+                        onInvite = shareInvite,
+                        inviteGlow = inviteGlow.value,
+                        lockedDifficulties = lockedDifficulties,
+                        bottomReserve = if (bottomBanner != null) 64.dp else Sumi.Space.s5,
+                    )
+                } else {
+                    CompactHomeContent(
+                        streakDays = streakDays,
+                        quote = quote,
+                        onStartGame = onStartGame,
+                        onSettings = onSettings,
+                        onInvite = shareInvite,
+                        inviteGlow = inviteGlow.value,
+                        lockedDifficulties = lockedDifficulties,
+                        bottomReserve = if (bottomBanner != null) 64.dp else Sumi.Space.s5,
+                        wide = windowWidth >= MEDIUM_MIN_WIDTH,
+                    )
+                }
+                // Offscreen InviteShareCard — positioned far off-screen via absoluteOffset
+                // so it lays out + draws (into inviteShareLayer) on every composition,
+                // but is never visible. toImageBitmap() above always has a fresh capture
+                // ready. Pro variant uses gold ink + "Sumi Pro"; otherwise normal Sumi.
                 Box(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .fillMaxWidth(),
-                    contentAlignment = Alignment.BottomCenter,
-                ) { bottomBanner() }
+                    modifier = Modifier.absoluteOffset(x = (-10_000).dp, y = (-10_000).dp),
+                ) {
+                    InviteShareCard(layer = inviteShareLayer, isPro = isPro)
+                }
+                // Ambient gust — a wind passes ~every 2.5 min. Sparse, slow.
+                SumiPetalBurst(
+                    trigger = gustTrigger,
+                    modifier = Modifier.fillMaxSize(),
+                    config = HOME_GUST_CONFIG,
+                )
+                if (bottomBanner != null) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .fillMaxWidth(),
+                        contentAlignment = Alignment.BottomCenter,
+                    ) { bottomBanner() }
+                }
             }
         }
     }
 }
+
+/** Phone and medium windows: one column, unchanged. */
+@Suppress("LongParameterList")
+@Composable
+private fun CompactHomeContent(
+    streakDays: Int,
+    quote: Quote,
+    onStartGame: (String) -> Unit,
+    onSettings: () -> Unit,
+    onInvite: () -> Unit,
+    inviteGlow: Float,
+    lockedDifficulties: Set<String>,
+    bottomReserve: Dp,
+    wide: Boolean,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .statusBarsWithCornerClearance()
+            .padding(horizontal = Sumi.Space.s6)
+            // Reserve room at the bottom so banner-anchored content doesn't overlap
+            // the last difficulty tile when scrolled to the end.
+            .padding(top = Sumi.Space.s4, bottom = bottomReserve),
+    ) {
+        HomeTopChrome(onSettings = onSettings)
+        Spacer(Modifier.height(Sumi.Space.s5))
+        DailyQuoteBlock(quote = quote)
+        Spacer(Modifier.height(Sumi.Space.s5))
+        QuoteRule()
+        Spacer(Modifier.height(Sumi.Space.s5))
+        StreakCard(streakDays = streakDays)
+        Spacer(Modifier.height(Sumi.Space.s4))
+        NewPracticeGrid(onStartGame = onStartGame, lockedDifficulties = lockedDifficulties, fillLastRow = wide)
+        Spacer(Modifier.height(Sumi.Space.s5))
+        InviteRow(glowAlpha = inviteGlow, onInvite = onInvite, fullWidth = wide)
+    }
+}
+
+/**
+ * Expanded windows: the header spans the content width (max [HOME_PAGE_MAX_WIDTH]), then two
+ * panes on one top line, [HOME_PANE_GAP] apart. Left: the quote, streak and invite. Right: the
+ * difficulty grid. The "Today / Practice" and "New Practice" labels share a baseline because both
+ * panes start at the same top edge with the same first element.
+ */
+@Suppress("LongParameterList")
+@Composable
+private fun ExpandedHomeContent(
+    streakDays: Int,
+    quote: Quote,
+    onStartGame: (String) -> Unit,
+    onSettings: () -> Unit,
+    onInvite: () -> Unit,
+    inviteGlow: Float,
+    lockedDifficulties: Set<String>,
+    bottomReserve: Dp,
+) {
+    // The viewport is measured outside the scroll container, whose own constraints are unbounded.
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val viewportHeight = maxHeight
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .statusBarsWithCornerClearance()
+                .padding(top = Sumi.Space.s4, bottom = bottomReserve),
+            contentAlignment = Alignment.TopCenter,
+        ) {
+            Column(
+                modifier = Modifier.widthIn(
+                    max = HOME_PAGE_MAX_WIDTH,
+                ).fillMaxWidth().padding(horizontal = Sumi.Space.s6),
+            ) {
+                HomeTopChrome(onSettings = onSettings)
+                Spacer(Modifier.height(Sumi.Space.s5))
+                // The body sits centred in the height the header leaves, so a tall window is balanced
+                // above and below instead of empty at the bottom. Short windows just scroll.
+                Column(
+                    modifier = Modifier.heightIn(min = viewportHeight - HOME_HEADER_RESERVE),
+                    verticalArrangement = Arrangement.Center,
+                ) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(HOME_PANE_GAP)) {
+                        Column(modifier = Modifier.weight(HOME_LEFT_WEIGHT)) {
+                            DailyQuoteBlock(quote = quote, large = true)
+                            Spacer(Modifier.height(Sumi.Space.s6))
+                            QuoteRule()
+                            Spacer(Modifier.height(Sumi.Space.s6))
+                            StreakCard(streakDays = streakDays)
+                        }
+                        BoxWithConstraints(modifier = Modifier.weight(HOME_RIGHT_WEIGHT)) {
+                            NewPracticeGrid(
+                                onStartGame = onStartGame,
+                                lockedDifficulties = lockedDifficulties,
+                                columns = if (maxWidth >= HOME_THREE_COLUMN_MIN_WIDTH) 3 else 2,
+                                fillLastRow = true,
+                                large = true,
+                            )
+                        }
+                    }
+                    // Spans from the left pane's left edge to the right pane's right edge.
+                    Spacer(Modifier.height(HOME_PANE_GAP))
+                    InviteRow(glowAlpha = inviteGlow, onInvite = onInvite, fullWidth = true)
+                }
+            }
+        }
+    }
+}
+
+/** Height the header row, its spacing and the page insets take, kept out of the centred body's minimum. */
+private val HOME_HEADER_RESERVE = 160.dp
+
+private val MEDIUM_MIN_WIDTH = 600.dp
+private val HOME_PAGE_MAX_WIDTH = 1200.dp
+private val HOME_PANE_GAP = 24.dp
+private val HOME_THREE_COLUMN_MIN_WIDTH = 560.dp
+private const val HOME_LEFT_WEIGHT = 5f
+private const val HOME_RIGHT_WEIGHT = 7f
 
 private const val GUST_INITIAL_DELAY_MS = 60_000L // first gust after 1 min on Home
 private const val GUST_INTERVAL_MS = 150_000L // every 2.5 min after
@@ -180,7 +306,7 @@ private val HOME_GUST_CONFIG = PetalBurstConfig(
  * opens the OS share sheet.
  */
 @Composable
-private fun InviteRow(glowAlpha: Float, onInvite: () -> Unit) {
+private fun InviteRow(glowAlpha: Float, onInvite: () -> Unit, fullWidth: Boolean = false) {
     val src = remember { MutableInteractionSource() }
     Box(
         modifier = Modifier
@@ -192,6 +318,7 @@ private fun InviteRow(glowAlpha: Float, onInvite: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Sumi.Space.s3),
             modifier = Modifier
+                .then(if (fullWidth) Modifier.fillMaxWidth() else Modifier)
                 .clickable(interactionSource = src, indication = null, onClick = onInvite)
                 .border(
                     width = 1.dp,
@@ -257,13 +384,17 @@ private fun HomeTopChrome(onSettings: () -> Unit) {
 }
 
 @Composable
-private fun DailyQuoteBlock(quote: Quote) {
+private fun DailyQuoteBlock(quote: Quote, large: Boolean = false) {
     Column {
         SumiEyebrow(text = "Today / Practice", color = SumiTheme.colors.red)
         Spacer(Modifier.height(Sumi.Space.s2))
         Text(
             text = "\u201C${quote.text}\u201D",
-            style = SumiTheme.typography.quote.copy(lineHeight = 36.sp),
+            style = if (large) {
+                SumiTheme.typography.quote.copy(fontSize = 40.sp, lineHeight = 52.sp)
+            } else {
+                SumiTheme.typography.quote.copy(lineHeight = 36.sp)
+            },
             color = SumiTheme.colors.ink,
         )
         Spacer(Modifier.height(Sumi.Space.s1))
@@ -334,11 +465,17 @@ private fun StreakCard(streakDays: Int) {
 }
 
 @Composable
-private fun NewPracticeGrid(onStartGame: (String) -> Unit, lockedDifficulties: Set<String>) {
+private fun NewPracticeGrid(
+    onStartGame: (String) -> Unit,
+    lockedDifficulties: Set<String>,
+    columns: Int = 2,
+    fillLastRow: Boolean = false,
+    large: Boolean = false,
+) {
     Column {
         SumiEyebrow(text = "New Practice", color = SumiTheme.colors.inkFaint)
         Spacer(Modifier.height(Sumi.Space.s3))
-        val rows = DIFFICULTY_TILES.chunked(2)
+        val rows = DIFFICULTY_TILES.chunked(columns)
         Column(verticalArrangement = Arrangement.spacedBy(Sumi.Space.s2)) {
             rows.forEach { row ->
                 Row(horizontalArrangement = Arrangement.spacedBy(Sumi.Space.s2)) {
@@ -350,9 +487,11 @@ private fun NewPracticeGrid(onStartGame: (String) -> Unit, lockedDifficulties: S
                             isLocked = name in lockedDifficulties,
                             onClick = { onStartGame(name) },
                             modifier = Modifier.weight(1f),
+                            large = large,
                         )
                     }
-                    if (row.size == 1) Spacer(Modifier.weight(1f))
+                    // Wide windows let the last row's cards share the full row instead of leaving a gap.
+                    if (!fillLastRow) repeat(columns - row.size) { Spacer(Modifier.weight(1f)) }
                 }
             }
         }
@@ -367,7 +506,10 @@ private fun DifficultyTile(
     isLocked: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    large: Boolean = false,
 ) {
+    // Expanded windows have room to spare, so the cards grow instead of leaving the page empty.
+    val scale = if (large) 1.4f else 1f
     val src = remember { MutableInteractionSource() }
     val borderColor = if (isLocked) SumiTheme.colors.gold else SumiTheme.colors.paperEdge
     val kanjiColor = if (isLocked) SumiTheme.colors.gold else SumiTheme.colors.red
@@ -379,13 +521,13 @@ private fun DifficultyTile(
                 .border(1.dp, borderColor)
                 .semantics(mergeDescendants = true) { contentDescription = tileDescription }
                 .clickable(interactionSource = src, indication = null, onClick = onClick)
-                .padding(horizontal = Sumi.Space.s3, vertical = Sumi.Space.s3),
+                .padding(horizontal = Sumi.Space.s3 * scale, vertical = Sumi.Space.s3 * scale),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(Sumi.Space.s3),
+            horizontalArrangement = Arrangement.spacedBy(Sumi.Space.s3 * scale),
         ) {
             Text(
                 text = kanji,
-                style = SumiTheme.typography.cjk.copy(fontSize = 30.sp),
+                style = SumiTheme.typography.cjk.copy(fontSize = (30 * scale).sp),
                 color = kanjiColor,
                 modifier = Modifier.semantics { hideFromAccessibility() },
             )
@@ -393,7 +535,7 @@ private fun DifficultyTile(
                 Text(
                     text = name,
                     style = SumiTheme.typography.h3.copy(
-                        fontSize = 20.sp,
+                        fontSize = (20 * scale).sp,
                         fontStyle = FontStyle.Italic,
                         fontWeight = FontWeight(500),
                     ),
@@ -401,7 +543,7 @@ private fun DifficultyTile(
                 )
                 Text(
                     text = if (isLocked) "Sumi Pro" else avgTime,
-                    style = SumiTheme.typography.uiMeta.copy(letterSpacing = 1.sp, fontSize = 12.sp),
+                    style = SumiTheme.typography.uiMeta.copy(letterSpacing = 1.sp, fontSize = (12 * scale).sp),
                     color = if (isLocked) SumiTheme.colors.gold else SumiTheme.colors.inkFaint,
                 )
             }

@@ -7,8 +7,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Brush
@@ -23,6 +26,8 @@ import xyz.ksharma.sumi.resources.washi_ink_dark
 import xyz.ksharma.sumi.resources.washi_paper_dark
 import xyz.ksharma.sumi.resources.washi_paper_light
 import xyz.ksharma.sumi.theme.SumiTheme
+import xyz.ksharma.sumi.theme.contentMaxWidth
+import xyz.ksharma.sumi.theme.safeHorizontalPadding
 
 /**
  * Three-layer paper background: base color → PNG texture → radial vignette.
@@ -33,6 +38,7 @@ fun WashiBG(
     modifier: Modifier = Modifier,
     variant: WashiVariant = Full,
     inkMode: Boolean = false,
+    capContentWidth: Boolean = true,
     content: @Composable BoxScope.() -> Unit = {},
 ) {
     val dark = SumiTheme.isDark
@@ -74,6 +80,17 @@ fun WashiBG(
             },
         )
 
-        content()
+        // Content only: the paper above stays full-bleed. Side insets keep it clear of the
+        // iPhone Duo status column and landscape notch; the cap centres it on wide windows.
+        Box(
+            modifier = Modifier.fillMaxSize().safeHorizontalPadding(),
+            contentAlignment = Alignment.TopCenter,
+        ) {
+            Box(
+                modifier = (if (capContentWidth) Modifier.contentMaxWidth() else Modifier.fillMaxWidth()).fillMaxHeight(),
+            ) {
+                content()
+            }
+        }
     }
 }

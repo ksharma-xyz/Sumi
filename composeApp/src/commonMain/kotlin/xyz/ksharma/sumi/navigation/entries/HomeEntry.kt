@@ -7,6 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.EntryProviderScope
@@ -94,6 +95,7 @@ fun EntryProviderScope<NavKey>.HomeEntry(navigator: SumiNavigator) {
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(50.dp),
+                        contentAlignment = Alignment.Center,
                     ) { BannerAd(adUnitId = adUnits.banner) }
                 }
             } else null,

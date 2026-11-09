@@ -75,6 +75,8 @@ import xyz.ksharma.sumi.resources.ink_bleed_03
 import xyz.ksharma.sumi.theme.SumiSeason
 import xyz.ksharma.sumi.theme.SumiTheme
 import xyz.ksharma.sumi.theme.SumiTokens
+import xyz.ksharma.sumi.theme.cornerClearanceTop
+import xyz.ksharma.sumi.theme.safeContentColumn
 
 private const val SLIDE_COUNT = 4
 
@@ -116,7 +118,9 @@ fun OnboardingScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .safeContentColumn()
                 .systemBarsPadding()
+                .padding(top = cornerClearanceTop())
                 .padding(horizontal = 32.dp),
         ) {
             // Selected accent threads through the rest of onboarding so the

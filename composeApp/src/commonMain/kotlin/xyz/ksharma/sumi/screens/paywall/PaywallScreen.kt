@@ -9,17 +9,15 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
@@ -54,6 +52,7 @@ import xyz.ksharma.sumi.preferences.ProRepository
 import xyz.ksharma.sumi.resources.Res
 import xyz.ksharma.sumi.resources.ink_bleed_01
 import xyz.ksharma.sumi.theme.SumiTheme
+import xyz.ksharma.sumi.theme.statusBarsWithCornerClearance
 import xyz.ksharma.sumi.theme.SumiTokens as Sumi
 
 private val PRO_FEATURES = listOf(
@@ -148,34 +147,45 @@ private fun PaywallContent(
     onPurchase: () -> Unit,
     onRestore: () -> Unit,
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .windowInsetsPadding(WindowInsets.statusBars)
-            .padding(horizontal = Sumi.Space.s6),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
+    // Short windows (landscape): the pinned pricing block would leave the header and feature
+    // list a sliver of height, so everything scrolls together instead.
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val compact = maxHeight < COMPACT_HEIGHT
+        val pricing: @Composable () -> Unit = {
+            PaywallPricing(
+                alpha = pricingAlpha,
+                offsetDp = pricingOffset,
+                purchaseError = purchaseError,
+                onPurchase = onPurchase,
+                onRestore = onRestore,
+            )
+        }
         Column(
             modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                .padding(top = Sumi.Space.s7, bottom = Sumi.Space.s4),
+                .fillMaxSize()
+                .statusBarsWithCornerClearance()
+                .padding(horizontal = Sumi.Space.s6),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            PaywallHeader(ensoProgress = ensoProgress, textAlpha = headerAlpha)
-            PaywallFeatures(rowAlphas = rowAlphas, rowOffsets = rowOffsets)
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .padding(top = Sumi.Space.s7, bottom = Sumi.Space.s4),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                PaywallHeader(ensoProgress = ensoProgress, textAlpha = headerAlpha)
+                PaywallFeatures(rowAlphas = rowAlphas, rowOffsets = rowOffsets)
+                if (compact) pricing()
+            }
+            if (!compact) pricing()
+            Spacer(Modifier.height(Sumi.Space.s6))
         }
-        PaywallPricing(
-            alpha = pricingAlpha,
-            offsetDp = pricingOffset,
-            purchaseError = purchaseError,
-            onPurchase = onPurchase,
-            onRestore = onRestore,
-        )
-        Spacer(Modifier.height(Sumi.Space.s6))
     }
 }
+
+private val COMPACT_HEIGHT = 560.dp
 
 private fun CoroutineScope.launchPaywallAnimation(
     rowAlphas: List<Animatable<Float, *>>,
@@ -325,7 +335,7 @@ private fun PaywallCloseButton(onBack: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .windowInsetsPadding(WindowInsets.statusBars)
+            .statusBarsWithCornerClearance()
             .padding(horizontal = Sumi.Space.s4, vertical = Sumi.Space.s3),
         contentAlignment = Alignment.TopEnd,
     ) {
