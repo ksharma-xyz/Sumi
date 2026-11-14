@@ -9,15 +9,18 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
@@ -47,6 +50,8 @@ import xyz.ksharma.sumi.design.components.SumiIcon
 import xyz.ksharma.sumi.design.components.SumiTextButton
 import xyz.ksharma.sumi.design.components.WashiBG
 import xyz.ksharma.sumi.design.icons.SumiIcons
+import xyz.ksharma.sumi.navigation.ExpandedContentMaxWidth
+import xyz.ksharma.sumi.navigation.isExpandedWindow
 import xyz.ksharma.sumi.preferences.ProProducts
 import xyz.ksharma.sumi.preferences.ProRepository
 import xyz.ksharma.sumi.resources.Res
@@ -95,48 +100,53 @@ fun PaywallScreen(
 
     var purchaseError by remember { mutableStateOf(false) }
 
-    WashiBG(modifier = modifier.fillMaxSize()) {
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
-            Image(
-                painter = painterResource(Res.drawable.ink_bleed_01),
-                contentDescription = null,
-                modifier = Modifier.size(400.dp),
-                contentScale = ContentScale.Fit,
-                alpha = 0.14f,
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        val expanded = isExpandedWindow()
+        WashiBG(modifier = Modifier.fillMaxSize(), capContentWidth = !expanded) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+                Image(
+                    painter = painterResource(Res.drawable.ink_bleed_01),
+                    contentDescription = null,
+                    modifier = Modifier.size(400.dp),
+                    contentScale = ContentScale.Fit,
+                    alpha = 0.14f,
+                )
+            }
+            PaywallContent(
+                expanded = expanded,
+                ensoProgress = ensoProgress.value,
+                headerAlpha = headerAlpha.value,
+                rowAlphas = rowAlphas.map { it.value },
+                rowOffsets = rowOffsets.map { it.value },
+                pricingAlpha = pricingAlpha.value,
+                pricingOffset = pricingOffset.value,
+                purchaseError = purchaseError,
+                onPurchase = {
+                    purchaseError = false
+                    scope.launchWithExceptionHandler<ProRepository>(
+                        dispatcher = Dispatchers.Main,
+                        errorBlock = { purchaseError = true },
+                    ) {
+                        val result = proRepo.purchase(ProProducts.LIFETIME)
+                        if (result.isFailure) purchaseError = true
+                    }
+                },
+                onRestore = {
+                    scope.launchWithExceptionHandler<ProRepository>(Dispatchers.Default) {
+                        proRepo.restorePurchases()
+                    }
+                },
             )
+            // Drawn last so it sits above the full-screen content and receives taps.
+            PaywallCloseButton(onBack = onBack)
         }
-        PaywallContent(
-            ensoProgress = ensoProgress.value,
-            headerAlpha = headerAlpha.value,
-            rowAlphas = rowAlphas.map { it.value },
-            rowOffsets = rowOffsets.map { it.value },
-            pricingAlpha = pricingAlpha.value,
-            pricingOffset = pricingOffset.value,
-            purchaseError = purchaseError,
-            onPurchase = {
-                purchaseError = false
-                scope.launchWithExceptionHandler<ProRepository>(
-                    dispatcher = Dispatchers.Main,
-                    errorBlock = { purchaseError = true },
-                ) {
-                    val result = proRepo.purchase(ProProducts.LIFETIME)
-                    if (result.isFailure) purchaseError = true
-                }
-            },
-            onRestore = {
-                scope.launchWithExceptionHandler<ProRepository>(Dispatchers.Default) {
-                    proRepo.restorePurchases()
-                }
-            },
-        )
-        // Drawn last so it sits above the full-screen content and receives taps.
-        PaywallCloseButton(onBack = onBack)
     }
 }
 
 @Suppress("LongParameterList")
 @Composable
 private fun PaywallContent(
+    expanded: Boolean,
     ensoProgress: Float,
     headerAlpha: Float,
     rowAlphas: List<Float>,
@@ -160,6 +170,10 @@ private fun PaywallContent(
                 onRestore = onRestore,
             )
         }
+        if (expanded) {
+            ExpandedPaywall(ensoProgress, headerAlpha, rowAlphas, rowOffsets, pricing)
+            return@BoxWithConstraints
+        }
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -181,6 +195,44 @@ private fun PaywallContent(
             }
             if (!compact) pricing()
             Spacer(Modifier.height(Sumi.Space.s6))
+        }
+    }
+}
+
+/** Two panes: what Pro includes on the left, the price and purchase on the right. */
+@Composable
+private fun BoxScope.ExpandedPaywall(
+    ensoProgress: Float,
+    headerAlpha: Float,
+    rowAlphas: List<Float>,
+    rowOffsets: List<Float>,
+    pricing: @Composable () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .align(Alignment.TopCenter)
+            .widthIn(max = ExpandedContentMaxWidth)
+            .fillMaxSize()
+            .statusBarsWithCornerClearance()
+            .padding(horizontal = Sumi.Space.s6),
+        horizontalArrangement = Arrangement.spacedBy(Sumi.Space.s8),
+    ) {
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxHeight()
+                .verticalScroll(rememberScrollState())
+                .padding(top = Sumi.Space.s7, bottom = Sumi.Space.s6),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            PaywallHeader(ensoProgress = ensoProgress, textAlpha = headerAlpha)
+            PaywallFeatures(rowAlphas = rowAlphas, rowOffsets = rowOffsets)
+        }
+        Box(
+            modifier = Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState()),
+            contentAlignment = Alignment.Center,
+        ) {
+            pricing()
         }
     }
 }

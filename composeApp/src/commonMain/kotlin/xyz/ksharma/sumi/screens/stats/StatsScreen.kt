@@ -9,6 +9,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -19,6 +20,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
@@ -41,6 +43,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
@@ -50,6 +53,8 @@ import xyz.ksharma.sumi.design.components.SumiIcon
 import xyz.ksharma.sumi.design.components.WashiBG
 import xyz.ksharma.sumi.design.icons.SumiIcons
 import xyz.ksharma.sumi.game.model.Difficulty
+import xyz.ksharma.sumi.navigation.ExpandedContentMaxWidth
+import xyz.ksharma.sumi.navigation.isExpandedWindow
 import xyz.ksharma.sumi.theme.SumiTheme
 import xyz.ksharma.sumi.theme.statusBarsWithCornerClearance
 import xyz.ksharma.sumi.theme.SumiTokens as Sumi
@@ -65,69 +70,123 @@ fun StatsScreen(
     // Offscreen share card → captured on tap of the share icon in StatsHeader.
     val shareLayer = rememberGraphicsLayer()
     val coroutineScope = rememberCoroutineScope()
-    WashiBG(modifier = modifier.fillMaxSize()) {
-        // Ink-bleed sits behind the hero number, alpha 0.08, 200dp.
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
-            Box(modifier = Modifier.padding(top = 140.dp)) {
-                InkBleed(sizeDp = 200.dp)
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        val expanded = isExpandedWindow()
+        WashiBG(modifier = Modifier.fillMaxSize(), capContentWidth = !expanded) {
+            // Ink-bleed sits behind the hero number, alpha 0.08, 200dp.
+            if (!expanded) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+                    Box(modifier = Modifier.padding(top = 140.dp)) {
+                        InkBleed(sizeDp = 200.dp)
+                    }
+                }
+            }
+
+            Column(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .then(if (expanded) Modifier.widthIn(max = ExpandedContentMaxWidth) else Modifier)
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .statusBarsWithCornerClearance()
+                    .padding(horizontal = Sumi.Space.s6)
+                    .padding(top = Sumi.Space.s2, bottom = Sumi.Space.s7),
+            ) {
+                StatsHeader(
+                    onBack = onBack,
+                    onShare = {
+                        coroutineScope.launch { onShare(shareLayer.toImageBitmap()) }
+                    },
+                )
+                Spacer(Modifier.height(Sumi.Space.s5))
+                if (expanded) {
+                    // Two columns that share their top and bottom edges: totals above, history below.
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(Sumi.Space.s6),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        // The ink bleed sits behind the hero number, in its own column.
+                        Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                            InkBleed(sizeDp = 200.dp)
+                            StatHero(total = state.totalPuzzlesSolved)
+                        }
+                        Column(modifier = Modifier.weight(1f)) { ThisWeekSection(state) }
+                    }
+                    Spacer(Modifier.height(Sumi.Space.s8))
+                    Row(horizontalArrangement = Arrangement.spacedBy(Sumi.Space.s6)) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            ImprovementSection(
+                                state,
+                                onUnlockPro,
+                                cardHeight = PERSONAL_BEST_ROW_HEIGHT * Difficulty.entries.size,
+                            )
+                        }
+                        Column(modifier = Modifier.weight(1f)) { PersonalBestsSection(state, onUnlockPro) }
+                    }
+                } else {
+                    StatHero(total = state.totalPuzzlesSolved)
+                    Spacer(Modifier.height(Sumi.Space.s8))
+                    ThisWeekSection(state)
+                    Spacer(Modifier.height(Sumi.Space.s8))
+                    ImprovementSection(state, onUnlockPro)
+                    Spacer(Modifier.height(Sumi.Space.s8))
+                    PersonalBestsSection(state, onUnlockPro)
+                }
+            }
+            // Offscreen share card — laid out + drawn into shareLayer every
+            // composition, never visible. Tap of the header share icon snapshots
+            // the layer to a bitmap and hands it to the share sheet.
+            Box(
+                modifier = Modifier.absoluteOffset(x = (-10_000).dp, y = (-10_000).dp),
+            ) {
+                StatsShareCard(state = state, layer = shareLayer)
             }
         }
+    }
+}
 
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .statusBarsWithCornerClearance()
-                .padding(horizontal = Sumi.Space.s6)
-                .padding(top = Sumi.Space.s2, bottom = Sumi.Space.s7),
-        ) {
-            StatsHeader(
-                onBack = onBack,
-                onShare = {
-                    coroutineScope.launch { onShare(shareLayer.toImageBitmap()) }
-                },
+/** Height of one personal-best row; the improvement card matches the whole list on wide windows. */
+private val PERSONAL_BEST_ROW_HEIGHT = 56.dp
+
+@Composable
+private fun ThisWeekSection(state: StatsState) {
+    Column {
+        SectionLabel("THIS WEEK")
+        Spacer(Modifier.height(Sumi.Space.s3))
+        ThisWeekGrid(state = state)
+    }
+}
+
+@Composable
+private fun ImprovementSection(state: StatsState, onUnlockPro: () -> Unit, cardHeight: Dp = 240.dp) {
+    Column {
+        SectionLabel("IMPROVEMENT")
+        Spacer(Modifier.height(Sumi.Space.s3))
+        if (state.isPro || state.recentSolveTimes.size >= 3) {
+            ImprovementCard(times = state.recentSolveTimes, cardHeight = cardHeight)
+        } else {
+            LockedCard(
+                title = "Solve a few more puzzles to see your improvement curve.",
+                cta = if (state.isPro) null else "Sumi Pro unlocks the full history",
+                onCta = onUnlockPro,
             )
-            Spacer(Modifier.height(Sumi.Space.s5))
-            StatHero(total = state.totalPuzzlesSolved)
-            Spacer(Modifier.height(Sumi.Space.s8))
-
-            SectionLabel("THIS WEEK")
-            Spacer(Modifier.height(Sumi.Space.s3))
-            ThisWeekGrid(state = state)
-            Spacer(Modifier.height(Sumi.Space.s8))
-
-            SectionLabel("IMPROVEMENT")
-            Spacer(Modifier.height(Sumi.Space.s3))
-            if (state.isPro || state.recentSolveTimes.size >= 3) {
-                ImprovementCard(times = state.recentSolveTimes)
-            } else {
-                LockedCard(
-                    title = "Solve a few more puzzles to see your improvement curve.",
-                    cta = if (state.isPro) null else "Sumi Pro unlocks the full history",
-                    onCta = onUnlockPro,
-                )
-            }
-            Spacer(Modifier.height(Sumi.Space.s8))
-
-            SectionLabel("PERSONAL BESTS")
-            Spacer(Modifier.height(Sumi.Space.s3))
-            if (state.isPro || state.bestTimes.isNotEmpty()) {
-                PersonalBestsList(bestTimes = state.bestTimes, isPro = state.isPro)
-            } else {
-                LockedCard(
-                    title = "Track your fastest solve at every difficulty.",
-                    cta = "Sumi Pro keeps every personal best",
-                    onCta = onUnlockPro,
-                )
-            }
         }
-        // Offscreen share card — laid out + drawn into shareLayer every
-        // composition, never visible. Tap of the header share icon snapshots
-        // the layer to a bitmap and hands it to the share sheet.
-        Box(
-            modifier = Modifier.absoluteOffset(x = (-10_000).dp, y = (-10_000).dp),
-        ) {
-            StatsShareCard(state = state, layer = shareLayer)
+    }
+}
+
+@Composable
+private fun PersonalBestsSection(state: StatsState, onUnlockPro: () -> Unit) {
+    Column {
+        SectionLabel("PERSONAL BESTS")
+        Spacer(Modifier.height(Sumi.Space.s3))
+        if (state.isPro || state.bestTimes.isNotEmpty()) {
+            PersonalBestsList(bestTimes = state.bestTimes, isPro = state.isPro)
+        } else {
+            LockedCard(
+                title = "Track your fastest solve at every difficulty.",
+                cta = "Sumi Pro keeps every personal best",
+                onCta = onUnlockPro,
+            )
         }
     }
 }
@@ -304,11 +363,11 @@ private fun ThisWeekCell(
  * The chart is hidden until at least 2 points exist (no useful trend with 1).
  */
 @Composable
-private fun ImprovementCard(times: List<Long>) {
+private fun ImprovementCard(times: List<Long>, cardHeight: Dp = 240.dp) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .height(240.dp)
+            .height(cardHeight)
             .border(width = 1.dp, color = SumiTheme.colors.ink.copy(alpha = 0.08f))
             .padding(Sumi.Space.s4),
     ) {
@@ -370,7 +429,7 @@ private fun PersonalBestsList(bestTimes: Map<String, Long>, isPro: Boolean) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(56.dp)
+                    .height(PERSONAL_BEST_ROW_HEIGHT)
                     .padding(horizontal = Sumi.Space.s4),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
