@@ -1,6 +1,7 @@
 package xyz.ksharma.sumi.navigation
 
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.BoxWithConstraintsScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
@@ -26,6 +27,14 @@ val ExpandedMinWidth: Dp = 840.dp
  * back to their own width to learn the window class, so they agree with the shell about it.
  */
 val LocalNavRailWidth = compositionLocalOf { 0.dp }
+
+/** Widest a multi-pane screen's content gets; wider windows centre it. */
+val ExpandedContentMaxWidth: Dp = 1200.dp
+
+/** True when the window (this scope's width plus any rail beside it) is Expanded. */
+@Composable
+fun BoxWithConstraintsScope.isExpandedWindow(): Boolean =
+    maxWidth + LocalNavRailWidth.current >= ExpandedMinWidth
 
 /**
  * The tab chrome around the current screen. Compact and medium windows keep the bottom bar;

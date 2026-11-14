@@ -56,16 +56,15 @@ All helpers live in `theme/CornerSafeInsets.kt`.
 - **Game screen** (`screens/game/GameLayout.kt`): `gameLayoutFor(width, height)` picks the layout
   from the window alone. "Usable height" already subtracts the status bar, corner clearance and the reserved banner height.
   Side by side is a **board-cell grid**: u = one board cell, board = 9u x 9u, panel = 6u x 9u,
-  gap = u/2 clamped 16..24dp, one centred unit of width 15u + gap.
-  `u = min((height - 60dp top bar block - 2 x 12dp margin) / 9, 640dp / 9, (width - 2 x margin - gap) / 15)`.
+  gap = 20dp, equal 28dp gutters left and right (inside the safe area), the unit centred vertically.
+  `u = min((height - 2 x 12dp) / 9, 640dp / 9, (width - 2 x 28dp - 20dp) / 15)`.
   Side by side needs width > height and u >= 32dp; anything else is the stacked, scrolling layout
   (unchanged, its board stays capped at 560dp).
-  - The top bar (back, difficulty + timer, pause) spans the unit above both: arrow left edge =
-    board left edge, pause bars' right edge = panel right edge.
-  - Panel rows, every horizontal line on a board line: row 0 (1u) Mistakes / Hints centred in
-    the band; rows 1-2 (2u) the five tools, spread across 6u and centred in the band; rows 3-8
-    (6u) a 3x3 keypad of square 2u cells. Its top edge is the board's first thick box line
-    (+3u), inner lines at +5u and +7u, bottom edge = board bottom (+9u).
+  - The panel shares the board's top and bottom edges. There is no full-width top bar.
+  - Panel rows: header 1u (back at the panel's left edge, difficulty + timer centred, pause at its
+    right edge), marks and hints 0.75u, the five tools 1.25u (together exactly 3u), then a 3x3 keypad
+    of square 2u cells (6u). The keypad's top edge is the board's second thick box line (+3u), inner
+    lines at +5u and +7u, bottom edge = board bottom (+9u).
   - Keypad lines use the board's thin line weight and colour (no heavier frame). Digits use the
     board's given-digit size (0.6u, ignores font scale like the board); the remaining-count badge
     is small, scaled from the board's pencil-mark size.
@@ -83,6 +82,12 @@ All helpers live in `theme/CornerSafeInsets.kt`.
   uses `SumiNavRail` (88dp, left, same four tabs and selected colour), tabs stacked from the top
   so the first sits level with the screen's header row. The screen gets the space to its right.
   The rail hides wherever the bottom bar hid (game, win, settings, ...).
+- **Portrait tablets** (game, stacked): the column is centred and capped at 720dp, and the top bar,
+  marks, tools and the one-row number pad are exactly as wide as the board.
+- **Stats, Settings, Paywall** go two-column from Expanded (`isExpandedWindow()`, content capped at
+  `ExpandedContentMaxWidth` 1200dp, 24dp gap, both columns start and end on shared lines). Stats:
+  total and this week on top, improvement and personal bests below (equal heights). Settings: Theme on
+  the left, Play and About on the right. Paywall: header and features left, pricing right.
 - Paywall scrolls as one page below 560dp of height so the pricing block does not starve the
   feature list; every other screen scrolls vertically.
 

@@ -91,7 +91,7 @@ internal fun GameScreenDuoOuterPortraitPreview() = GameScreenAtWindow(DUO_OUTER_
 @Composable
 internal fun GameScreenDuoOuterLandscapePreview() = GameScreenAtWindow(DUO_OUTER_HEIGHT_DP, DUO_OUTER_WIDTH_DP)
 
-/** Duo inner display, portrait: stacked, board at its 560dp cap. */
+/** Duo inner display, portrait: stacked, board filling the width. */
 @ScreenshotTest(fontScaleSensitive = false)
 @Preview(name = "4. Duo inner portrait", group = "Window", showBackground = true)
 @Composable
@@ -109,7 +109,7 @@ internal fun GameScreenDuoInnerLandscapePreview() = GameScreenAtWindow(DUO_INNER
 @Composable
 internal fun GameScreenTabletLandscapePreview() = GameScreenAtWindow(TABLET_LONG_DP, TABLET_SHORT_DP)
 
-/** Tablet portrait: stacked, board at its cap. */
+/** Tablet portrait: stacked, board and controls share one width. */
 @ScreenshotTest(fontScaleSensitive = false)
 @Preview(name = "7. Tablet portrait", group = "Window", showBackground = true)
 @Composable

@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
@@ -37,6 +39,8 @@ import kotlinx.coroutines.delay
 import xyz.ksharma.sumi.design.components.SumiButtonVariant
 import xyz.ksharma.sumi.design.components.SumiTextButton
 import xyz.ksharma.sumi.design.components.WashiBG
+import xyz.ksharma.sumi.navigation.ExpandedContentMaxWidth
+import xyz.ksharma.sumi.navigation.isExpandedWindow
 import xyz.ksharma.sumi.theme.SumiSeason
 import xyz.ksharma.sumi.theme.SumiTheme
 import xyz.ksharma.sumi.theme.statusBarsWithCornerClearance
@@ -58,113 +62,169 @@ fun SettingsScreen(
     debugCallbacks: DebugCallbacks?,
     modifier: Modifier = Modifier,
 ) {
-    WashiBG(modifier = modifier.fillMaxSize()) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            SettingsTopBar(onBack = onBack)
-
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        val expanded = isExpandedWindow()
+        WashiBG(modifier = Modifier.fillMaxSize(), capContentWidth = !expanded) {
             Column(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = Sumi.Space.s6)
-                    .padding(bottom = Sumi.Space.s9),
+                    .align(Alignment.TopCenter)
+                    .then(if (expanded) Modifier.widthIn(max = ExpandedContentMaxWidth) else Modifier)
+                    .fillMaxSize(),
             ) {
-                Spacer(Modifier.height(Sumi.Space.s4))
+                SettingsTopBar(onBack = onBack)
 
-                SettingsSectionLabel("Theme")
-                Spacer(Modifier.height(Sumi.Space.s3))
-                SettingsPanel {
-                    SettingsRow(
-                        label = "Season",
-                        description = "Changes the accent colour across the app.",
-                    )
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = Sumi.Space.s6)
+                        .padding(bottom = Sumi.Space.s9),
+                ) {
                     Spacer(Modifier.height(Sumi.Space.s4))
-                    SeasonChips(current = themeState.season, onSelect = onSeasonSelect)
-                }
-
-                Spacer(Modifier.height(Sumi.Space.s3))
-                SettingsPanel {
-                    SettingsToggleRow(
-                        label = "Haptics",
-                        description = "Vibration feedback while playing.",
-                        checked = themeState.hapticsEnabled,
-                        onToggle = onHapticsToggle,
-                    )
-                }
-
-                Spacer(Modifier.height(Sumi.Space.s3))
-                SettingsPanel {
-                    SettingsToggleRow(
-                        label = "Show mistake count",
-                        description = "Hide the running mistake counter on the game screen.",
-                        checked = themeState.showMistakes,
-                        onToggle = onShowMistakesToggle,
-                    )
-                }
-
-                Spacer(Modifier.height(Sumi.Space.s3))
-                SettingsPanel {
-                    SettingsToggleRow(
-                        label = "High-legibility numerals",
-                        description = "Use a clearer sans typeface for board digits.",
-                        checked = themeState.highLegibility,
-                        onToggle = onHighLegibilityToggle,
-                    )
-                }
-
-                Spacer(Modifier.height(Sumi.Space.s3))
-                SettingsPanel {
-                    SettingsToggleRow(
-                        label = "Conflicts only",
-                        description = "Highlight only rule conflicts, not wrong-vs-solution guesses.",
-                        checked = themeState.strictConflicts,
-                        onToggle = onStrictConflictsToggle,
-                    )
-                }
-
-                Spacer(Modifier.height(Sumi.Space.s3))
-                SettingsPanel {
-                    SettingsToggleRow(
-                        label = "Digit-first input",
-                        description = "Tap a number to arm it, then tap cells to place it.",
-                        checked = themeState.digitFirstInput,
-                        onToggle = onDigitFirstToggle,
-                    )
-                }
-
-                Spacer(Modifier.height(Sumi.Space.s3))
-                SettingsPanel {
-                    SettingsToggleRow(
-                        label = "Lives mode",
-                        description = "End the puzzle after a few mistakes for a tougher challenge.",
-                        checked = themeState.livesMode,
-                        onToggle = onLivesModeToggle,
-                    )
-                }
-
-                Spacer(Modifier.height(Sumi.Space.s6))
-                SettingsSectionLabel("About")
-                Spacer(Modifier.height(Sumi.Space.s3))
-
-                SettingsPanel {
-                    SettingsRow(
-                        label = "Open Licenses",
-                        description = "Typefaces and libraries used in Sumi.",
-                    )
-                    Spacer(Modifier.height(Sumi.Space.s3))
-                    SumiTextButton(
-                        text = "View Licenses",
-                        onClick = onLicenses,
-                        variant = SumiButtonVariant.Ghost,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-
-                if (debugCallbacks != null) {
-                    Spacer(Modifier.height(Sumi.Space.s6))
-                    DebugSection(callbacks = debugCallbacks)
+                    if (expanded) {
+                        // Two columns that start on the same line: look and feel on the left, play on the right.
+                        Row(horizontalArrangement = Arrangement.spacedBy(Sumi.Space.s6)) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                ThemeSection(themeState, onSeasonSelect, onHapticsToggle, onHighLegibilityToggle)
+                            }
+                            Column(modifier = Modifier.weight(1f)) {
+                                PlaySection(
+                                    themeState = themeState,
+                                    onShowMistakesToggle = onShowMistakesToggle,
+                                    onStrictConflictsToggle = onStrictConflictsToggle,
+                                    onDigitFirstToggle = onDigitFirstToggle,
+                                    onLivesModeToggle = onLivesModeToggle,
+                                )
+                                Spacer(Modifier.height(Sumi.Space.s6))
+                                AboutSection(onLicenses)
+                                if (debugCallbacks != null) {
+                                    Spacer(Modifier.height(Sumi.Space.s6))
+                                    DebugSection(callbacks = debugCallbacks)
+                                }
+                            }
+                        }
+                    } else {
+                        ThemeSection(themeState, onSeasonSelect, onHapticsToggle, onHighLegibilityToggle)
+                        Spacer(Modifier.height(Sumi.Space.s6))
+                        PlaySection(
+                            themeState = themeState,
+                            onShowMistakesToggle = onShowMistakesToggle,
+                            onStrictConflictsToggle = onStrictConflictsToggle,
+                            onDigitFirstToggle = onDigitFirstToggle,
+                            onLivesModeToggle = onLivesModeToggle,
+                        )
+                        Spacer(Modifier.height(Sumi.Space.s6))
+                        AboutSection(onLicenses)
+                        if (debugCallbacks != null) {
+                            Spacer(Modifier.height(Sumi.Space.s6))
+                            DebugSection(callbacks = debugCallbacks)
+                        }
+                    }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun ThemeSection(
+    themeState: ThemeState,
+    onSeasonSelect: (SumiSeason) -> Unit,
+    onHapticsToggle: () -> Unit,
+    onHighLegibilityToggle: () -> Unit,
+) {
+    Column {
+        SettingsSectionLabel("Theme")
+        Spacer(Modifier.height(Sumi.Space.s3))
+        SettingsPanel {
+            SettingsRow(label = "Season", description = "Changes the accent colour across the app.")
+            Spacer(Modifier.height(Sumi.Space.s4))
+            SeasonChips(current = themeState.season, onSelect = onSeasonSelect)
+        }
+        Spacer(Modifier.height(Sumi.Space.s3))
+        SettingsPanel {
+            SettingsToggleRow(
+                label = "Haptics",
+                description = "Vibration feedback while playing.",
+                checked = themeState.hapticsEnabled,
+                onToggle = onHapticsToggle,
+            )
+        }
+        Spacer(Modifier.height(Sumi.Space.s3))
+        SettingsPanel {
+            SettingsToggleRow(
+                label = "High-legibility numerals",
+                description = "Use a clearer sans typeface for board digits.",
+                checked = themeState.highLegibility,
+                onToggle = onHighLegibilityToggle,
+            )
+        }
+    }
+}
+
+@Composable
+private fun PlaySection(
+    themeState: ThemeState,
+    onShowMistakesToggle: () -> Unit,
+    onStrictConflictsToggle: () -> Unit,
+    onDigitFirstToggle: () -> Unit,
+    onLivesModeToggle: () -> Unit,
+) {
+    Column {
+        SettingsSectionLabel("Play")
+        Spacer(Modifier.height(Sumi.Space.s3))
+        SettingsPanel {
+            SettingsToggleRow(
+                label = "Show mistake count",
+                description = "Hide the running mistake counter on the game screen.",
+                checked = themeState.showMistakes,
+                onToggle = onShowMistakesToggle,
+            )
+        }
+        Spacer(Modifier.height(Sumi.Space.s3))
+        SettingsPanel {
+            SettingsToggleRow(
+                label = "Conflicts only",
+                description = "Highlight only rule conflicts, not wrong-vs-solution guesses.",
+                checked = themeState.strictConflicts,
+                onToggle = onStrictConflictsToggle,
+            )
+        }
+        Spacer(Modifier.height(Sumi.Space.s3))
+        SettingsPanel {
+            SettingsToggleRow(
+                label = "Digit-first input",
+                description = "Tap a number to arm it, then tap cells to place it.",
+                checked = themeState.digitFirstInput,
+                onToggle = onDigitFirstToggle,
+            )
+        }
+        Spacer(Modifier.height(Sumi.Space.s3))
+        SettingsPanel {
+            SettingsToggleRow(
+                label = "Lives mode",
+                description = "End the puzzle after a few mistakes for a tougher challenge.",
+                checked = themeState.livesMode,
+                onToggle = onLivesModeToggle,
+            )
+        }
+    }
+}
+
+@Composable
+private fun AboutSection(onLicenses: () -> Unit) {
+    Column {
+        SettingsSectionLabel("About")
+        Spacer(Modifier.height(Sumi.Space.s3))
+        SettingsPanel {
+            SettingsRow(label = "Open Licenses", description = "Typefaces and libraries used in Sumi.")
+            Spacer(Modifier.height(Sumi.Space.s3))
+            SumiTextButton(
+                text = "View Licenses",
+                onClick = onLicenses,
+                variant = SumiButtonVariant.Ghost,
+                modifier = Modifier.fillMaxWidth(),
+            )
         }
     }
 }
