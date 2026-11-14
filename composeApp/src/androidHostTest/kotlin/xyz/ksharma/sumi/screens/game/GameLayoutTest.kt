@@ -38,30 +38,39 @@ class GameLayoutTest {
     fun tabletLandscapeFillsTheHeightUpToTheBoardCap() {
         val layout = sideBySide(1280, 800)
         assertDp(640f / 9, layout.cell) // height would allow 79.6dp; the 640dp board cap wins
-        assertEquals(MAX_SIDE_GAP, layout.gap)
-        assertTrue(layout.boardSize + SIDE_TOP_BAR_BLOCK + SIDE_BOARD_MARGIN * 2 <= 800.dp)
+        assertEquals(SIDE_GAP, layout.gap)
+        assertTrue(layout.boardSize + SIDE_VERTICAL_MARGIN * 2 <= 800.dp)
     }
 
     @Test
     fun duoInnerLandscapeIsWidthBound() {
         val layout = sideBySide(951, 669)
-        assertDp((951f - 24 - 24) / 15, layout.cell)
-        assertTrue(layout.unitWidth + SIDE_BOARD_MARGIN * 2 <= 951.dp)
+        assertDp((951f - 28 * 2 - 20) / 15, layout.cell)
+        assertDp(951f, layout.unitWidth + SIDE_MARGIN * 2)
     }
 
     @Test
-    fun duoOuterLandscapeIsSideBySideWithAHalfCellGap() {
+    fun duoOuterLandscapeIsSideBySide() {
         val layout = sideBySide(678, 466)
-        val fromHeight = (466f - 24 - 60) / 9
-        assertDp((678f - 24 - fromHeight / 2) / 15, layout.cell)
-        assertDp(fromHeight / 2, layout.gap)
+        assertDp((678f - 28 * 2 - 20) / 15, layout.cell)
         assertTrue(layout.cell >= MIN_SIDE_CELL)
+        assertTrue(layout.boardSize + SIDE_VERTICAL_MARGIN * 2 <= 466.dp)
+    }
+
+    @Test
+    fun panelRowsAddUpToTheBoardHeight() {
+        assertEquals(
+            BOARD_CELLS.toFloat(),
+            PANEL_HEADER_CELLS + PANEL_MARKS_CELLS + PANEL_TOOLS_CELLS + PANEL_KEYPAD_CELLS,
+        )
+        // The keypad starts on the board's second thick box line (3 cells down).
+        assertEquals(3f, PANEL_HEADER_CELLS + PANEL_MARKS_CELLS + PANEL_TOOLS_CELLS)
     }
 
     @Test
     fun cellBelowTheMinimumFallsBackToStacked() {
-        // 340dp of height leaves a 28dp cell.
-        assertEquals(GameLayout.Stacked, gameLayoutFor(width = 900.dp, height = 340.dp))
+        // 300dp of height leaves a 30dp cell.
+        assertEquals(GameLayout.Stacked, gameLayoutFor(width = 900.dp, height = 300.dp))
     }
 
     @Test

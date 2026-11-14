@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
@@ -258,60 +259,67 @@ private fun StackedGameBody(
     bottomReservedHeight: Dp,
     fitToHeight: Boolean,
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            // Tall enough: nothing scrolls and the board takes the height the controls leave
-            // (iPhone Duo's outer display, where a full-width board pushed the number pad under
-            // the banner). Too short (phones on their side): scroll instead of clipping.
-            .then(if (fitToHeight) Modifier else Modifier.verticalScroll(rememberScrollState()))
-            .statusBarsWithCornerClearance()
-            // Tight side margin so the grid (and number-pad tap targets) get
-            // as much width as possible — easier to read / tap, better for
-            // low vision. MAX_BOARD_WIDTH still caps it on tablets.
-            .padding(horizontal = Sumi.Space.s2)
-            .padding(bottom = bottomReservedHeight),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Spacer(Modifier.height(Sumi.Space.s3))
-        GameTopBar(
-            difficulty = ui.diff,
-            elapsedMs = ui.elapsedMs,
-            onBack = callbacks.onBack,
-            onPause = callbacks.onPause,
-        )
-        Spacer(Modifier.height(Sumi.Space.s3))
-        GameMarksRow(ui)
-        Spacer(Modifier.height(Sumi.Space.s3))
-        // BoxWithConstraints lets the board scale to fill the available width —
-        // up to MAX_BOARD_WIDTH (560dp) so it grows properly on tablets but
-        // doesn't dominate a 12-inch display. SumiBoard owns its own perimeter
-        // so no wrapping border / padding is needed (would have caused the
-        // interior lines to overhang the perimeter).
-        BoxWithConstraints(
-            modifier = if (fitToHeight) Modifier.weight(1f, fill = false) else Modifier,
-            contentAlignment = Alignment.Center,
+    // The column is centred and capped, so on a tablet the top bar, marks, tools and pad are exactly
+    // as wide as the board.
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+        Column(
+            modifier = Modifier
+                .fillMaxHeight()
+                .widthIn(max = MAX_BOARD_WIDTH + Sumi.Space.s2 * 2)
+                .fillMaxWidth()
+                // Tall enough: nothing scrolls and the board takes the height the controls leave
+                // (iPhone Duo's outer display, where a full-width board pushed the number pad under
+                // the banner). Too short (phones on their side): scroll instead of clipping.
+                .then(if (fitToHeight) Modifier else Modifier.verticalScroll(rememberScrollState()))
+                .statusBarsWithCornerClearance()
+                // Tight side margin so the grid (and number-pad tap targets) get
+                // as much width as possible — easier to read / tap, better for
+                // low vision. MAX_BOARD_WIDTH still caps it on tablets.
+                .padding(horizontal = Sumi.Space.s2)
+                .padding(bottom = bottomReservedHeight),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            val side = if (fitToHeight) minOf(maxWidth, maxHeight) else maxWidth
-            BoardArea(ui = ui, callbacks = callbacks, cellSize = minOf(side, MAX_BOARD_WIDTH) / 9)
+            Spacer(Modifier.height(Sumi.Space.s3))
+            GameTopBar(
+                difficulty = ui.diff,
+                elapsedMs = ui.elapsedMs,
+                onBack = callbacks.onBack,
+                onPause = callbacks.onPause,
+            )
+            Spacer(Modifier.height(Sumi.Space.s3))
+            GameMarksRow(ui)
+            Spacer(Modifier.height(Sumi.Space.s3))
+            // BoxWithConstraints lets the board scale to fill the available width —
+            // up to MAX_BOARD_WIDTH (720dp) so it grows properly on tablets but
+            // doesn't dominate a 12-inch display. SumiBoard owns its own perimeter
+            // so no wrapping border / padding is needed (would have caused the
+            // interior lines to overhang the perimeter).
+            BoxWithConstraints(
+                modifier = if (fitToHeight) Modifier.weight(1f, fill = false) else Modifier,
+                contentAlignment = Alignment.Center,
+            ) {
+                val side = if (fitToHeight) minOf(maxWidth, maxHeight) else maxWidth
+                BoardArea(ui = ui, callbacks = callbacks, cellSize = minOf(side, MAX_BOARD_WIDTH) / 9)
+            }
+            Spacer(Modifier.height(Sumi.Space.s4))
+            ToolsRow(tools = gameTools(ui.state, callbacks))
+            Spacer(Modifier.height(Sumi.Space.s3))
+            NumberPad(
+                state = ui.state,
+                selectedDigit = ui.selectedDigit,
+                highLegibility = ui.highLegibility,
+                onDigit = callbacks.onEnter,
+            )
         }
-        Spacer(Modifier.height(Sumi.Space.s4))
-        ToolsRow(tools = gameTools(ui.state, callbacks))
-        Spacer(Modifier.height(Sumi.Space.s3))
-        NumberPad(
-            state = ui.state,
-            selectedDigit = ui.selectedDigit,
-            highLegibility = ui.highLegibility,
-            onDigit = callbacks.onEnter,
-        )
     }
 }
 
 /**
- * One centred unit on a grid of board cells (u = one cell, board = 9u x 9u). The top bar spans board
- * and panel. Beside the board a panel 6u wide and 9u tall, every horizontal line on a board line:
- * row 0 (1u) marks and hints, rows 1-2 (2u) the tools, rows 3-8 (6u) a 3x3 pad of square 2u cells
- * whose top edge is the board's first thick box line and whose bottom edge is the board bottom.
+ * One centred unit on a grid of board cells (u = one cell, board = 9u x 9u). The panel beside the
+ * board is 6u wide and 9u tall, so it shares the board's top and bottom edges: the header (back,
+ * difficulty and timer, pause) takes 1u, marks and hints 0.75u, the tools 1.25u, and the 3x3 pad of
+ * square 2u cells the last 6u. The pad's top edge is the board's second thick box line and its
+ * bottom edge is the board bottom.
  */
 @Composable
 private fun SideBySideGameBody(
@@ -329,35 +337,38 @@ private fun SideBySideGameBody(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Column(modifier = Modifier.width(layout.unitWidth)) {
-            GameTopBar(
-                difficulty = ui.diff,
-                elapsedMs = ui.elapsedMs,
-                onBack = callbacks.onBack,
-                onPause = callbacks.onPause,
-                edgeAligned = true,
-            )
-            Spacer(Modifier.height(SIDE_TOP_BAR_GAP))
-            Row(
-                modifier = Modifier.fillMaxWidth().height(layout.boardSize),
-                horizontalArrangement = Arrangement.spacedBy(layout.gap),
-            ) {
-                BoardArea(ui = ui, callbacks = callbacks, cellSize = u)
-                Column(modifier = Modifier.width(layout.panelWidth).fillMaxHeight()) {
-                    Box(modifier = Modifier.fillMaxWidth().height(u), contentAlignment = Alignment.Center) {
-                        GameMarksRow(ui)
-                    }
-                    Box(modifier = Modifier.fillMaxWidth().height(u * 2), contentAlignment = Alignment.Center) {
-                        ToolsRow(tools = gameTools(ui.state, callbacks), slotWidth = u * PANEL_CELLS / 5)
-                    }
-                    NumberPadGrid(
-                        state = ui.state,
-                        selectedDigit = ui.selectedDigit,
-                        highLegibility = ui.highLegibility,
-                        onDigit = callbacks.onEnter,
-                        cell = u,
-                    )
+        Row(
+            modifier = Modifier.width(layout.unitWidth).height(layout.boardSize),
+            horizontalArrangement = Arrangement.spacedBy(layout.gap),
+        ) {
+            BoardArea(ui = ui, callbacks = callbacks, cellSize = u)
+            Column(modifier = Modifier.width(layout.panelWidth).fillMaxHeight()) {
+                GameTopBar(
+                    difficulty = ui.diff,
+                    elapsedMs = ui.elapsedMs,
+                    onBack = callbacks.onBack,
+                    onPause = callbacks.onPause,
+                    barHeight = u * PANEL_HEADER_CELLS,
+                )
+                Box(
+                    modifier = Modifier.fillMaxWidth().height(u * PANEL_MARKS_CELLS),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    GameMarksRow(ui)
                 }
+                Box(
+                    modifier = Modifier.fillMaxWidth().height(u * PANEL_TOOLS_CELLS),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    ToolsRow(tools = gameTools(ui.state, callbacks), slotWidth = u * PANEL_CELLS / 5)
+                }
+                NumberPadGrid(
+                    state = ui.state,
+                    selectedDigit = ui.selectedDigit,
+                    highLegibility = ui.highLegibility,
+                    onDigit = callbacks.onEnter,
+                    cell = u,
+                )
             }
         }
     }
@@ -410,13 +421,14 @@ private fun GameTopBar(
     elapsedMs: Long,
     onBack: () -> Unit,
     onPause: () -> Unit,
-    edgeAligned: Boolean = false,
+    barHeight: Dp? = null,
 ) {
+    val edgeAligned = barHeight != null
     val backSrc = remember { MutableInteractionSource() }
     val pauseSrc = remember { MutableInteractionSource() }
     val kanji = DIFFICULTY_KANJI[difficulty] ?: "一"
-    // Edge-aligned (side by side): a fixed-height bar with no bottom padding, and the back arrow and
-    // pause icon pushed to the outer edges so they sit on the board's left / panel's right edge.
+    // Side by side ([barHeight] set): a fixed-height bar with no bottom padding, and the back arrow and
+    // pause icon pushed to the panel's outer edges.
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -425,7 +437,7 @@ private fun GameTopBar(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .then(if (edgeAligned) Modifier.height(SIDE_TOP_BAR_HEIGHT) else Modifier),
+                .then(if (barHeight != null) Modifier.height(barHeight) else Modifier),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
