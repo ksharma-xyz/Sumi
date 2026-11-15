@@ -8,6 +8,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
@@ -26,6 +28,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.datetime.DateTimeUnit
@@ -37,6 +40,8 @@ import kotlinx.datetime.toLocalDateTime
 import xyz.ksharma.sumi.design.components.InkBleed
 import xyz.ksharma.sumi.design.components.WashiBG
 import xyz.ksharma.sumi.game.model.Difficulty
+import xyz.ksharma.sumi.navigation.ExpandedContentMaxWidth
+import xyz.ksharma.sumi.navigation.isExpandedWindow
 import xyz.ksharma.sumi.theme.SumiTheme
 import xyz.ksharma.sumi.theme.statusBarsWithCornerClearance
 import kotlin.time.Clock
@@ -56,41 +61,90 @@ fun DailyScreen(
     }
     val todayEpoch = remember(today) { today.toEpochDays() }
 
-    WashiBG(modifier = modifier.fillMaxSize()) {
-        // Subtle ink-bleed accent in the top-right (handoff: 0.06 alpha, 120dp).
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.TopEnd) {
-            Box(modifier = Modifier.padding(top = 80.dp, end = 24.dp)) {
-                InkBleed(sizeDp = 120.dp)
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        val expanded = isExpandedWindow()
+        WashiBG(modifier = Modifier.fillMaxSize(), capContentWidth = !expanded) {
+            // Subtle ink-bleed accent in the top-right (handoff: 0.06 alpha, 120dp).
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.TopEnd) {
+                Box(modifier = Modifier.padding(top = 80.dp, end = 24.dp)) {
+                    InkBleed(sizeDp = 120.dp)
+                }
+            }
+
+            Column(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .then(if (expanded) Modifier.widthIn(max = ExpandedContentMaxWidth) else Modifier)
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .statusBarsWithCornerClearance()
+                    .padding(horizontal = Sumi.Space.s6)
+                    .padding(top = Sumi.Space.s2, bottom = Sumi.Space.s7),
+            ) {
+                DailyHeader(onBack = onBack)
+                Spacer(Modifier.height(Sumi.Space.s4))
+                val calendar: @Composable () -> Unit = {
+                    DailyCalendar(state = state, today = today)
+                }
+                val todayAndHistory: @Composable () -> Unit = {
+                    DailyTodayAndHistory(
+                        state = state,
+                        today = today,
+                        todayEpoch = todayEpoch,
+                        onPlayToday = onPlayToday,
+                    )
+                }
+                if (expanded) {
+                    // Calendar on the left, today and the earlier months beside it.
+                    Row(horizontalArrangement = Arrangement.spacedBy(Sumi.Space.s9)) {
+                        listOf(calendar, todayAndHistory).forEach { column ->
+                            Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.TopCenter) {
+                                Column(modifier = Modifier.widthIn(max = DAILY_COLUMN_MAX_WIDTH)) { column() }
+                            }
+                        }
+                    }
+                } else {
+                    calendar()
+                    Spacer(Modifier.height(Sumi.Space.s8))
+                    todayAndHistory()
+                }
             }
         }
+    }
+}
 
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .statusBarsWithCornerClearance()
-                .padding(horizontal = Sumi.Space.s6)
-                .padding(top = Sumi.Space.s2, bottom = Sumi.Space.s7),
-        ) {
-            DailyHeader(onBack = onBack)
-            Spacer(Modifier.height(Sumi.Space.s4))
-            MonthHero(month = today.month, year = today.year, solveDays = state.solveDays, today = today)
-            Spacer(Modifier.height(Sumi.Space.s6))
-            CalendarGrid(month = today.month, year = today.year, today = today, solveDays = state.solveDays)
-            Spacer(Modifier.height(Sumi.Space.s8))
-            SectionLabel("TODAY")
-            Spacer(Modifier.height(Sumi.Space.s3))
-            TodayCard(
-                difficulty = state.currentDifficulty,
-                puzzleId = todayEpoch,
-                status = state.todayStatus,
-                onClick = onPlayToday,
-            )
-            Spacer(Modifier.height(Sumi.Space.s8))
-            SectionLabel("PREVIOUS MONTHS")
-            Spacer(Modifier.height(Sumi.Space.s3))
-            PreviousMonths(today = today, solveDays = state.solveDays)
-        }
+/** Widest a Daily column gets on wide windows; keeps the calendar cells from spreading apart. */
+private val DAILY_COLUMN_MAX_WIDTH: Dp = 440.dp
+
+@Composable
+private fun DailyCalendar(state: DailyState, today: LocalDate) {
+    Column {
+        MonthHero(month = today.month, year = today.year, solveDays = state.solveDays, today = today)
+        Spacer(Modifier.height(Sumi.Space.s6))
+        CalendarGrid(month = today.month, year = today.year, today = today, solveDays = state.solveDays)
+    }
+}
+
+@Composable
+private fun DailyTodayAndHistory(
+    state: DailyState,
+    today: LocalDate,
+    todayEpoch: Long,
+    onPlayToday: () -> Unit,
+) {
+    Column {
+        SectionLabel("TODAY")
+        Spacer(Modifier.height(Sumi.Space.s3))
+        TodayCard(
+            difficulty = state.currentDifficulty,
+            puzzleId = todayEpoch,
+            status = state.todayStatus,
+            onClick = onPlayToday,
+        )
+        Spacer(Modifier.height(Sumi.Space.s8))
+        SectionLabel("PREVIOUS MONTHS")
+        Spacer(Modifier.height(Sumi.Space.s3))
+        PreviousMonths(today = today, solveDays = state.solveDays)
     }
 }
 

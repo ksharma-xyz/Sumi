@@ -26,6 +26,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -41,7 +42,9 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
@@ -83,7 +86,9 @@ import xyz.ksharma.sumi.design.components.SumiIcon
 import xyz.ksharma.sumi.design.components.SumiPetals
 import xyz.ksharma.sumi.design.components.WashiBG
 import xyz.ksharma.sumi.design.icons.SumiIcons
+import xyz.ksharma.sumi.navigation.ExpandedContentMaxWidth
 import xyz.ksharma.sumi.navigation.TabBackHandler
+import xyz.ksharma.sumi.navigation.isExpandedWindow
 import xyz.ksharma.sumi.share.BookInk
 import xyz.ksharma.sumi.share.BookPaper
 import xyz.ksharma.sumi.share.BookTheme
@@ -215,8 +220,9 @@ private fun ZenLanding(
     onPageChange: (Int) -> Unit,
     onOpenDesigner: () -> Unit,
 ) {
-    Box(modifier = Modifier.fillMaxSize()) {
-        WashiBG(modifier = Modifier.fillMaxSize())
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val expanded = isExpandedWindow()
+        WashiBG(modifier = Modifier.fillMaxSize(), capContentWidth = !expanded)
         // Ambient gold petals — sparse + slow so the page reads as still and
         // premium, not festive. Drawn behind content so swipes/taps still land.
         SumiPetals(
@@ -235,7 +241,13 @@ private fun ZenLanding(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .safeContentColumn()
+                .then(
+                    if (expanded) {
+                        Modifier.wrapContentWidth(Alignment.CenterHorizontally).widthIn(max = ExpandedContentMaxWidth)
+                    } else {
+                        Modifier.safeContentColumn()
+                    },
+                )
                 .statusBarsWithCornerClearance()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = Sumi.Space.s6)
@@ -244,19 +256,47 @@ private fun ZenLanding(
         ) {
             ProBadge()
             Spacer(Modifier.height(Sumi.Space.s8))
-            ZenSectionLabel(text = "The Library")
-            Spacer(Modifier.height(Sumi.Space.s4))
-            if (quotes.isNotEmpty()) {
-                QuoteStage(quotes = quotes, quoteIndex = quoteIndex, onPageChange = onPageChange)
+            if (expanded) {
+                // Quote stage left, book card right at the quote card's height, so the two share
+                // their top and bottom edges.
+                Row(horizontalArrangement = Arrangement.spacedBy(Sumi.Space.s9)) {
+                    ZenLibrary(quotes, quoteIndex, onPageChange, Modifier.weight(1f))
+                    ZenBook(onOpenDesigner, Modifier.weight(1f), cardModifier = Modifier.height(QUOTE_CARD_HEIGHT))
+                }
+            } else {
+                ZenLibrary(quotes, quoteIndex, onPageChange)
+                Spacer(Modifier.height(Sumi.Space.s8))
+                ZenBook(onOpenDesigner)
             }
-            Spacer(Modifier.height(Sumi.Space.s8))
-            ZenSectionLabel(text = "Zen Sudoku")
-            Spacer(Modifier.height(Sumi.Space.s4))
-            PuzzleBookCard(onClick = onOpenDesigner)
             // No restore-purchase footer here — Zen tab is only reachable when
             // the user is already Pro, so restore is unnecessary on this surface.
             // (It still lives on PaywallScreen where it actually matters.)
         }
+    }
+}
+
+@Composable
+private fun ZenLibrary(
+    quotes: List<Quote>,
+    quoteIndex: Int,
+    onPageChange: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier) {
+        ZenSectionLabel(text = "The Library")
+        Spacer(Modifier.height(Sumi.Space.s4))
+        if (quotes.isNotEmpty()) {
+            QuoteStage(quotes = quotes, quoteIndex = quoteIndex, onPageChange = onPageChange)
+        }
+    }
+}
+
+@Composable
+private fun ZenBook(onOpenDesigner: () -> Unit, modifier: Modifier = Modifier, cardModifier: Modifier = Modifier) {
+    Column(modifier = modifier) {
+        ZenSectionLabel(text = "Zen Sudoku")
+        Spacer(Modifier.height(Sumi.Space.s4))
+        PuzzleBookCard(onClick = onOpenDesigner, modifier = cardModifier)
     }
 }
 
@@ -473,10 +513,10 @@ private fun QuoteDots(current: Int, total: Int) {
  * tap-target unambiguous without resorting to a button bar.
  */
 @Composable
-private fun PuzzleBookCard(onClick: () -> Unit) {
+private fun PuzzleBookCard(onClick: () -> Unit, modifier: Modifier = Modifier) {
     val src = remember { MutableInteractionSource() }
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .border(1.dp, SumiTheme.colors.paperEdge)
             .clickable(interactionSource = src, indication = null, onClick = onClick)
@@ -489,6 +529,7 @@ private fun PuzzleBookCard(onClick: () -> Unit) {
                 .background(SumiTheme.colors.gold.copy(alpha = 0.6f)),
         )
         Row(
+            modifier = Modifier.align(Alignment.CenterStart),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Sumi.Space.s5),
         ) {

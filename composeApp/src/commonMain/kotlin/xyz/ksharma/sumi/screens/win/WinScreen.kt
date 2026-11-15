@@ -6,6 +6,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -16,6 +17,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
@@ -53,6 +56,7 @@ import xyz.ksharma.sumi.design.components.SumiButton
 import xyz.ksharma.sumi.design.components.SumiButtonSize
 import xyz.ksharma.sumi.design.components.SumiButtonVariant
 import xyz.ksharma.sumi.design.components.WashiBG
+import xyz.ksharma.sumi.navigation.isExpandedWindow
 import xyz.ksharma.sumi.resources.Res
 import xyz.ksharma.sumi.resources.ink_bleed_02
 import xyz.ksharma.sumi.resources.ink_bleed_03
@@ -60,6 +64,7 @@ import xyz.ksharma.sumi.resources.logo_chop
 import xyz.ksharma.sumi.resources.logo_enso
 import xyz.ksharma.sumi.theme.SumiTheme
 import xyz.ksharma.sumi.theme.safeContentColumn
+import xyz.ksharma.sumi.theme.statusBarsWithCornerClearance
 import xyz.ksharma.sumi.theme.SumiTokens as Sumi
 
 // Long because the screen orchestrates a share-layer card + interstitial-ad lifecycle +
@@ -121,31 +126,63 @@ fun WinScreen(
                 alpha = 0.20f,
             )
         }
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .safeContentColumn()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = Sumi.Space.s6)
-                .padding(top = Sumi.Space.s9, bottom = Sumi.Space.s7),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            WinShareCard(
-                elapsedMs = elapsedMs,
-                mistakeCount = mistakeCount,
-                moveCount = moveCount,
-                difficulty = difficulty,
-                quote = quote,
-                solution = solution,
-                surface = ShareCardSurface(layer = shareLayer, background = cardBackground),
-            )
-            Spacer(Modifier.height(Sumi.Space.s7))
-            WinActions(
-                onNextPuzzle = onNextPuzzle,
-                onShare = if (onShare != null) {
-                    { coroutineScope.launch { onShare(shareLayer.toImageBitmap()) } }
-                } else null,
-            )
+        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+            val expanded = isExpandedWindow()
+            val card: @Composable () -> Unit = {
+                WinShareCard(
+                    elapsedMs = elapsedMs,
+                    mistakeCount = mistakeCount,
+                    moveCount = moveCount,
+                    difficulty = difficulty,
+                    quote = quote,
+                    solution = solution,
+                    surface = ShareCardSurface(layer = shareLayer, background = cardBackground),
+                )
+            }
+            val actions: @Composable (Modifier) -> Unit = { actionsModifier ->
+                WinActions(
+                    onNextPuzzle = onNextPuzzle,
+                    onShare = if (onShare != null) {
+                        { coroutineScope.launch { onShare(shareLayer.toImageBitmap()) } }
+                    } else null,
+                    modifier = actionsModifier,
+                )
+            }
+            if (expanded) {
+                // Card on the left, actions beside it: the card keeps its portrait share
+                // proportions and the buttons stay a fixed width instead of stretching.
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .statusBarsWithCornerClearance()
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = Sumi.Space.s6, vertical = Sumi.Space.s6),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                ) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(Sumi.Space.s9),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Box(modifier = Modifier.width(WIN_CARD_MAX_WIDTH)) { card() }
+                        actions(Modifier.width(WIN_ACTIONS_WIDTH))
+                    }
+                }
+            } else {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .safeContentColumn()
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = Sumi.Space.s6)
+                        .padding(top = Sumi.Space.s9, bottom = Sumi.Space.s7),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Box(modifier = Modifier.widthIn(max = WIN_CARD_MAX_WIDTH)) { card() }
+                    Spacer(Modifier.height(Sumi.Space.s7))
+                    actions(Modifier.widthIn(max = WIN_CARD_MAX_WIDTH).fillMaxWidth())
+                }
+            }
         }
         // Only render InterstitialAd once the pre-loaded ad reports READY, and keep it
         // composed through SHOWING/SHOWN. Removing the composable mid-presentation
@@ -167,6 +204,12 @@ fun WinScreen(
         }
     }
 }
+
+/** Widest the share card gets; the captured image keeps portrait proportions. */
+private val WIN_CARD_MAX_WIDTH: Dp = 400.dp
+
+/** Width of the button column beside the card on wide windows. */
+private val WIN_ACTIONS_WIDTH: Dp = 300.dp
 
 /** Bundles share-layer plumbing so [WinShareCard]'s param list stays under detekt's threshold. */
 private data class ShareCardSurface(val layer: GraphicsLayer, val background: Color)
@@ -404,12 +447,13 @@ private fun difficultyKanji(difficulty: String): String = when (difficulty.lower
 private fun WinActions(
     onNextPuzzle: (() -> Unit)?,
     onShare: (() -> Unit)?,
+    modifier: Modifier = Modifier,
 ) {
     // Two-button hierarchy: Share is the primary (high-contrast) action — most
     // users want to celebrate the run; Next Practice is the secondary ghost.
     // System back from Win returns Home, so a dedicated "Return Home" button
     // is redundant and was removed.
-    Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Sumi.Space.s2)) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(Sumi.Space.s2)) {
         if (onShare != null) {
             SumiButton(
                 onClick = onShare,
