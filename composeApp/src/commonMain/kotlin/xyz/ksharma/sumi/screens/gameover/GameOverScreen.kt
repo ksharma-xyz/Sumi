@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
@@ -16,11 +17,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import xyz.ksharma.sumi.design.components.SumiButtonVariant
 import xyz.ksharma.sumi.design.components.SumiTextButton
 import xyz.ksharma.sumi.design.components.WashiBG
 import xyz.ksharma.sumi.theme.SumiTheme
 import xyz.ksharma.sumi.theme.SumiTokens as Sumi
+
+/** Widest the buttons get, so they do not stretch across a wide window. */
+private val ACTION_MAX_WIDTH: Dp = 320.dp
 
 @Composable
 fun GameOverScreen(
@@ -64,14 +70,14 @@ fun GameOverScreen(
                 text = "Try again",
                 onClick = onRetry,
                 variant = SumiButtonVariant.Primary,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.widthIn(max = ACTION_MAX_WIDTH).fillMaxWidth(),
             )
             Spacer(Modifier.height(Sumi.Space.s3))
             SumiTextButton(
                 text = "Home",
                 onClick = onHome,
                 variant = SumiButtonVariant.Ghost,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.widthIn(max = ACTION_MAX_WIDTH).fillMaxWidth(),
             )
         }
     }
