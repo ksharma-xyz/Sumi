@@ -34,6 +34,11 @@ jobs:
       FASTLANE_XCODEBUILD_SETTINGS_TIMEOUT: 120
     steps:
       - uses: actions/checkout@v4
+        with:
+          # settings.gradle.kts includeBuild("darpan") applies to every Gradle invocation,
+          # including the one the Xcode "Compile Kotlin Framework" phase runs. Without the
+          # submodule the archive fails with "Could not find xyz.ksharma:darpan-annotations".
+          submodules: recursive
 
       # Select Xcode before anything else runs.
       # xcversion is not used — relies on the sunsetted xcode-install gem
