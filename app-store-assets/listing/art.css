@@ -1,0 +1,29 @@
+/* Sumi type and frame, from SumiTheme: display is Cormorant Garamond medium
+   italic, body is Source Serif 4. --u is 1% of the panel's short side. */
+/* The app's Seal component: accent chop, paper hairline, kanji, -5 degrees. */
+.seal {
+  display: grid; place-items: center; flex: 0 0 auto;
+  width: calc(var(--u) * 9.6); height: calc(var(--u) * 9.6); margin-bottom: calc(var(--u) * 3.2);
+  background: var(--seal); border-radius: calc(var(--u) * .8); transform: rotate(-5deg);
+  box-shadow: 0 calc(var(--u) * .5) calc(var(--u) * 1.4) rgba(60, 24, 14, .26),
+              inset 0 0 0 calc(var(--u) * .24) rgba(244, 236, 224, .5);
+}
+.seal b { font-family: "Mincho"; font-weight: 600; font-size: calc(var(--u) * 5.4); line-height: 1; color: #F4ECE0; }
+.copy h1 { font-family: "Cormorant"; font-style: italic; font-weight: 500; line-height: 1.0; letter-spacing: -.018em; color: var(--ink); }
+.copy h1 span { padding: 0 .1em; }
+.copy h1 .l2 { color: var(--accent); }
+.copy p {
+  margin-top: calc(var(--u) * 2.8); font-family: "SourceSerif"; font-weight: 400;
+  font-size: calc(var(--u) * 3.9); line-height: 1.35; letter-spacing: .004em; color: var(--sub);
+}
+.device {
+  background: linear-gradient(145deg, #A39A8E 0%, #3B352F 18%, #17130F 50%, #3B352F 82%, #8D8478 100%);
+  box-shadow: 0 calc(var(--u) * .7) calc(var(--u) * 1.4) rgba(var(--shadow), .20),
+              0 calc(var(--u) * 3) calc(var(--u) * 5) rgba(var(--shadow), .22),
+              0 calc(var(--u) * 7.5) calc(var(--u) * 13) rgba(var(--shadow), .24);
+}
+.squat .seal { width: calc(var(--u) * 6.8); height: calc(var(--u) * 6.8); margin-bottom: calc(var(--u) * 1.8); }
+.squat .seal b { font-size: calc(var(--u) * 3.8); }
+.squat .copy p { margin-top: calc(var(--u) * 1.6); font-size: calc(var(--u) * 3.1); }
+.landscape .seal { width: calc(var(--u) * 10); height: calc(var(--u) * 10); margin-bottom: calc(var(--u) * 4); }
+.landscape .copy p { font-size: calc(var(--u) * 3.9); }

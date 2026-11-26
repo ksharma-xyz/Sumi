@@ -1,3 +1,5 @@
 # Snapshot-test baselines. These are regenerated wholesale on any visual change, so keeping
 # them out of the normal object store stops the repo growing a copy per re-record.
 **/screenshots/**/*.png filter=lfs diff=lfs merge=lfs -text
+# Store listing captures, panels and icons.
+app-store-assets/**/*.png filter=lfs diff=lfs merge=lfs -text

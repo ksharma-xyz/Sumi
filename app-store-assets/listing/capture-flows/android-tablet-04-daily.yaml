@@ -1,0 +1,9 @@
+# Sumi Android tablet (landscape 2560x1600), 04-daily: Daily tab calendar, top of scroll.
+appId: xyz.ksharma.sumi.debug
+---
+- tapOn: "DAILY"
+- extendedWaitUntil:
+    visible: "PREVIOUS MONTHS"
+    timeout: 5000
+- waitForAnimationToEnd:
+    timeout: 3000

@@ -1,0 +1,9 @@
+# Sumi Android tablet (landscape 2560x1600), 03-stats: Stats tab (Practice Log), top of scroll. Run from Home after a fresh app start.
+appId: xyz.ksharma.sumi.debug
+---
+- tapOn: "STATS"
+- extendedWaitUntil:
+    visible: "Practice Log"
+    timeout: 5000
+- waitForAnimationToEnd:
+    timeout: 3000

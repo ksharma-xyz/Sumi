@@ -1,0 +1,206 @@
+{
+ "app": "Sumi",
+ "fonts": [
+  {
+   "family": "Cormorant",
+   "file": "../../composeApp/src/commonMain/composeResources/font/cormorant_garamond_medium_italic.ttf",
+   "weight": 500,
+   "style": "italic"
+  },
+  {
+   "family": "SourceSerif",
+   "file": "../../composeApp/src/commonMain/composeResources/font/source_serif_4_regular.ttf",
+   "weight": 400
+  },
+  {
+   "family": "Mincho",
+   "file": "../../composeApp/src/commonMain/composeResources/font/shippori_mincho_semibold.ttf",
+   "weight": 600
+  }
+ ],
+ "max_font": {
+  "portrait": 12.6,
+  "landscape": 11.2
+ },
+ "raw_dirs": {
+  "iphone-6.9": "../screenshots/iphone-6.9in-1320x2868",
+  "iphone-6.5": "../screenshots/iphone-6.5in-1242x2688",
+  "iphone-6.3": "../screenshots/iphone-6.9in-1320x2868",
+  "ipad-13": "../screenshots/ipad-13in-2064x2752",
+  "iphone-duo-outer": "../screenshots/iphone-duo-outer-1398x2034",
+  "iphone-duo-inner-landscape": "../screenshots/iphone-duo-inner-2853x2007",
+  "iphone-duo-inner-portrait": "../screenshots/iphone-duo-inner-2007x2853",
+  "android-phone": "../screenshots/android-phone",
+  "android-tablet": "../screenshots/android-tablet"
+ },
+ "panels": [
+  {
+   "slug": "home",
+   "raw": "01-home.png",
+   "seal": "墨",
+   "lines": [
+    "Sudoku,",
+    "stripped of noise"
+   ],
+   "sub": "Five levels, three with Sumi Pro",
+   "colors": {
+    "mode": "light",
+    "paper": "#F5ECEA",
+    "glow": "#FCF5F3",
+    "deep": "#E1D2CC",
+    "fibre": "#CCAA9E",
+    "ink": "#1A1410",
+    "sub": "#5A4838",
+    "accent": "#8C2E4C",
+    "seal": "#B84568",
+    "stroke": "#8C2E4C",
+    "strokeAlpha": "0.26",
+    "shadow": "62, 40, 24"
+   }
+  },
+  {
+   "slug": "game",
+   "raw": "02-game.png",
+   "seal": "墨",
+   "lines": [
+    "Warm ink on",
+    "washi paper"
+   ],
+   "sub": "Notes, undo and hints",
+   "colors": {
+    "mode": "light",
+    "paper": "#F4ECE0",
+    "glow": "#FBF6ED",
+    "deep": "#DFD1B6",
+    "fibre": "#C9B48A",
+    "ink": "#1A1410",
+    "sub": "#5A4838",
+    "accent": "#A8342A",
+    "seal": "#A8342A",
+    "stroke": "#1A1410",
+    "strokeAlpha": "0.22",
+    "shadow": "62, 40, 24"
+   }
+  },
+  {
+   "slug": "stats",
+   "raw": "03-stats.png",
+   "seal": "墨",
+   "lines": [
+    "Watch your",
+    "times sharpen"
+   ],
+   "sub": "Solves, streaks and averages",
+   "colors": {
+    "mode": "light",
+    "paper": "#EEF2E4",
+    "glow": "#F4F8EC",
+    "deep": "#D0D9BC",
+    "fibre": "#9DAE85",
+    "ink": "#1A1410",
+    "sub": "#5A4838",
+    "accent": "#3F6E2F",
+    "seal": "#5A8A4A",
+    "stroke": "#3F6E2F",
+    "strokeAlpha": "0.26",
+    "shadow": "62, 40, 24"
+   }
+  },
+  {
+   "slug": "daily",
+   "raw": "04-daily.png",
+   "seal": "墨",
+   "lines": [
+    "One puzzle",
+    "every day"
+   ],
+   "sub": "A calendar of every solve",
+   "colors": {
+    "mode": "light",
+    "paper": "#F4E9D8",
+    "glow": "#FBF3E8",
+    "deep": "#DFCCB0",
+    "fibre": "#C8A272",
+    "ink": "#1A1410",
+    "sub": "#5A4838",
+    "accent": "#8C3C14",
+    "seal": "#B85A28",
+    "stroke": "#8C3C14",
+    "strokeAlpha": "0.26",
+    "shadow": "62, 40, 24"
+   }
+  },
+  {
+   "slug": "win",
+   "raw": "05-win.png",
+   "seal": "完",
+   "lines": [
+    "Every solve",
+    "ends in a seal"
+   ],
+   "sub": "Your time, moves and a quote",
+   "colors": {
+    "mode": "light",
+    "paper": "#EEEEF8",
+    "glow": "#F6F6FC",
+    "deep": "#D8DAE8",
+    "fibre": "#A8B0CC",
+    "ink": "#1A1410",
+    "sub": "#5A4838",
+    "accent": "#333E88",
+    "seal": "#4A5CB0",
+    "stroke": "#333E88",
+    "strokeAlpha": "0.25",
+    "shadow": "62, 40, 24"
+   }
+  },
+  {
+   "slug": "pause",
+   "raw": "06-game-paused.png",
+   "seal": "休",
+   "lines": [
+    "Pause anytime,",
+    "no penalty"
+   ],
+   "sub": "Your time waits for you",
+   "colors": {
+    "mode": "night",
+    "paper": "#1A1410",
+    "glow": "#2D241A",
+    "deep": "#0F0A07",
+    "fibre": "#6B5B47",
+    "ink": "#F4ECE0",
+    "sub": "#B3A088",
+    "accent": "#D08898",
+    "seal": "#B84568",
+    "stroke": "#D08898",
+    "strokeAlpha": "0.34",
+    "shadow": "0, 0, 0"
+   }
+  },
+  {
+   "slug": "zen",
+   "raw": "07-zen.png",
+   "seal": "墨",
+   "lines": [
+    "Words for",
+    "a still mind"
+   ],
+   "sub": "The quote library, with Sumi Pro",
+   "colors": {
+    "mode": "night",
+    "paper": "#1A1410",
+    "glow": "#2D241A",
+    "deep": "#0F0A07",
+    "fibre": "#6B5B47",
+    "ink": "#F4ECE0",
+    "sub": "#B3A088",
+    "accent": "#D9A855",
+    "seal": "#8A6B2A",
+    "stroke": "#D9A855",
+    "strokeAlpha": "0.40",
+    "shadow": "0, 0, 0"
+   }
+  }
+ ]
+}

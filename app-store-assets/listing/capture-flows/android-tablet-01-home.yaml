@@ -1,0 +1,7 @@
+# Sumi Android tablet (landscape 2560x1600), 01-home. Assumes the Debug app is running and debug toggles are set (see android-phone-00-setup.yaml).
+appId: xyz.ksharma.sumi.debug
+---
+- tapOn: "PLAY"
+- waitForAnimationToEnd:
+    timeout: 3000
+- assertVisible: "NEW PRACTICE"
