@@ -268,7 +268,8 @@ private fun ExpandedHomeContent(
                                 lockedDifficulties = lockedDifficulties,
                                 columns = if (maxWidth >= HOME_THREE_COLUMN_MIN_WIDTH) 3 else 2,
                                 fillLastRow = true,
-                                large = true,
+                                // In a narrower pane a large card breaks a name mid-word.
+                                large = maxWidth >= HOME_LARGE_TILE_MIN_WIDTH,
                             )
                         }
                     }
@@ -288,6 +289,9 @@ private val MEDIUM_MIN_WIDTH = 600.dp
 private val HOME_PAGE_MAX_WIDTH = 1200.dp
 private val HOME_PANE_GAP = 24.dp
 private val HOME_THREE_COLUMN_MIN_WIDTH = 560.dp
+
+/** Narrowest difficulty pane that fits two large cards side by side. */
+private val HOME_LARGE_TILE_MIN_WIDTH = 360.dp
 private const val HOME_LEFT_WEIGHT = 5f
 private const val HOME_RIGHT_WEIGHT = 7f
 

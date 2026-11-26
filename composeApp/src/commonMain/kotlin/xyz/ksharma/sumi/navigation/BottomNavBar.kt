@@ -8,11 +8,15 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.Text
@@ -84,7 +88,7 @@ fun BottomNavBar(
     }
 }
 
-/** Width of [SumiNavRail], also what content to its right has lost from the window width. */
+/** Width of [SumiNavRail] for its tabs and divider; a start inset is added on top. */
 val NavRailWidth = 88.dp
 
 /**
@@ -102,10 +106,14 @@ fun SumiNavRail(
         Column(
             modifier = Modifier
                 .fillMaxHeight()
+                // The rail touches only the start edge, so insets on the far side are not its
+                // to clear (iPhone in landscape, the camera column on iPhone Duo).
+                .consumeWindowInsets(WindowInsets.safeDrawing.only(WindowInsetsSides.End))
+                // Before width(), so a start inset widens the rail instead of squeezing the tabs.
+                .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Start))
                 .width(NavRailWidth - 1.dp)
                 .statusBarsWithCornerClearance()
                 .windowInsetsPadding(WindowInsets.navigationBars)
-                .safeHorizontalPadding()
                 // Same top inset as a screen's header row, so the first tab lines up with it.
                 .padding(top = Sumi.Space.s4, bottom = Sumi.Space.s3),
             horizontalAlignment = Alignment.CenterHorizontally,
