@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.BoxWithConstraintsScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.only
@@ -15,6 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.NavKey
@@ -49,8 +52,13 @@ fun SumiNavShell(
     modifier: Modifier = Modifier,
     content: @Composable (Modifier) -> Unit,
 ) {
+    // The rail grows by the start inset, so screens must be told its real width.
+    val startInset = WindowInsets.safeDrawing.only(WindowInsetsSides.Start)
+        .asPaddingValues()
+        .calculateStartPadding(LocalLayoutDirection.current)
     BoxWithConstraints(modifier = modifier) {
         val rail = showNav && maxWidth >= ExpandedMinWidth
+        val railWidth = if (rail) NavRailWidth + startInset else 0.dp
         Row(modifier = Modifier.fillMaxSize()) {
             if (rail) SumiNavRail(currentTab = currentTab, onTabClick = onTabClick)
             // contentWindowInsets = 0 so Scaffold doesn't consume system bar insets.
@@ -71,7 +79,7 @@ fun SumiNavShell(
                     if (showNav && !rail) BottomNavBar(currentTab = currentTab, onTabClick = onTabClick)
                 },
             ) { innerPadding ->
-                CompositionLocalProvider(LocalNavRailWidth provides if (rail) NavRailWidth else 0.dp) {
+                CompositionLocalProvider(LocalNavRailWidth provides railWidth) {
                     content(Modifier.padding(bottom = innerPadding.calculateBottomPadding()))
                 }
             }
