@@ -1,0 +1,36 @@
+# Sumi Android phone, one-off debug state on a FRESH install: Simulate Pro ON, Show Ads OFF, Seed 5-day streak.
+# Fresh install defaults are Simulate Pro Off, Show Ads On, so a single tap each flips them to the canonical state.
+# Run this exactly once per fresh install (a second run would flip the toggles back).
+appId: xyz.ksharma.sumi.debug
+---
+- launchApp:
+    clearState: false
+- waitForAnimationToEnd:
+    timeout: 4000
+- tapOn:
+    point: "89%,9%"          # sun/gear icon, top right of Play tab
+- waitForAnimationToEnd
+- scrollUntilVisible:
+    element: "Simulate Pro"
+    direction: DOWN
+    timeout: 20000
+- tapOn: "Simulate Pro"
+- swipe:
+    start: "50%,80%"
+    end: "50%,35%"
+- tapOn: "Show Ads"
+- scrollUntilVisible:
+    element: "SEED"
+    direction: DOWN
+    timeout: 20000
+- tapOn: "SEED"
+- tapOn:
+    point: "11%,9%"          # back arrow
+- waitForAnimationToEnd
+# Home only picks up the seeded streak after a process restart.
+- stopApp
+- launchApp
+- waitForAnimationToEnd:
+    timeout: 4000
+- assertVisible: "5"
+- assertVisible: "NEW PRACTICE"

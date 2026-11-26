@@ -1,0 +1,10 @@
+# Sumi Android phone, 06-game-paused: from the running game (02-game), tap pause (top right).
+appId: xyz.ksharma.sumi.debug
+---
+- tapOn:
+    point: "89%,9%"          # pause button, top right of the game header
+- extendedWaitUntil:
+    visible: "A moment of rest"
+    timeout: 5000
+- waitForAnimationToEnd:
+    timeout: 2000

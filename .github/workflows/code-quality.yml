@@ -52,11 +52,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          # Baselines are stored in Git LFS; without this the checkout leaves pointer
-          # files behind and every comparison fails for the wrong reason.
-          lfs: true
           # darpan is a composite build via git submodule until it is published to Central.
           submodules: recursive
+
+      # Baselines are stored in Git LFS; without them the checkout leaves pointer files behind
+      # and every comparison fails for the wrong reason. Only the baselines are pulled: the
+      # store pictures in app-store-assets/ are also in LFS and no CI job needs them.
+      - name: Fetch snapshot baselines
+        run: |
+          git lfs install --local
+          git lfs pull --include="composeApp/screenshots/**" --exclude=""
 
       - name: Set up JDK
         uses: actions/setup-java@v4

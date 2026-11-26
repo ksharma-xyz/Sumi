@@ -1,0 +1,20 @@
+# Sumi Android tablet (landscape 2560x1600), 05-win: debug "Open Win screen" (Settings > Debug > Open).
+# Start from Home (Play tab). Wait for the win animation to settle before capturing.
+appId: xyz.ksharma.sumi.debug
+---
+- tapOn: "PLAY"
+- waitForAnimationToEnd
+- tapOn:
+    point: "96%,8%"          # settings (sun) icon
+- waitForAnimationToEnd
+- scrollUntilVisible:
+    element: "Open Win screen"
+    direction: DOWN
+    timeout: 30000
+- scroll
+- tapOn: "OPEN"
+- extendedWaitUntil:
+    visible: "Share Result"
+    timeout: 10000
+- waitForAnimationToEnd:
+    timeout: 5000

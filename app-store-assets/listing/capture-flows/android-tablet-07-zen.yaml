@@ -1,0 +1,9 @@
+# Sumi Android tablet (landscape 2560x1600), 07-zen: Zen tab with Simulate Pro ON.
+appId: xyz.ksharma.sumi.debug
+---
+- tapOn: "ZEN"
+- extendedWaitUntil:
+    visible: "THE LIBRARY"
+    timeout: 5000
+- waitForAnimationToEnd:
+    timeout: 3000

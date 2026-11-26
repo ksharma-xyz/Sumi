@@ -1,0 +1,8 @@
+# Sumi Android phone, 02-game: Easy puzzle in progress, early. Start on Play tab (Home).
+# Then capture immediately: adb -s <serial> exec-out screencap -p > .../02-game.png
+appId: xyz.ksharma.sumi.debug
+---
+- tapOn: "Easy"
+- extendedWaitUntil:
+    visible: "MISTAKES.*"
+    timeout: 10000
